@@ -207,7 +207,7 @@ local AuraList = {
         1833, -- Cheap Shot
         8643, -- Kidney Shot
         8983, -- Bash
-        16940, 16941 -- Brutal Impact (r1&2)
+        16940, 16941, -- Brutal Impact (r1&2)
         19577, -- Intimidation
         49803, -- Pounce
         199804, -- Between the Eyes
@@ -317,7 +317,7 @@ local AuraList = {
 		-- 163505, -- Rake
         49803, -- Pounce
         8983, -- Bash
-        16940, 16941 -- Brutal Impact (r1&2)
+        16940, 16941, -- Brutal Impact (r1&2)
 		-- Hunter 
         19577, -- Intimidation (pet)
         -- Rogue 
@@ -327,7 +327,7 @@ local AuraList = {
 		49802, -- Maim
         49803, -- Pounce
         8983, -- Bash
-        16940, 16941 -- Brutal Impact (r1&2)
+        16940, 16941, -- Brutal Impact (r1&2)
 		-- Warrior 
         46968, -- Shockwave 
         7922, -- Charge Stun
@@ -506,7 +506,7 @@ local AuraList = {
         36554, -- Shadowstep
         54861, -- Nitro Boosts
         -- 58875, -- Spirit Walk
-        64127, 64129 -- Body and Soul (r1,2)
+        64127, 64129, -- Body and Soul (r1,2)
         -- 68992, -- Darkflight
         -- 85499, -- Speed of Light
         -- 87023, -- Cauterize
@@ -532,7 +532,7 @@ local AuraList = {
         -- 214121, -- Body and Mind (priest talent)
         -- 215572, -- Frothing Berserker (warrior talent)
         -- 231390, -- Trailblazer (hunter talent)
-        5118, 13159  -- Aspect of the Cheetah & Aspect of the Pack
+        5118, 13159,  -- Aspect of the Cheetah & Aspect of the Pack
         -- 204475, -- Windburst (marks hunter artifact ability)        
     },
     -- Deff 
@@ -582,7 +582,7 @@ local AuraList = {
         -- 104773, -- Unending Resolve
         6940, -- Hand of Sacrifice
         -- 108271, -- Astral Shift
-        30823,- Shamanistic Rage
+        30823, -- Shamanistic Rage
         26669, -- Evasion
         22812, -- Ironbark
         10278, -- Hand of Protection
@@ -615,7 +615,7 @@ local AuraList = {
     -- Damage buffs / debuffs
     Rage = {
         18499, -- Berserker Rage
-        12880, 14201, 14202, 14203, 14204 -- Enrage (Fury talent r1,2,3,4,5)
+        12880, 14201, 14202, 14203, 14204, -- Enrage (Fury talent r1,2,3,4,5)
         12292, -- Death Wish
     }, 
     DamageBuffs = {        
@@ -753,7 +753,7 @@ local AuraList = {
         -- 8004, -- Healing Surge
         -- 73920, -- Healing Rain
         49273, -- Healing Wave
-        49276,- Lesser Healing Wave
+        49276, -- Lesser Healing Wave
         -- 197995, -- Wellspring                          (shaman, restoration)
         -- 207778, -- Downpour                            (shaman, restoration)
         48785, -- Flash of Light

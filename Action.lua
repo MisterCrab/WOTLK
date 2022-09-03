@@ -4141,7 +4141,6 @@ local ActionHasRunningDB, ActionHasFinishedLoading
 do 
 	for constant, v in pairs(_G) do 
 		if type(constant) == "string" and constant:match("ACTION_CONST_") then 
-			print(constant)
 			ActionConst[constant:gsub("ACTION_CONST_", "")] = v
 		end 
 	end 
