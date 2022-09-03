@@ -14346,12 +14346,12 @@ function Action.ToggleMainUI()
 			
 			-- UI: PanelOptions - SelectResurrects
 			SelectResurrects = CreateCheckbox(PanelOptions, "SelectResurrects", true) -- yes macro, no callback 
-			if StdUi.isClassic and Action.PlayerClass == "DRUID" then 
-				-- Druid in Classic hasn't ressurect
-				SelectResurrects:Disable()
-				SelectResurrects:SetChecked(false, true) -- only internal 
-				db.SelectResurrects = false 
-			end 
+			--if StdUi.isClassic and Action.PlayerClass == "DRUID" then 
+			--	-- Druid in Classic hasn't ressurect
+			--	SelectResurrects:Disable()
+			--	SelectResurrects:SetChecked(false, true) -- only internal 
+			--	specDB[db].SelectResurrects = false 
+			--end 
 		end -- isHealer END 
 
 			-- UI: PanelUnitIDs
