@@ -53,6 +53,7 @@ _G.ACTION_CONST_PORTRAIT_SHAMAN										= dir .. [[TRADE_ARCHAEOLOGY_ANCIENTORC
 _G.ACTION_CONST_PORTRAIT_MAGE										= dir .. [[ClassIcon_Mage]]
 _G.ACTION_CONST_PORTRAIT_WARLOCK									= dir .. [[ClassIcon_Warlock]]
 _G.ACTION_CONST_PORTRAIT_DRUID										= dir .. [[ClassIcon_Druid]]
+_G.ACTION_CONST_PORTRAIT_DEATHKNIGHT								= dir .. [[Button_FrostPresence_DeathKnight]]
 
 -- Class true portaits (used in the scroll table for Healing Engine tab in UI)
 _G.ACTION_CONST_TRUE_PORTRAIT_WARRIOR								= _G.ACTION_CONST_PORTRAIT_WARRIOR
