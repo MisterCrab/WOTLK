@@ -73,6 +73,9 @@ else
 	GetTotemInfo				= _G.GetTotemInfo
 	GetTotemTimeLeft			= _G.GetTotemTimeLeft
 end 
+
+-- Classic WOTLK 
+local HasAttachedGlyph 			= _G.HasAttachedGlyph
 	  	  	  
 -------------------------------------------------------------------------------
 -- Remap
@@ -656,6 +659,11 @@ function Player:GetTotemTimeLeft(i)
 	-- @return: number (timeLeft = GetTotemTimeLeft(1 through 4))
 	-- Example: <https://github.com/SwimmingTiger/LibTotemInfo/issues/2>
 	return GetTotemTimeLeft(i)
+end 
+
+-- Classic: Glyph
+function Player:HasAttachedGlyph(spellID)
+	return HasAttachedGlyph(spellID)
 end 
 
 -- crit_chance
