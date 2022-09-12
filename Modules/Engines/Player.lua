@@ -1435,6 +1435,78 @@ function Player:ComboPointsDeficit(unitID)
 	return self:ComboPointsMax(unitID) - self:ComboPoints(unitID)
 end
 
+---------------------------------
+--- 5 | Runic Power Functions ---
+---------------------------------
+-- runicpower.max
+function Player:RunicPowerMax()
+	return UnitPowerMax(self.UnitID, RunicPowerPowerType)
+end
+
+-- runicpower
+function Player:RunicPower()
+	return UnitPower(self.UnitID, RunicPowerPowerType)
+end
+
+-- runicpower.pct
+function Player:RunicPowerPercentage()
+	return (self:RunicPower() / self:RunicPowerMax()) * 100
+end
+
+-- runicpower.deficit
+function Player:RunicPowerDeficit()
+	return self:RunicPowerMax() - self:RunicPower()
+end
+
+-- "runicpower.deficit.pct"
+function Player:RunicPowerDeficitPercentage()
+	return (self:RunicPowerDeficit() / self:RunicPowerMax()) * 100
+end
+
+---------------------------
+--- 6 | Runes Functions ---
+---------------------------
+-- Computes any rune cooldown.
+local function ComputeRuneCooldown(Slot, BypassRecovery)
+	-- Get rune cooldown infos
+	local CDTime, CDValue = GetRuneCooldown(Slot)
+	-- Return 0 if the rune isn't in CD.
+	if CDTime == 0 or not CDTime then return 0 end
+	-- Compute the CD.
+	local CD = CDTime + CDValue - TMW.time - (BypassRecovery and 0 or RecoveryOffset())
+	-- Return the Rune CD
+	return CD > 0 and CD or 0
+end
+
+-- rune
+function Player:Rune()
+	local Count = 0
+	for i = 1, 6 do
+		if ComputeRuneCooldown(i) == 0 then
+			Count = Count + 1
+		end
+	end
+	return Count
+end
+
+-- rune.time_to_x
+function Player:RuneTimeToX(Value)
+	if type(Value) ~= "number" then error("Value must be a number.") end
+	if Value < 1 or Value > 6 then error("Value must be a number between 1 and 6.") end
+	local Runes = {}
+	for i = 1, 6 do
+		Runes[i] = ComputeRuneCooldown(i)
+	end
+	tsort(Runes, sortByLowest)
+	local Count = 1
+	for _, CD in pairs(Runes) do
+		if Count == Value then
+			return CD
+		end
+		Count = Count + 1
+	end
+end
+
 ------------------------
 --- 7 | Soul Shards  ---
 ------------------------
@@ -1722,6 +1794,10 @@ Player.PredictedResourceMap = {
 	[3] = function() return Player:EnergyPredicted() end,
 	-- ComboPoints
 	[4] = function() return Player:ComboPoints() end,
+	-- Runes
+	[5] = function() return Player:Runes() end,
+	-- Runic Power
+	[6] = function() return Player:RunicPower() end,
 	-- Soul Shards
 	[7] = function() return Player:SoulShardsP() end,
 	-- Astral Power
