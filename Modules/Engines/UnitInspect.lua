@@ -38,7 +38,9 @@ local function GetGUID(unitID)
 end 
 
 local function UnitInspectItem(unitID, invID)
-    if (UnitPlayerControlled(unitID) and CanInspect(unitID) and not UnitIsUnit("player", unitID)) then    
+	
+    if (UnitPlayerControlled(unitID) and CanInspect(unitID) and not UnitIsUnit("player", unitID)) then  
+		print("UnitInspectItem", "unitID:", unitID, "unitName:", UnitName(unitID), "CanInspect:", CanInspect(unitID))
 		local GUID = GetGUID(unitID)
 		if not GUID then 
 			return 
@@ -120,8 +122,8 @@ local function UnitInspectWipe(...)
 	end 
 end 
 
-Listener:Add("ACTION_EVENT_UNIT_INSPECT", "PLAYER_REGEN_ENABLED", 		UnitInspectWipe)
-Listener:Add("ACTION_EVENT_UNIT_INSPECT", "UNIT_INVENTORY_CHANGED",		UnitInspectWipe)
+--Listener:Add("ACTION_EVENT_UNIT_INSPECT", "PLAYER_REGEN_ENABLED", 		UnitInspectWipe)
+--Listener:Add("ACTION_EVENT_UNIT_INSPECT", "UNIT_INVENTORY_CHANGED",		UnitInspectWipe)
 
 
 -------------------------------------------------------------------------------
@@ -135,8 +137,8 @@ function A.GetUnitItem(unitID, invID, itemClassID, itemSubClassID, itemID, byPas
 		if InspectCache[GUID] and InspectCache[GUID][invID] and InspectCache[GUID][invID].itemID then 
 			return (not itemClassID or InspectCache[GUID][invID].itemClassID == itemClassID) and (not itemSubClassID or InspectCache[GUID][invID].itemSubClassID == itemSubClassID) and (not itemID or InspectCache[GUID][invID].itemID == itemID)
 		else
-			local I = UnitInspectItem(unitID, invID)
-			return (byPassDistance and not I and true) or (I and (not itemClassID or I.itemClassID == itemClassID) and (not itemSubClassID or I.itemSubClassID == itemSubClassID) and (not itemID or I.itemID == itemID))
+			--local I = UnitInspectItem(unitID, invID)
+			--return (byPassDistance and not I and true) or (I and (not itemClassID or I.itemClassID == itemClassID) and (not itemSubClassID or I.itemSubClassID == itemSubClassID) and (not itemID or I.itemID == itemID))
 		end 
 	end 
 end
@@ -151,9 +153,9 @@ function A.GetUnitItemInfo(unitID, invID)
 	local GUID = GetGUID(unitID)
 	if GUID then 
 		if InspectCache[GUID] and InspectCache[GUID][invID] and InspectCache[GUID][invID].itemID then 
-			return InspectCache[GUID][invID]
+			--return InspectCache[GUID][invID]
 		else
-			return UnitInspectItem(unitID, invID)
+			--return UnitInspectItem(unitID, invID)
 		end 
 	end 
 end  
