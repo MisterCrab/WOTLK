@@ -1530,7 +1530,7 @@ end
 
 -- soul shards predicted, customize in spec overrides
 function Player:SoulShardsP()
-	return self:SoulShards() * 100 / self:SoulShardsMax()
+	return UnitPower(self.UnitID, SoulShardsPowerType)
 end
 
 -- soul_shard.deficit
