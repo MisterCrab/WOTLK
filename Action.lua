@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "15.11.2022"
+local DateTime 														= "20.11.2022"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -32,7 +32,7 @@ local StdUi 														= LibStub("StdUi"):NewInstance()
 local LibDBIcon	 													= LibStub("LibDBIcon-1.0")
 local LSM 															= LibStub("LibSharedMedia-3.0")
 	  LSM:Register(LSM.MediaType.STATUSBAR, "Flat", [[Interface\Addons\]] .. _G.ACTION_CONST_ADDON_NAME .. [[\Media\Flat]])
-local isClassic														= true -- _G.WOW_PROJECT_ID == _G.WOW_PROJECT_BURNING_CRUSADE_CLASSIC	 
+local isClassic														= _G.WOW_PROJECT_ID == _G.WOW_PROJECT_WRATH_CLASSIC	 
 StdUi.isClassic 													= isClassic	  
 local owner															= isClassic and "PlayerClass" or "PlayerSpec" 
 
