@@ -180,6 +180,9 @@ A.Trinket1 							= Create({ Type = "TrinketBySlot", 		ID = CONST.INVSLOT_TRINKE
 A.Trinket2 							= Create({ Type = "TrinketBySlot", 		ID = CONST.INVSLOT_TRINKET2, 					BlockForbidden = true, Desc = "Lower Trinket (/use 14)" 													})
 A.Shoot								= Create({ Type = "Spell", 				ID = 5019, 										QueueForbidden = true, BlockForbidden = true, Hidden = true,  Desc = "Wand" 								})
 A.AutoShot							= Create({ Type = "Spell", 				ID = 75, 										QueueForbidden = true, BlockForbidden = true, Hidden = true,  Desc = "Hunter's shoot" 						})
+A.HSFel1							= Create({ Type = "Item", 				ID = 36894, 									QueueForbidden = true, Desc = "[6] HealthStone" 															})
+A.HSFel2							= Create({ Type = "Item", 				ID = 36893, 									QueueForbidden = true, Desc = "[6] HealthStone" 															})
+A.HSFel3							= Create({ Type = "Item", 				ID = 36894, 									QueueForbidden = true, Desc = "[6] HealthStone" 															})
 A.HSGreater1						= Create({ Type = "Item", 				ID = 5510, 										QueueForbidden = true, Desc = "[6] HealthStone" 															})
 A.HSGreater2						= Create({ Type = "Item", 				ID = 19010, 									QueueForbidden = true, Desc = "[6] HealthStone" 															})
 A.HSGreater3						= Create({ Type = "Item", 				ID = 19011, 									QueueForbidden = true, Desc = "[6] HealthStone" 															})
@@ -435,7 +438,7 @@ function A.Rotation(icon)
 			-- Healthstone 
 			local Healthstone = GetToggle(1, "HealthStone") 
 			if Healthstone >= 0 then 
-				local HealthStoneObject = DetermineUsableObject(player, true, nil, true, nil, A.HSGreater3, A.HSGreater2, A.HSGreater1, A.HS3, A.HS2, A.HS1, A.HSLesser3, A.HSLesser2, A.HSLesser1, A.HSMajor3, A.HSMajor2, A.HSMajor1, A.HSMinor3, A.HSMinor2, A.HSMinor1)
+				local HealthStoneObject = DetermineUsableObject(player, true, nil, true, nil, A.HSFel3, A.HSFel2, A.HSFel1, A.HSGreater3, A.HSGreater2, A.HSGreater1, A.HS3, A.HS2, A.HS1, A.HSLesser3, A.HSLesser2, A.HSLesser1, A.HSMajor3, A.HSMajor2, A.HSMajor1, A.HSMinor3, A.HSMinor2, A.HSMinor1)
 				if HealthStoneObject then 			
 					if Healthstone >= 100 then -- AUTO 
 						if Unit(player):TimeToDie() <= 9 and Unit(player):HealthPercent() <= 40 then 
