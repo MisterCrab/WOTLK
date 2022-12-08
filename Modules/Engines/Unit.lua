@@ -2490,15 +2490,15 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID
 		return unitID and (UnitCanAttack("player", unitID) or UnitIsEnemy("player", unitID)) and (not isPlayer or UnitIsPlayer(unitID))
 	end, "UnitID"),	
-	IsHealer 								= Cache:Wrap(function(self, skipUnitIsUnit, class)  
+	IsHealer 								= Cache:Wrap(function(self, class)  
 		-- @return boolean
-		-- Nill-able: skipUnitIsUnit, class
+		-- Nill-able: class
 		local unitID 						= self.UnitID
-		if not skipUnitIsUnit and UnitIsUnit(unitID, "player") then 
-			return self("player"):HasSpec(InfoSpecIs.HEALER) 
-		end 
-		
-		if InfoClassCanBeHealer[class or self(unitID):Class()] then 		
+		if InfoClassCanBeHealer[class or self(unitID):Class()] then 	
+			if self(unitID):HasSpec(InfoSpecIs.HEALER) then 
+				return true
+			end 
+			
 											-- bypass it in PvP 
 			local taken_dmg 				= (self(unitID):IsEnemy() and self(unitID):IsPlayer() and 0) or CombatTracker:GetDMG(unitID)
 			local done_dmg					= CombatTracker:GetDPS(unitID)
@@ -2511,19 +2511,19 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID
 		return InfoClassCanBeHealer[self(unitID):Class()]
 	end, "UnitID"),	
-	IsTank 									= Cache:Wrap(function(self, skipUnitIsUnit, class)    
+	IsTank 									= Cache:Wrap(function(self, class)    
 		-- @return boolean 
-		-- Nill-able: skipUnitIsUnit, class
+		-- Nill-able: class
 		local unitID 						= self.UnitID
-		if not skipUnitIsUnit and UnitIsUnit(unitID, "player") then 
-			return self("player"):HasSpec(InfoSpecIs.TANK) 
-		end 
-		
 		local unitID_class 					= class or self(unitID):Class()
 		if InfoClassCanBeTank[unitID_class] then 
 			if unitID:match("raid%d+") and GetPartyAssignment("maintank", unitID) then 
 				return true 
 			end 
+			
+			if self(unitID):HasSpec(InfoSpecIs.TANK) then 
+				return true
+			end 			
 			
 			if CombatTracker:CombatTime(unitID) == 0 then 
 				if unitID_class == "PALADIN" then 
@@ -2555,17 +2555,16 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID
 		return InfoClassCanBeTank[self(unitID):Class()]
 	end, "UnitID"),	
-	IsDamager								= Cache:Wrap(function(self, skipUnitIsUnit)    
+	IsDamager								= Cache:Wrap(function(self)    
 		-- @return boolean 
-		-- Nill-able: skipUnitIsUnit
 		local unitID 						= self.UnitID
-		if not skipUnitIsUnit and UnitIsUnit(unitID, "player") then 
-			return self("player"):HasSpec(InfoSpecIs.DAMAGER) 
-		end 
-
 		if unitID:match("raid%d+") and GetPartyAssignment("mainassist", unitID) then 
 			return true 
 		end 
+		
+		if self(unitID):HasSpec(InfoSpecIs.DAMAGER) then 
+			return true
+		end 		
 											-- bypass it in PvP 
 		local taken_dmg 					= (self(unitID):IsEnemy() and self(unitID):IsPlayer() and 0) or CombatTracker:GetDMG(unitID) 
 		local done_dmg						= CombatTracker:GetDPS(unitID)
@@ -2575,21 +2574,21 @@ A.Unit = PseudoClass({
 	IsMelee 								= Cache:Wrap(function(self) 
 		-- @return boolean 
 		local unitID 						= self.UnitID
-		if UnitIsUnit(unitID, "player") then 
-			return self("player"):HasSpec(InfoSpecIs.MELEE) 
-		end 
-		
 		local class = self(unitID):Class()
 		if InfoClassCanBeMelee[class] then 
 			if class == "WARRIOR" or class == "ROGUE" or class == "DEATHKNIGHT" then 
 				return true 
 			end 
 			
-			if self(unitID):IsTank(true, class) then 
+			if self(unitID):HasSpec(InfoSpecIs.MELEE) then 
+				return true
+			end 			
+			
+			if self(unitID):IsTank(class) then 
 				return true 
 			end 
 			
-			if self(unitID):IsDamager(true) then 
+			if self(unitID):IsDamager() then 
 				if unitClass == "SHAMAN" then 
 					local _, offhand = UnitAttackSpeed(unitID)
 					return offhand ~= nil                    
