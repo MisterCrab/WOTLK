@@ -5299,6 +5299,40 @@ local Upgrade 					= {
 				},
 			}, "gActionDB[5].PvE")
 		end,
+		[2] 					= function()
+			tEraseKeys(gActionDB[5].PvP, { 
+				PurgeHigh = {
+					-- Warlock: Major Spellstone
+					[17730] = true,
+					-- Priest (Human): Feedback
+					[13896] = true,
+					-- Warlock: Spellstone
+					[128] = true,
+					-- Warlock: Greater Spellstone
+					[17729] = true, 
+				},
+				Magic = {
+					-- Druid: Faerie Fire (Feral)
+					[17390] = true,
+					-- Priest: Blackout
+					[15269] = true,
+				},
+				BlessingofProtection = {
+						-- Improved Concussive Shot	(Hunter)
+					[19410] = true,
+				},
+				Curse = {
+					-- Warlock: Curse of Shadow
+					[17862] = true, 
+					-- Hex of Weakness(Priest - Troll)
+					[9035] = true,
+				},
+				BlessingofFreedom = {
+					-- Improved Wing Clip (Hunter)
+					[19229] = true,	
+				},
+			}, "gActionDB[5].PvP")
+		end,
 	},
 	pUpgradesForProfile			= {},
 	SortMethod					= function(a, b)
