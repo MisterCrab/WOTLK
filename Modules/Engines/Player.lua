@@ -77,7 +77,9 @@ else
 end 
 
 -- Classic WOTLK 
-local HasAttachedGlyph 			= _G.HasAttachedGlyph
+local NUM_GLYPH_SLOTS								= _G.NUM_GLYPH_SLOTS
+local  GetActiveTalentGroup, 	GetGlyphSocketInfo 	= 
+	_G.GetActiveTalentGroup, _G.GetGlyphSocketInfo
 	  	  	  
 -------------------------------------------------------------------------------
 -- Remap
@@ -158,6 +160,8 @@ local Data = {
 	-- Inventory
 	CheckInv 	= {},
 	InfoInv 	= {},
+	-- Glyph
+	Glyphs		= {},
 } 
 
 local DataAuraStealthed				= Data.AuraStealthed
@@ -170,6 +174,7 @@ local DataCheckBags					= Data.CheckBags
 local DataInfoBags					= Data.InfoBags
 local DataCheckInv					= Data.CheckInv
 local DataInfoInv					= Data.InfoInv
+local DataGlyphs					= Data.Glyphs
 
 function Data.logAura(...)
 	local _, EVENT, _, SourceGUID, _, _, _, DestGUID, _, _, _, _, spellName, _, auraType = CombatLogGetCurrentEventInfo() 
@@ -343,6 +348,20 @@ function Data.logInv()
 	end 
 end 
 
+function Data.UpdateGlyphs()
+	wipe(DataGlyphs)
+	
+	local talentGroup = GetActiveTalentGroup() or 1
+	local enabled, _, spellID
+	for i = 1, NUM_GLYPH_SLOTS do 
+		enabled, _, spellID = GetGlyphSocketInfo(i, talentGroup)
+		if enabled and spellID then 
+			DataGlyphs[spellID] = true 
+			DataGlyphs[GetSpellInfo(spellID)] = true 
+		end 
+	end 
+end 
+
 Listener:Add("ACTION_EVENT_PLAYER", "PLAYER_STARTED_MOVING", function()
 	if Data.TimeStampMoving ~= TMW.time then 
 		Data.TimeStampMoving = TMW.time 
@@ -386,6 +405,14 @@ Listener:Add("ACTION_EVENT_PLAYER", "UPDATE_SHAPESHIFT_FORMS", 				Data.UpdateSt
 Listener:Add("ACTION_EVENT_PLAYER", "UPDATE_SHAPESHIFT_FORM", 				Data.UpdateStance)
 Listener:Add("ACTION_EVENT_PLAYER", "PLAYER_ENTERING_WORLD", 				Data.UpdateStance)
 Listener:Add("ACTION_EVENT_PLAYER", "PLAYER_LOGIN", 						Data.UpdateStance)
+
+-- WOTLK: Glyphs
+Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_ADDED", 					Data.UpdateGlyphs)
+Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_REMOVED", 					Data.UpdateGlyphs)
+Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_UPDATED", 					Data.UpdateGlyphs)
+TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", function()
+	Data.UpdateGlyphs()
+end)
 
 local function RecoveryOffset()
 	return A_GetPing() + A_GetCurrentGCD()
@@ -663,9 +690,11 @@ function Player:GetTotemTimeLeft(i)
 	return GetTotemTimeLeft(i)
 end 
 
--- Classic: Glyph
-function Player:HasAttachedGlyph(spellID)
-	return HasAttachedGlyph(spellID)
+-- WOTLK: Glyphs
+function Player:HasGlyph(spell)
+	-- @usage Player:HasGlyph(spellName) or Player:HasGlyph(spellID)
+	-- @return boolean 
+	return DataGlyphs[spell]
 end 
 
 -- crit_chance
