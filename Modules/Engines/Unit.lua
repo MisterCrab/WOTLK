@@ -959,6 +959,227 @@ local Info = {
         ["TANK"] 				= {103, 66, 73, 250},
         ["DAMAGER"] 			= {255, 70, 259, 260, 261, 263, 71, 72, 102, 253, 254, 62, 63, 64, 258, 262, 265, 266, 267, 250, 251},
     },
+	ClassSpecBuffs				= {
+		["WARRIOR"] 			= {
+			[CONST.WARRIOR_ARMS] = {
+				56638, 								-- Taste for Blood
+				64976, 								-- Juggernaut
+			}, 
+			[CONST.WARRIOR_FURY] = 29801, 			-- Rampage
+			[CONST.WARRIOR_PROTECTION] = 50227, 	-- Sword and Board
+		},
+		["PALADIN"]	= {
+			[CONST.PALADIN_RETRIBUTION] = 20375,	-- Seal of Command
+			[CONST.PALADIN_HOLY] = 31836,			-- Light's Grace
+			[CONST.PALADIN_PROTECTION] = 25781,		-- Righteous Fury
+		},
+		["HUNTER"] = {
+			[CONST.HUNTER_BEASTMASTERY] = 20895,	-- Spirit Bond
+			[CONST.HUNTER_MARKSMANSHIP] = 19506,	-- Trueshot Aura
+		},
+		["ROGUE"] = {
+			[CONST.ROGUE_SUBTLETY] = {
+				36554, 								-- Shadowstep
+				31223,								-- Master of Subtlety
+			},
+			[CONST.ROGUE_OUTLAW] = 51690,			-- Killing Spree
+		},
+		["PRIEST"] = {
+			[CONST.PRIEST_HOLY] = 47788,			-- Guardian Spirit
+			[CONST.PRIEST_DISCIPLINE] = 52800,		-- Borrowed Time
+			[CONST.PRIEST_SHADOW] = {
+				15473, 								-- Shadowform
+				15286,								-- Vampiric Embrace
+			},
+		},
+		["SHAMAN"] = {
+			[CONST.SHAMAN_ELEMENTAL] = {
+				57663,								-- Totem of Wrath
+				51470,								-- Elemental Oath
+			},
+			[CONST.SHAMAN_ENCHANCEMENT] = 30809,	-- Unleashed Rage
+			[CONST.SHAMAN_RESTORATION] = 49284,		-- Earth Shield
+		},
+		["MAGE"] = {
+			[CONST.MAGE_FROST] = 43039,				-- Ice Barrier
+			[CONST.MAGE_FIRE] = 11129,				-- Combustion
+			[CONST.MAGE_ARCANE] = 31583,			-- Arcane Empowerment
+		},
+		["WARLOCK"] = {
+			[CONST.WARLOCK_DESTRUCTION] = 30302,	-- Nether Protection
+		},
+		["DRUID"] = {
+			[CONST.DRUID_BALANCE] = 24907,			-- Moonkin Aura
+			[CONST.DRUID_FERAL] = 24932,			-- Leader of the Pack
+			[CONST.DRUID_RESTORATION] = 34123,		-- Tree of Life
+		},
+		["DEATHKNIGHT"] = {
+			[CONST.DEATHKNIGHT_UNHOLY] = 49222,		-- Bone Shield
+			[CONST.DEATHKNIGHT_FROST] = 55610,		-- Icy Talons
+			[CONST.DEATHKNIGHT_BLOOD] = {
+				49016,								-- Hysteria
+				53138,								-- Abomination's Might
+			},
+		},
+	},
+	ClassSpecSpells 			= {
+		["WARRIOR"]				= {
+			[CONST.WARRIOR_ARMS] = {
+				47486,								-- Mortal Strike
+				46924,								-- Bladestorm
+				56638, 								-- Taste for Blood
+				64976, 								-- Juggernaut
+			},
+			[CONST.WARRIOR_FURY] = {
+				23881,								-- Bloodthirst
+				29801, 								-- Rampage
+			},
+			[CONST.WARRIOR_PROTECTION] = {
+				12809,								-- Concussion Blow
+				47498,								-- Devastate
+				50227, 	-- Sword and Board
+			},
+		},
+		["PALADIN"]	= {
+			[CONST.PALADIN_RETRIBUTION] = {
+				35395,								-- Crusader Strike
+				53385,								-- Divine Storm
+				20066,								-- Repentance
+				20375,								-- Seal of Command
+			}, 
+			[CONST.PALADIN_HOLY] = {
+				48825,								-- Holy Shock
+				31836,								-- Light's Grace
+			},
+			[CONST.PALADIN_PROTECTION] = 48827,		-- Avenger's Shield
+		},
+		["HUNTER"] = {
+			[CONST.HUNTER_BEASTMASTERY] = {
+				19577,								-- Intimidation
+				20895,								-- Spirit Bond
+			},
+			[CONST.HUNTER_MARKSMANSHIP] = {
+				34490,								-- Silencing Shot
+				53209,								-- Chimera Shot
+				19506,								-- Trueshot Aura
+			},
+			[CONST.HUNTER_SURVIVAL] = {
+				60053,								-- Explosive Shot
+				49012,								-- Wyvern Sting
+			},
+		},
+		["ROGUE"] = {
+			[CONST.ROGUE_ASSASSINATION] = 48666,	-- Mutilate
+			[CONST.ROGUE_OUTLAW] = {
+				51690, 								-- Killing Spree
+				13877,								-- Blade Flurry
+				13750,								-- Adrenaline Rush
+			},
+			[CONST.ROGUE_SUBTLETY] = {
+				48660,								-- Hemorrhage
+				36554, 								-- Shadowstep
+				31223,								-- Master of Subtlety
+			},
+		},
+		["PRIEST"] = {
+			[CONST.PRIEST_HOLY] = {
+				34861,								-- Circle of Healing
+				47788,								-- Guardian Spirit
+			},
+			[CONST.PRIEST_DISCIPLINE] = {
+				33206,								-- Pain Suppression
+				10060,								-- Power Infusion
+				53007,								-- Penance
+				52800,								-- Borrowed Time
+			},
+			[CONST.PRIEST_SHADOW] = {
+				15473, 								-- Shadowform
+				15286,								-- Vampiric Embrace
+				15487,								-- Silence
+				48160,								-- Vampiric Touch
+			},
+		},
+		["SHAMAN"] = {
+			[CONST.SHAMAN_ELEMENTAL] = {
+				57663,								-- Totem of Wrath
+				51470,								-- Elemental Oath
+				59159,								-- Thunderstorm
+				16166,								-- Elemental Mastery
+			},
+			[CONST.SHAMAN_ENCHANCEMENT] = {
+				30809,								-- Unleashed Rage
+				51533,								-- Feral Spirit
+				30823,								-- Shamanistic Rage
+				17364,								-- Stormstrike
+			},
+			[CONST.SHAMAN_RESTORATION] = {
+				49284,								-- Earth Shield
+				61301,								-- Riptide
+				51886,								-- Cleanse Spirit
+			},
+		},
+		["MAGE"] = {
+			[CONST.MAGE_FROST] = {
+				43039,								-- Ice Barrier
+				44572,								-- Deep Freeze
+			},
+			[CONST.MAGE_FIRE] = {
+				11129,								-- Combustion
+				42945,								-- Blast Wave
+				42950,								-- Dragon's Breath
+				55360,								-- Living Bomb
+			},
+			[CONST.MAGE_ARCANE] = {
+				31583,								-- Arcane Empowerment
+				44781,								-- Arcane Barrage
+			},
+		},
+		["WARLOCK"] = {
+			[CONST.WARLOCK_AFFLICTION] = {
+				59164,								-- Haunt
+				47843,								-- Unstable Affliction
+			},
+			[CONST.WARLOCK_DEMONOLOGY] = 59672,		-- Metamorphosis
+			[CONST.WARLOCK_DESTRUCTION] = {
+				30302,								-- Nether Protection
+				59172,								-- Chaos Bolt
+				47847,								-- Shadowfury
+			},
+		},
+		["DRUID"] = {
+			[CONST.DRUID_BALANCE] = {
+				24907,								-- Moonkin Aura
+				53201,								-- Starfall
+				61384,								-- Typhoon
+			},
+			[CONST.DRUID_FERAL] = {
+				24932,								-- Leader of the Pack
+				48566,								-- Mangle (Cat)
+				48564,								-- Mangle (Bear)
+			},
+			[CONST.DRUID_RESTORATION] = {
+				34123,								-- Tree of Life
+				18562,								-- Swiftmend
+			},
+		},
+		["DEATHKNIGHT"] = {
+			[CONST.DEATHKNIGHT_UNHOLY] = {
+				49222,								-- Bone Shield
+				55271,								-- Scourge Strike
+			},
+			[CONST.DEATHKNIGHT_FROST] = {
+				55610,								-- Icy Talons
+				55268,								-- Frost Strike
+				51411,								-- Howling Blast
+				49203,								-- Hungering Cold
+			},
+			[CONST.DEATHKNIGHT_BLOOD] = {
+				49016,								-- Hysteria
+				53138,								-- Abomination's Might
+				55262,								-- Heart Strike
+			},
+		},
+	},
 	ClassCanBeHealer			= {
 		["PALADIN"] 			= true,
 		["PRIEST"]				= true,
@@ -2072,6 +2293,8 @@ local InfoCacheStaying						= Info.CacheStaying
 local InfoCacheInterrupt					= Info.CacheInterrupt
 
 local InfoSpecIs 							= Info.SpecIs
+local InfoClassSpecBuffs					= Info.ClassSpecBuffs
+local InfoClassSpecSpells					= Info.ClassSpecSpells
 local InfoClassCanBeHealer 					= Info.ClassCanBeHealer
 local InfoClassCanBeTank 					= Info.ClassCanBeTank
 local InfoClassCanBeMelee 					= Info.ClassCanBeMelee
@@ -3152,22 +3375,82 @@ A.Unit = PseudoClass({
 	end, "UnitID"),		
 	HasSpec									= Cache:Pass(function(self, specID)	
 		-- @return boolean 
-		-- Only PLAYER!
 		local unitID 						= "player"
-		if not UnitIsUnit(unitID, "player") then 
-			error("Can't use Action.Unit(" .. (unitID or "unitID") .. "):HasSpec(" .. (specID or "") .. ") since field 'unitID' must be equal to 'player'")
-			return 
-		end 
 		
-		if type(specID) == "table" then        
-			for i = 1, #specID do
-				if specID[i] == A.PlayerSpec then 
-					return true 
-				end 
-			end       
+		if UnitIsUnit(unitID, "player") then 
+			local playerSpec = A.PlayerSpec
+			if type(specID) == "table" then        
+				for i = 1, #specID do
+					if specID[i] == playerSpec then 
+						return true 
+					end 
+				end       
+			else 
+				return specID == playerSpec      
+			end
 		else 
-			return specID == A.PlayerSpec      
-		end
+			local unitClass = self(unitID):Class()
+			
+			-- Search by auras 
+			local unitClassBuffs = InfoClassSpecBuffs[unitClass]
+			if unitClassBuffs then 
+				local unitSpecBuffs
+				if type(specID) == "table" then
+					for i = 1, #specID do
+						unitSpecBuffs = unitClassBuffs[specID[i]]
+						if unitSpecBuffs and self(unitID):HasBuffs(unitSpecBuffs) > 0 then 
+							return true 
+						end 
+					end  
+				else
+					unitSpecBuffs = unitClassBuffs[specID]
+					if unitSpecBuffs and self(unitID):HasBuffs(unitSpecBuffs) > 0 then 
+						return true 
+					end 
+				end 
+			end 
+			
+			-- Search by used spells 
+			-- Note: Used in PvP for any players. Doesn't work in PvE mode.
+			local unitClassSpells = InfoClassSpecSpells[unitClass]
+			if unitClassSpells then 
+				local unitSpecSpells
+				if type(specID) == "table" then
+					for i = 1, #specID do
+						unitSpecSpells = unitClassSpells[specID[i]]
+						
+						if unitSpecSpells then 
+							if type(unitSpecSpells) == "table" then 
+								for _, spellID in ipairs(unitSpecSpells) do 
+									if self(unitID):GetSpellCounter(spellID) > 0 then 
+										return true 
+									end 
+								end 
+							else 
+								if self(unitID):GetSpellCounter(unitSpecSpells) > 0 then 
+									return true 
+								end 
+							end 
+						end 
+					end  
+				else
+					unitSpecSpells = unitClassSpells[specID]
+					if unitSpecSpells then 
+						if type(unitSpecSpells) == "table" then 
+							for _, spellID in ipairs(unitSpecSpells) do 
+								if self(unitID):GetSpellCounter(spellID) > 0 then 
+									return true 
+								end 
+							end 
+						else 
+							if self(unitID):GetSpellCounter(unitSpecSpells) > 0 then 
+								return true 
+							end 
+						end 
+					end 
+				end 
+			end 
+		end 
 	end, "UnitID"),
 	HasFlags 								= Cache:Wrap(function(self) 
 		-- @return boolean 
