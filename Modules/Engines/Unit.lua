@@ -2358,6 +2358,10 @@ A.Unit = PseudoClass({
 		
 		local class = self(unitID):Class()
 		if InfoClassCanBeMelee[class] then 
+			if class == "WARRIOR" or class == "ROGUE" or class == "DEATHKNIGHT" then 
+				return true 
+			end 
+			
 			if self(unitID):IsTank(true, class) then 
 				return true 
 			end 
