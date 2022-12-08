@@ -953,11 +953,11 @@ local Info = {
 	CacheStaying				= setmetatable({}, { __mode = "kv" }),
 	CacheInterrupt 				= setmetatable({}, { __mode = "kv" }),
 	SpecIs 						= {
-        ["MELEE"] 				= {103, 255, 70, 259, 260, 261, 263, 71, 72, 66, 73},
+        ["MELEE"] 				= {103, 255, 70, 259, 260, 261, 263, 71, 72, 66, 73, 250, 251, 252},
         ["RANGE"] 				= {102, 253, 254, 62, 63, 64, 258, 262, 265, 266, 267},
         ["HEALER"] 				= {105, 65, 256, 257, 264},
-        ["TANK"] 				= {103, 66, 73},
-        ["DAMAGER"] 			= {255, 70, 259, 260, 261, 263, 71, 72, 102, 253, 254, 62, 63, 64, 258, 262, 265, 266, 267},
+        ["TANK"] 				= {103, 66, 73, 250},
+        ["DAMAGER"] 			= {255, 70, 259, 260, 261, 263, 71, 72, 102, 253, 254, 62, 63, 64, 258, 262, 265, 266, 267, 250, 251},
     },
 	ClassCanBeHealer			= {
 		["PALADIN"] 			= true,
@@ -970,13 +970,15 @@ local Info = {
         ["PALADIN"] 			= true,
         ["DRUID"] 				= true,	
 		["SHAMAN"]				= true, -- T3 tank in Classic possible 
+		["DEATHKNIGHT"]			= true,
 	},
 	ClassCanBeMelee				= {
         ["WARRIOR"] 			= true,
         ["PALADIN"] 			= true,
         ["ROGUE"] 				= true,
         ["SHAMAN"] 				= true,
-        ["DRUID"] 				= true,		
+        ["DRUID"] 				= true,	
+		["DEATHKNIGHT"]			= true,
 	},
 	AllCC 						= {"Silenced", "Stuned", "Sleep", "Fear", "Disoriented", "Incapacitated"},
 	CreatureType				= setmetatable(

@@ -15514,6 +15514,10 @@ local specs = {
 	[250]	= {"Blood", 236270, "TANK"},
 	[251]	= {"Frost", 236270, "DAMAGER"},
 	[252]	= {"Unholy", 236270, "DAMAGER"},
+	
+	[250]	= {"Blood", 135770, "DAMAGER"},
+	[251]	= {"Frost", 135773, "DAMAGER"},
+	[252]	= {"Unholy", 135775, "DAMAGER"},
 }; ActionData.specs = specs
 
 function Action.GetNumSpecializations()
