@@ -77,9 +77,8 @@ else
 end 
 
 -- Classic WOTLK 
-local NUM_GLYPH_SLOTS								= _G.NUM_GLYPH_SLOTS
-local  GetActiveTalentGroup, 	GetGlyphSocketInfo 	= 
-	_G.GetActiveTalentGroup, _G.GetGlyphSocketInfo
+local  GetActiveTalentGroup, 	GetGlyphSocketInfo,	   GetNumGlyphSockets = 
+	_G.GetActiveTalentGroup, _G.GetGlyphSocketInfo, _G.GetNumGlyphSockets
 	  	  	  
 -------------------------------------------------------------------------------
 -- Remap
@@ -353,7 +352,7 @@ function Data.UpdateGlyphs()
 	
 	local talentGroup = GetActiveTalentGroup() or 1
 	local enabled, _, spellID
-	for i = 1, NUM_GLYPH_SLOTS do 
+	for i = 1, GetNumGlyphSockets() do 
 		enabled, _, spellID = GetGlyphSocketInfo(i, talentGroup)
 		if enabled and spellID then 
 			DataGlyphs[spellID] = true 
