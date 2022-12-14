@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "08.12.2022"
+local DateTime 														= "14.12.2022"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -15544,10 +15544,6 @@ local specs = {
 	[259]	= {"Assassination", 236270, "DAMAGER"},
 	[260]	= {"Combat", 236286, "DAMAGER"},
 	[261]	= {"Subtlety", 132320, "DAMAGER"},
-	
-	[250]	= {"Blood", 236270, "TANK"},
-	[251]	= {"Frost", 236270, "DAMAGER"},
-	[252]	= {"Unholy", 236270, "DAMAGER"},
 	
 	[250]	= {"Blood", 135770, "DAMAGER"},
 	[251]	= {"Frost", 135773, "DAMAGER"},
