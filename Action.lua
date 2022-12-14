@@ -15545,7 +15545,7 @@ local specs = {
 	[260]	= {"Combat", 236286, "DAMAGER"},
 	[261]	= {"Subtlety", 132320, "DAMAGER"},
 	
-	[250]	= {"Blood", 135770, "DAMAGER"},
+	[250]	= {"Blood", 135770, "TANK"},
 	[251]	= {"Frost", 135773, "DAMAGER"},
 	[252]	= {"Unholy", 135775, "DAMAGER"},
 }; ActionData.specs = specs
