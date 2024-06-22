@@ -51,7 +51,7 @@ local AuraIsValid						= A.AuraIsValid
 local BuildToC							= A.BuildToC
 local StdUi								= A.StdUi
 local RunLua							= StdUi.RunLua
-local isClassic							= false --- StdUi.isClassic -- WOTLK has focus
+local isClassic							= StdUi.isClassic
 
 local GetLOS							= _G.GetLOS
 
@@ -137,7 +137,7 @@ frame:SetToplevel(true)
 frame:SetSize(1, 1)
 frame:SetScale(1)
 frame:SetPoint("TOPLEFT", 163, 0)
-frame.texture = frame:CreateTexture(nil, "TOOLTIP")
+frame.texture = frame:CreateTexture(nil, "OVERLAY")
 frame.texture:SetAllPoints(true)
 frame.Colors 							= {
 	none								= {0, 0, 0, 1},
@@ -695,7 +695,7 @@ local function OnUpdate()
 		member 							= player  
 		memberGUID 						= TeamCacheFriendlyUNITs[member]	
 		if memberGUID then 
-			--playerGUID					= memberGUID -- Save for future referrence
+			playerGUID					= memberGUID -- Save for future referrence
 			memberData 					= UnitIDs[member]
 			memberData:Setup(member, memberGUID, true)				
 			FrequencyTemp.MHP 			= (FrequencyTemp.MHP or 0) + memberData.MHP 
@@ -708,7 +708,7 @@ local function OnUpdate()
     end 
 	
 	-- Focus 
-	if not isClassic and not TeamCacheFriendlyGUIDs[focus] and not A_Unit(focus):IsEnemy() then 
+	if not TeamCacheFriendlyGUIDs[focus] and not A_Unit(focus):IsEnemy() then 
 		-- Replaces party/raid unit by self
 		-- We have to replace member by focus only in case if focus is not member of the group
 		-- This need for /focus macros otherwise toggles will not work through specific unit (e.g. raid1, party1) if its equal to focus unit

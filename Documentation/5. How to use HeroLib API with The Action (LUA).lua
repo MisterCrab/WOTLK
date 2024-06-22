@@ -1,20 +1,19 @@
+--[[
 -------------------------------------------------------------------------------
 -- Introduction 
 -------------------------------------------------------------------------------
---[[
 This guide will describe how to be super lazy and transfer HeroRotations (https://github.com/herotc/hero-rotation) by few mins 
 Make sure what you created ProfileUI and specizalition snippets before to continue as it was described in previous guides
 Make sure what you have enabled HeroLib and HeroCache addons
-]]
 
 -------------------------------------------------------------------------------
 -- №1: Make Hero API defaults
 -------------------------------------------------------------------------------
---[[
 Write in chat /tmw > 'LUA Snippets' > Find to edit your specizalition snippet for profile 
 Make sure what Action[Action.PlayerClass] has same KEY names as it has HeroRotation code for Spell and Item 
 You have to put them with same name and same case sensitive in Action[Action.PlayerClass]
-]]
+--]]
+
 Action[Action.PlayerClass] = {
 	-- your actions to create same as it has HeroRotation but with Action structure 
 }

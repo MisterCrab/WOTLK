@@ -133,7 +133,7 @@ local GetSpellBookItemName			= _G.GetSpellBookItemName
 local FindSpellBookSlotBySpellID 	= _G.FindSpellBookSlotBySpellID
 
 -- Unit 	  
-local UnitAura						= _G.UnitAura
+local UnitAura						= _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex
 local 	 UnitIsUnit, 	UnitGUID	= 
 	  _G.UnitIsUnit, _G.UnitGUID 
 
@@ -158,7 +158,7 @@ do
 			IsBreakAbleDeBuff[tempTable[j]] = true 
 			local spellName = GetSpellInfo(tempTable[j])
 			if not spellName then 
-				error("Need to delete " .. tempTable[j])
+				print("Need to delete " .. tempTable[j])
 			else 
 				IsBreakAbleDeBuff[spellName] = true 
 			end 
@@ -814,7 +814,7 @@ local Racial = {
 							not unitID or 
 							not Unit(unitID):IsEnemy() 
 						) and 
-						MultiUnits:GetCasting(8, 1) >= 1
+						MultiUnits:GetByRangeCasting(8, 1) >= 1
 					)			  
 		end 		
 
@@ -894,6 +894,13 @@ end
 
 function A:GetItemCooldown()
 	-- @return number
+	
+	-- Potion Sickness
+	-- Unable to consume potions until you rest out of combat for a short duration.
+	if self.Type == "Potion" and Unit("player"):HasBuffs(53787) > 0 then 
+		return huge
+	end 
+	
 	local start, duration, enable = self.Item:GetCooldown()
 	return enable ~= 0 and ((duration == 0 or A_OnGCD(duration)) and 0 or duration - (TMW.time - start)) or huge
 end 
@@ -1078,6 +1085,12 @@ function A:AbsentImun(unitID, imunBuffs)
 			local debuffName, expirationTime, remainTime, _
 			for i = 1, huge do			
 				debuffName, _, _, _, _, expirationTime = UnitAura(unitID, i, "HARMFUL")
+				
+				if type(debuffName) == "table" then 	
+					expirationTime = debuffName.expirationTime
+					debuffName = debuffName.name
+				end  				
+				
 				if not debuffName then
 					break 
 				elseif IsBreakAbleDeBuff[debuffName] then 

@@ -36,6 +36,7 @@ _G.ACTION_CONST_LEFT 												= dir .. [[Spell_Shaman_SpiritLink]]
 _G.ACTION_CONST_RIGHT 												= dir .. [[INV_BannerPVP_03]] 
 _G.ACTION_CONST_STOPCAST 											= dir .. [[Spell_Magic_PolymorphRabbit]]
 _G.ACTION_CONST_AUTOTARGET 											= dir .. [[INV_Gizmo_GoblingTonkController]]
+_G.ACTION_CONST_LASTTARGET											= 237290		-- inv_misc_enggizmos_27
 
 _G.ACTION_CONST_AUTOSHOOT											= dir .. [[ABILITY_SHOOTWAND]] -- 132317 -- spellID: 5019
 _G.ACTION_CONST_AUTOATTACK											= dir .. [[INV_Sword_04]] -- spellID: 7038
@@ -70,6 +71,7 @@ _G.ACTION_CONST_TRUE_PORTRAIT_PICKPOCKET							= 136235
 
 -- SpellID
 _G.ACTION_CONST_SPELLID_FREEZING_TRAP								= 1499
+_G.ACTION_CONST_SPELLID_FREEZING_TRAP2								= 60192
 
 _G.ACTION_CONST_PICKPOCKET											= 5967
 
@@ -93,6 +95,21 @@ _G.ACTION_CONST_SPELL_FAILED_LINE_OF_SIGHT 							= _G.SPELL_FAILED_LINE_OF_SIGH
 _G.ACTION_CONST_PVP_TARGET_ARENA1									= dir .. [[Spell_Warlock_DemonicPortal_Green]]
 _G.ACTION_CONST_PVP_TARGET_ARENA2									= dir .. [[Spell_Nature_MoonGlow]]
 _G.ACTION_CONST_PVP_TARGET_ARENA3 									= dir .. [[PALADIN_HOLY]]
+_G.ACTION_CONST_PVP_TARGET_ARENA4 									= 133875 		-- inv_misc_enggizmos_17
+_G.ACTION_CONST_PVP_TARGET_ARENA5 									= 133876 		-- inv_misc_enggizmos_18
+
+_G.ACTION_CONST_PVP_FOCUS_ARENA1									= 136243 		-- trade_engineering
+_G.ACTION_CONST_PVP_FOCUS_ARENA2									= 135805 		-- spell_fire_fire
+_G.ACTION_CONST_PVP_FOCUS_ARENA3									= 135848 		-- spell_frost_frostnova
+_G.ACTION_CONST_PVP_FOCUS_ARENA4									= 133873 		-- inv_misc_enggizmos_15
+_G.ACTION_CONST_PVP_FOCUS_ARENA5									= 133874 		-- inv_misc_enggizmos_16
+
+-- Focus
+_G.ACTION_CONST_FOCUS_PLAYER										= 134310		-- inv_misc_monsterscales_08
+_G.ACTION_CONST_FOCUS_PARTY1										= 134314		-- inv_misc_monsterscales_12
+_G.ACTION_CONST_FOCUS_PARTY2										= 134316		-- Inv_misc_monsterscales_14
+_G.ACTION_CONST_FOCUS_PARTY3										= 134318		-- Inv_misc_monsterscales_16
+_G.ACTION_CONST_FOCUS_PARTY4										= 134320		-- Inv_misc_monsterscales_18
 
 -- Specialization ID
 _G.ACTION_CONST_WARRIOR_ARMS 										= 71			

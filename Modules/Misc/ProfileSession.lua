@@ -572,7 +572,7 @@ do -- create UI
 	panelUser:EnableMouse(true)	
 
 	panelUser.message = StdUi:FontString(panelUser, "")
-	panelUser.message:SetJustifyH("MIDDLE")
+	panelUser.message:SetJustifyH("CENTER")
 	
 	panelUser.output = StdUi:SimpleEditBox(panelUser, default_width, config_elements.editbox_height, "")
 	panelUser.output:SetPropagateKeyboardInput(false)

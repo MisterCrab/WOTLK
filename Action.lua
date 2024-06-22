@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "19.12.2022"
+local DateTime 														= "23.06.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -39,8 +39,8 @@ local owner															= isClassic and "PlayerClass" or "PlayerSpec"
 local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate, 	 GetMouseFocus,	   GetCVar,	   SetCVar,	   GetBindingFromClick,    GetSpellInfo = 
 	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetMouseFocus, _G.GetCVar, _G.SetCVar, _G.GetBindingFromClick, _G.GetSpellInfo
 	  
-local 	 UnitName, 	  UnitClass,    UnitExists,    UnitIsUnit,    UnitGUID, 	UnitAura, 	 UnitPower,    UnitIsOwnerOrControllerOfUnit = 
-	  _G.UnitName, _G.UnitClass, _G.UnitExists, _G.UnitIsUnit, _G.UnitGUID,  _G.UnitAura, _G.UnitPower, _G.UnitIsOwnerOrControllerOfUnit	  
+local 	 UnitName, 	  UnitClass,    UnitExists,    UnitIsUnit,    UnitGUID, 	UnitAura, 	 									  UnitPower,    UnitIsOwnerOrControllerOfUnit = 
+	  _G.UnitName, _G.UnitClass, _G.UnitExists, _G.UnitIsUnit, _G.UnitGUID,  _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex, _G.UnitPower, _G.UnitIsOwnerOrControllerOfUnit	  
 	  
 -- AutoShoot 
 local  HasWandEquipped 												= 
@@ -4347,12 +4347,10 @@ local Factory = {
 				-- Priest
 				[2050] = "Lesser Heal",
 				[2060] = "Greater Heal",
-				[6064] = "Heal",
 				[596] = "Prayer of Healing",
 				-- Druid
 				[740] = "Tranquility",
 				[8936] = "Regrowth",
-				[25297] = "Healing Touch",
 				-- Shaman
 				[1064] = "Chain Heal",
 				[331] = "Healing Wave",
@@ -4377,15 +4375,9 @@ local Factory = {
 				[982] = "Revive pet",
 				[1513] = "Scare Beast",
 				-- Warlock 				
-				[20757] = "Create Soulstone (Major)",
-				[693] = "Create Soulstone (Minor)",
-				[11730] = "Create Healthstone (Major)",
-				[11729] = "Create Healthstone (Greater)",
-				[5699] = "Create Healthstone",
 				[1122] = "Inferno",
 				[5782] = "Fear",
 				[5484] = "Howl of Terror",
-				[20755] = "Create Soulstone",	
 				[710] = "Banish",
 				-- Druid 
 				[20484] = "Rebirth",
@@ -5045,7 +5037,6 @@ local GlobalFactory = {
 				[23694] = { dur = 2 },				-- Improved Hamstring		(Warrior)
 				[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
 				[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
-				[12494] = { dur = 2 },				-- Frostbite				(Mage)	
 				[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
 				[19675] = { dur = 2 },				-- Feral Charge Effect		(Druid)
 				[19185] = { dur = 2 },				-- Entrapment				(Hunter)
@@ -5449,6 +5440,11 @@ local function dbUpdate()
 	TMWdbglobal		= TMWdb.global 
 	pActionDB 		= TMWdbprofile.ActionDB
 	gActionDB		= TMWdbglobal.ActionDB
+	
+	-- Fixes Resizer_Generic error if user tried to open ui in combat
+	if TMWdbglobal and not TMWdbglobal.AllowCombatConfig then 
+		TMWdbglobal.AllowCombatConfig = true
+	end 
 	
 	-- On hook InitializeDatabase
 	if not Action.CurrentProfile and TMWdb then 
@@ -7024,18 +7020,27 @@ function Action.RacialIsON(self)
 	return A_GetToggle(1, "Racial") and (not self or self:IsExists())
 end 
 
--- [1] ReTarget
+-- [1] ReTarget // ReFocus
 local Re; Re = {
-	Units = { "arena1", "arena2", "arena3" },
+	Units = { "arena1", "arena2", "arena3", "arena4", "arena5" },
 	-- Textures 
 	target = {
 		["arena1"] = ActionConst.PVP_TARGET_ARENA1,
 		["arena2"] = ActionConst.PVP_TARGET_ARENA2,
 		["arena3"] = ActionConst.PVP_TARGET_ARENA3,
+		["arena4"] = ActionConst.PVP_TARGET_ARENA4,
+		["arena5"] = ActionConst.PVP_TARGET_ARENA5,
 	},
+	focus = {
+		["arena1"] = ActionConst.PVP_FOCUS_ARENA1,
+		["arena2"] = ActionConst.PVP_FOCUS_ARENA2,
+		["arena3"] = ActionConst.PVP_FOCUS_ARENA3,
+		["arena4"] = ActionConst.PVP_FOCUS_ARENA4,
+		["arena5"] = ActionConst.PVP_FOCUS_ARENA5,
+	},	
 	-- OnEvent 
 	PLAYER_TARGET_CHANGED = function()
-		if Action.Zone == "pvp" then 			
+		if (Action.Zone == "arena" or Action.Zone == "pvp") then 			
 			if UnitExists("target") then 
 				Re.LastTargetIsExists = true 
 				for i = 1, #Re.Units do
@@ -7050,25 +7055,56 @@ local Re; Re = {
 			end 
 		end 		
 	end,	
-	-- OnInitialize, OnProfileChanged
-	Reset 			= function(self)		
-		A_Listener:Remove("ACTION_EVENT_RE", 		"PLAYER_TARGET_CHANGED")
-		self.LastTargetIsExists	= nil
-		self.LastTargetUnitID 	= nil 
-		self.LastTargetTexture 	= nil 	
-		
-		Action.Re:ClearTarget()
+	PLAYER_FOCUS_CHANGED = function()
+		if (Action.Zone == "arena" or Action.Zone == "pvp") then 
+			if UnitExists("focus") then 
+				Re.LastFocusIsExists = true 
+				for i = 1, #Re.Units do 
+					if UnitIsUnit("focus", Re.Units[i]) then 
+						Re.LastFocusUnitID = Re.Units[i]
+						Re.LastFocusTexture = Re.focus[Re.LastFocusUnitID]
+						break
+					end 
+				end 
+			else
+				Re.LastFocusIsExists = false 
+			end 
+		end 
 	end,
-	Initialize		= function(self)
+	-- OnInitialize, OnProfileChanged
+	Reset 			= function(self)	
+		A_Listener:Remove("ACTION_EVENT_RE", 	 "PLAYER_TARGET_CHANGED")
+		A_Listener:Remove("ACTION_EVENT_RE", 	 "PLAYER_FOCUS_CHANGED")
+		self.LastTargetIsExists	 	= nil
+		self.LastTargetUnitID 	 	= nil 
+		self.LastTargetTexture 	 	= nil 
+		self.LastFocusIsExists 	 	= nil 
+		self.LastFocusUnitID 	 	= nil
+		self.LastFocusTexture 	 	= nil
+
+		Action.Re:ClearTarget()
+		Action.Re:ClearFocus()
+	end,
+	Initialize		= function(self)	
 		if A_GetToggle(1, "ReTarget") then 
-			A_Listener:Add("ACTION_EVENT_RE", 		"PLAYER_TARGET_CHANGED", self.PLAYER_TARGET_CHANGED)
+			A_Listener:Add(   "ACTION_EVENT_RE", "PLAYER_TARGET_CHANGED", self.PLAYER_TARGET_CHANGED)
 			self.PLAYER_TARGET_CHANGED()
 		else 
-			A_Listener:Remove("ACTION_EVENT_RE", 	"PLAYER_TARGET_CHANGED")
+			A_Listener:Remove("ACTION_EVENT_RE", "PLAYER_TARGET_CHANGED")
 			self.LastTargetIsExists	= nil
 			self.LastTargetUnitID 	= nil 
 			self.LastTargetTexture 	= nil 			
 		end 
+		
+		if A_GetToggle(1, "ReFocus") then 
+			A_Listener:Add(   "ACTION_EVENT_RE", "PLAYER_FOCUS_CHANGED",  self.PLAYER_FOCUS_CHANGED)
+			self.PLAYER_FOCUS_CHANGED()
+		else 
+			A_Listener:Remove("ACTION_EVENT_RE", "PLAYER_FOCUS_CHANGED")
+			self.LastFocusIsExists 	= nil 
+			self.LastFocusUnitID 	= nil
+			self.LastFocusTexture 	= nil			
+		end 		
 	end,
 }
 
@@ -7103,6 +7139,36 @@ Action.Re = {
 			end 
 		end 
 	end,
+	-- Focus 
+	SetFocus 	= function(self, unitID)
+		-- Creates schedule to set in focus the 'unitID'
+		if not Re.focus[unitID] then 
+			error("Action.Re:SetFocus must have valid for own API the 'unitID' param. Input: " .. (unitID or "nil"))
+			return 
+		end
+		
+		Re.ManualFocusUnitID 	= unitID
+		Re.ManualFocusTexture 	= Re.focus[unitID]
+	end,	
+	ClearFocus 	= function(self)
+		Re.ManualFocusUnitID 	= nil 
+		Re.ManualFocusTexture 	= nil 		
+	end,
+	CanFocus	= function(self, icon)
+		-- @return boolean 
+		-- Note: Only for internal use for Core.lua
+		if not Re.LastFocusIsExists and Re.LastFocusTexture and UnitExists(Re.LastFocusUnitID) then 
+			return Action:Show(icon, Re.LastFocusTexture)
+		end 
+		
+		if Re.ManualFocusTexture and UnitExists(Re.ManualFocusUnitID) then 
+			if UnitIsUnit("focus", Re.ManualFocusUnitID) then 				
+				return self:ClearFocus() 
+			else 
+				return Action:Show(icon, Re.ManualFocusTexture)
+			end 
+		end 
+	end,
 }
 
 -- [1] LOS System (Line of Sight)
@@ -7124,15 +7190,16 @@ local LineOfSight = {
 
 		if not UnitIsUnit("target", unitID) and A_Unit(unitID):IsNameplateAny() then 
 			-- Not valid for @target
-			local UnitFrame
+			local UnitFrame, NamePlateFrame
 			for i = 1, huge do 
-				if not self.NamePlateFrame[i] then 
+				NamePlateFrame = self.NamePlateFrame[i]
+				if not NamePlateFrame then 
 					break 
 				else
-					UnitFrame = self.NamePlateFrame[i].UnitFrame
+					UnitFrame = NamePlateFrame.UnitFrame					
 					if UnitFrame and UnitFrame.unitExists and UnitIsUnit(UnitFrame.unit, unitID) then
-						return UnitFrame:GetEffectiveAlpha() <= 0.4
-					end 
+						return UnitFrame:GetEffectiveAlpha() <= 0.400001
+					end		
 				end 
 			end 
 		else 
@@ -7574,9 +7641,28 @@ local AuraDuration = {
 			else
 				if maxPrioIndex then 
 					name, icon, _, _, duration, expirationTime, caster, _,_, spellId = UnitAura(unit, maxPrioIndex, maxPrioFilter)
+					
+					if type(name) == "table" then 	
+						icon = name.icon
+						duration = name.duration
+						expirationTime = name.expirationTime
+						caster = name.sourceUnit
+						spellId = name.spellId
+						name = name.name
+					end  						
 				else 
 					for i = 1, huge do 
 						name, icon, _, _, duration, expirationTime, caster, _,_, spellId = UnitAura(unit, i, maxPrioFilter)
+						
+						if type(name) == "table" then 	
+							icon = name.icon
+							duration = name.duration
+							expirationTime = name.expirationTime
+							caster = name.sourceUnit
+							spellId = name.spellId
+							name = name.name
+						end  							
+						
 						if not name then 
 							break 
 						end 
@@ -7609,6 +7695,18 @@ local AuraDuration = {
 		local maxBuffs 			= math_min(_G["TargetFrame"].maxBuffs or MAX_TARGET_BUFFS, MAX_TARGET_BUFFS)
 		for i = 1, maxBuffs do
 			local buffName, icon, count, _, duration, expirationTime, caster, canStealOrPurge, _, spellId = UnitAura(unit, i, "HELPFUL")
+			
+			if type(buffName) == "table" then 	
+				icon = buffName.icon
+				count = buffName.charges
+				duration = buffName.duration
+				expirationTime = buffName.expirationTime
+				caster = buffName.sourceUnit
+				canStealOrPurge = buffName.isStealable
+				spellId = buffName.spellId
+				buffName = buffName.name
+			end  				
+			
 			if buffName then
 				frameName 	= "TargetFrameBuff" .. i
 				frame 		= _G[frameName]			
@@ -7681,6 +7779,20 @@ local AuraDuration = {
 		local maxDebuffs 					= math_min(_G["TargetFrame"].maxDebuffs or MAX_TARGET_DEBUFFS, MAX_TARGET_DEBUFFS)
 		for i = 1, maxDebuffs do 
 			local debuffName, icon, count, debuffType, duration, expirationTime, caster, _, _, spellId, _, _, casterIsPlayer, nameplateShowAll = UnitAura(unit, i, "HARMFUL")
+			
+			if type(debuffName) == "table" then 	
+				icon = debuffName.icon
+				count = debuffName.charges
+				debuffType = debuffName.dispelName
+				duration = debuffName.duration
+				expirationTime = debuffName.expirationTime
+				caster = debuffName.sourceUnit				
+				spellId = debuffName.spellId
+				casterIsPlayer = debuffName.isFromPlayerOrPlayerPet
+				nameplateShowAll = debuffName.nameplateShowAll
+				debuffName = debuffName.name
+			end  				
+			
 			if debuffName then 
 				if TargetFrame_ShouldShowDebuffs(unit, caster, nameplateShowAll, casterIsPlayer) then
 					frameName 	= "TargetFrameDebuff" .. i
@@ -7843,6 +7955,14 @@ local AuraDuration = {
 		hooksecurefunc("CompactUnitFrame_UtilSetBuff", function(buffFrame, unit, index, filter)
 			if Action.IsInitialized and self.IsEnabled then 
 				local name, _, _, _, duration, expirationTime, _, _, _, spellId = UnitAura(unit, index, "HELPFUL")
+
+				if type(name) == "table" then 	
+					duration = name.duration
+					expirationTime = name.expirationTime			
+					spellId = name.spellId
+					name = name.name
+				end  			
+					
 				local enabled = expirationTime and expirationTime ~= 0
 				if enabled then
 					CooldownFrame_Set(buffFrame.cooldown, expirationTime - duration, duration, true)
@@ -7855,6 +7975,14 @@ local AuraDuration = {
 		hooksecurefunc("CompactUnitFrame_UtilSetDebuff", function(debuffFrame, unit, index, filter)
 			if Action.IsInitialized and self.IsEnabled then 
 				local name, _, _, _, duration, expirationTime, _, _, _, spellId = UnitAura(unit, index, filter)
+				
+				if type(name) == "table" then 	
+					duration = name.duration
+					expirationTime = name.expirationTime			
+					spellId = name.spellId
+					name = name.name
+				end  					
+				
 				local enabled = expirationTime and expirationTime ~= 0
 				if enabled then
 					CooldownFrame_Set(debuffFrame.cooldown, expirationTime - duration, duration, true)
@@ -8050,6 +8178,39 @@ end
 
 -- [3] SetQueue (Queue System)
 local Queue; Queue 				= {
+	-- These units are used to auto-determine .MetaSlot if its not specified
+	GetMetaByUnitID				= { 
+		arena1					= 6, 	
+		arena2					= 7, 	
+		arena3					= 8, 	
+		arena4					= 9, 	
+		arena5					= 10, 	
+		arenapet1				= 6, 	
+		arenapet2				= 7, 	
+		arenapet3				= 8, 	
+		arenapet4				= 9, 	
+		arenapet5				= 10, 	
+		raid1 					= 6, 
+		raid2 					= 7, 
+		raid3 					= 8, 
+		raid4 					= 9, 
+		raid5 					= 10, 
+		raidpet1 				= 6, 
+		raidpet2 				= 7, 
+		raidpet3 				= 8, 
+		raidpet4 				= 9, 
+		raidpet5 				= 10, 		
+		party1 					= 6, 
+		party2 					= 7, 
+		party3 					= 8,
+		party4 					= 9,
+		-- no player as meta 10 to avoid possible conflicts 
+		partypet1				= 6, 
+		partypet2				= 7, 
+		partypet3				= 8,
+		partypet4				= 9,		
+		-- no pet as meta 10 to avoid possible conflicts 
+	},
 	EmptyArgs					= {},
 	Temp 						= {
 		SilenceON				= { Silence = true },
@@ -8253,7 +8414,7 @@ function Action:SetQueue(args)
 		return 
 	end 
 	
-	local printKey 	= self.Desc .. (self.Color or "") 
+	local printKey 	= self.Desc .. (type(self.Color) == "string" and self.Color or "")	-- type fixes some poorly designed addon that overwrites the .Color key in each global table and its subtables with its own function 
 		  printKey	= (printKey ~= "" and (" " .. L["TAB"][3]["KEY"] .. printKey .. "]")) or ""
 	
 	local args = args or Queue.EmptyArgs	
@@ -8314,7 +8475,11 @@ function Action:SetQueue(args)
 			end 
 		end 
 	end
-    tinsert(ActionDataQ, priority, setmetatable({ UnitID = args.UnitID, MetaSlot = args.MetaSlot, Auto = args.Auto, Start = TMW.time, CP = args.CP }, { __index = self })) -- Don't touch creation tables here!
+    
+	-- Since devs expects to make "arena1" running at A[6] without need for .MetaSlot specified 
+	-- This part of code determines .MetaSlot depending on UnitID
+	local meta = args.MetaSlot or Queue.GetMetaByUnitID[args.UnitID]
+	tinsert(ActionDataQ, priority, setmetatable({ UnitID = args.UnitID, MetaSlot = meta, Auto = args.Auto, Start = TMW.time, CP = args.CP }, { __index = self })) -- Don't touch creation tables here!
 
 	if args.PowerType then 
 		-- Note: we set it as true to use in function Action.IsQueueReady()
@@ -8651,6 +8816,16 @@ function Action.AuraIsBlackListed(unitID)
 		local _, Dur, Name, count, duration, expirationTime, canStealOrPurge, id
 		for i = 1, huge do 
 			Name, _, count, _, duration, expirationTime, _, canStealOrPurge, _, id = UnitAura(unitID, i, Filter)
+			
+			if type(Name) == "table" then 	
+				count = Name.charges
+				duration = Name.duration
+				expirationTime = Name.expirationTime	
+				canStealOrPurge = Name.isStealable
+				id = Name.spellId
+				Name = Name.name
+			end  				
+			
 			if Name then
 				if Aura[Name] and Aura[Name].Enabled and (Aura[Name].Role == "ANY" or (Aura[Name].Role == "HEALER" and Action.IamHealer) or (Aura[Name].Role == "DAMAGER" and not Action.IamHealer)) and (not Aura[Name].byID or id == Aura[Name].ID) then 
 					Dur = expirationTime == 0 and huge or expirationTime - TMW.time
@@ -8673,6 +8848,16 @@ function Action.AuraIsValid(unitID, Toggle, Category)
 			local _, Dur, Name, count, duration, expirationTime, canStealOrPurge, id
 			for i = 1, huge do			
 				Name, _, count, _, duration, expirationTime, _, canStealOrPurge, _, id = UnitAura(unitID, i, Filter)
+				
+				if type(Name) == "table" then 	
+					count = Name.charges
+					duration = Name.duration
+					expirationTime = Name.expirationTime	
+					canStealOrPurge = Name.isStealable
+					id = Name.spellId
+					Name = Name.name
+				end  					
+				
 				if Name then					
 					if Aura[Name] and Aura[Name].Enabled and (Aura[Name].Role == "ANY" or (Aura[Name].Role == "HEALER" and Action.IamHealer) or (Aura[Name].Role == "DAMAGER" and not Action.IamHealer)) and (not Aura[Name].byID or id == Aura[Name].ID) then 					
 						Dur = expirationTime == 0 and huge or expirationTime - TMW.time
@@ -8834,19 +9019,40 @@ local Cursor; Cursor 		= {
 
 -- [7] MSG System (Message)
 local MSG; MSG 				= {
-	units 					= { "raid%d+", "party%d+", "arena%d+", "player", "target" }, -- "nameplate", pets and etc haven't API, it will be passed as no unit if specified in phrase!
+	units 					= { "raid%d+", "raidpet%d+", "party%d+", "partypet%d+", "arena%d+", "arenapet%d+", "player", "target" }, -- "focus", "nameplate" and etc haven't API, it will be passed as no unit if specified in phrase!
 	group 					= { 
-		{ u = "raid1", 	meta = 6 	}, 
-		{ u = "raid2", 	meta = 7	}, 
-		{ u = "raid3", 	meta = 8	}, 
-		{ u = "party1", meta = 6 	}, 
-		{ u = "party2", meta = 7	}, 
-		{ u = "party3", meta = 8	},
+		{ u = "raid1", 		meta = 6 	}, 
+		{ u = "raid2", 		meta = 7	}, 
+		{ u = "raid3", 		meta = 8	}, 
+		{ u = "raid4", 		meta = 9	}, 
+		{ u = "raid5", 		meta = 10	}, 
+		{ u = "raidpet1", 	meta = 6 	}, 
+		{ u = "raidpet2", 	meta = 7	}, 
+		{ u = "raidpet3", 	meta = 8	}, 
+		{ u = "raidpet4", 	meta = 9	}, 
+		{ u = "raidpet5", 	meta = 10	}, 		
+		{ u = "party1", 	meta = 6 	}, 
+		{ u = "party2", 	meta = 7	}, 
+		{ u = "party3", 	meta = 8	},
+		{ u = "party4", 	meta = 9	},
+		-- no player as meta 10 to avoid possible conflicts 
+		{ u = "partypet1", 	meta = 6 	}, 
+		{ u = "partypet2", 	meta = 7	}, 
+		{ u = "partypet3", 	meta = 8	},
+		{ u = "partypet4", 	meta = 9	},
+		-- no pet as meta 10 to avoid possible conflicts 
 	},
 	arena 					= {
-		{ u = "arena1", meta = 6 	}, 
-		{ u = "arena2", meta = 7	}, 
-		{ u = "arena3", meta = 8	}, 	
+		arena1				= 6, 	
+		arena2				= 7, 	
+		arena3				= 8, 	
+		arena4				= 9, 	
+		arena5				= 10, 	
+		arenapet1			= 6, 	
+		arenapet2			= 7, 	
+		arenapet3			= 8, 	
+		arenapet4			= 9, 	
+		arenapet5			= 10, 	
 	},
 	set 					= {},
 	SetToggle				= {7, "MSG_Toggle"},
@@ -8877,7 +9083,7 @@ local MSG; MSG 				= {
 							if unit:match("raid") or unit:match("party") then 	
 								local group_type = Action.TeamCache.Friendly.Type
 								for j = 1, #MSG.group do 
-									if (j <= 3 and group_type == "raid") or (j > 3 and group_type == "party") then 
+									if (j <= 10 and group_type == "raid") or (j > 10 and group_type == "party") then 
 										if UnitIsUnit(unit, MSG.group[j].u) then 	
 											MSG.set.MetaSlot = MSG.group[j].meta											 
 											MSG.set.UnitID = MSG.group[j].u
@@ -9438,6 +9644,10 @@ function Action.ToggleMainUI()
 	local spec 				= Action.PlayerClass .. Action.GetCL()
 	local MainUI			= Action.MainUI
 	if MainUI then 	
+		if not MainUI:GetPropagateKeyboardInput() and not InCombatLockdown() then 
+			MainUI:SetPropagateKeyboardInput(true)
+		end 
+		
 		if MainUI:IsShown() then 
 			MainUI:SetShown(not MainUI:IsShown())
 			return
@@ -9472,7 +9682,9 @@ function Action.ToggleMainUI()
 		end)
 				
 		MainUI:EnableKeyboard(true)
-		MainUI:SetPropagateKeyboardInput(true)
+		if not InCombatLockdown() then 
+			MainUI:SetPropagateKeyboardInput(true)
+		end 		
 		-- Catches the game menu bind just before it fires.
 		MainUI:SetScript("OnKeyDown", function(self, Key)				
 			if GetBindingFromClick(Key) == "TOGGLEGAMEMENU" and self:IsShown() then 
@@ -9882,30 +10094,35 @@ function Action.ToggleMainUI()
 
 			local lastUpdate	
 			function MainUI.UpdateResize(manual) 
-				if manual ~= true and TMW.time - (lastUpdate or 0) < 0.02 then 
+				if not manual and TMW.time - (lastUpdate or 0) < 0.0001 then 
 					return 
 				end 
 				
-				tabFrame:CustomDrawButtons()
+				if manual then 
+					tabFrame:CustomDrawButtons()
+				end 
+				
 				lastUpdate 	= manual == true and 0 or TMW.time 												
 				local spec	= Action.PlayerClass .. CL
-				for _, tab in ipairs(tabFrame.tabs) do	
-					if tab.childs[spec] then									
+				for i, tab in ipairs(tabFrame.tabs) do	
+					if tab.childs[spec] then	
 						-- Easy Layout (base parent)
-						local anchor = StdUi:GetAnchor(tab, spec)							
-						if anchor.layout then 
+						local anchor = StdUi:GetAnchor(tab, spec)
+						if anchor.layout and (manual or (i > 2 and i ~= 8)) then 
 							anchor:DoLayout()
 						end	
 
 						MainUI.UpdateResizeForKids(StdUi:GetAnchorKids(tab, spec))		
 					end 	
-				end 
+				end 								
 			end
 			
 			MainUI.resizer.resizer.resizeButton:HookScript("OnMouseUp", function()				
 				MainUI.UpdateResize(true)
 			end)
-			MainUI:HookScript("OnSizeChanged", MainUI.UpdateResize)
+			MainUI:HookScript("OnSizeChanged", function(self) 				
+				MainUI.UpdateResize(false) 
+			end)
 			-- I don't know how to fix layout overleap problem caused by resizer after hide, so I did some trick through this:
 			-- If you have a better idea let me know 
 			MainUI:HookScript("OnHide", function(self) 
@@ -10543,7 +10760,7 @@ function Action.ToggleMainUI()
 			}				
 			
 			Color.Title:SetAllPoints()			
-			Color.Title:SetJustifyH("MIDDLE")
+			Color.Title:SetJustifyH("CENTER")
 			Color.Title:SetFontSize(14)
 
 			Color.UseColor = StdUi:Checkbox(anchor, L["TAB"][tabName]["COLORUSE"], 250)
@@ -10839,7 +11056,7 @@ function Action.ToggleMainUI()
 			
 			local Misc = StdUi:Header(PauseChecksPanel, L["TAB"][tabName]["MISC"])
 			Misc:SetAllPoints()			
-			Misc:SetJustifyH("MIDDLE")
+			Misc:SetJustifyH("CENTER")
 			Misc:SetFontSize(14)
 			
 			local DisableRotationDisplay = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEROTATIONDISPLAY"])
@@ -10933,7 +11150,7 @@ function Action.ToggleMainUI()
 
 			local Tools = StdUi:Header(PauseChecksPanel, L["TAB"][tabName]["TOOLS"])
 			Tools:SetAllPoints()			
-			Tools:SetJustifyH("MIDDLE")
+			Tools:SetJustifyH("CENTER")
 			Tools:SetFontSize(14)			
 			
 			local LetMeCast = StdUi:Checkbox(anchor, "LetMeCast")
@@ -11208,7 +11425,7 @@ function Action.ToggleMainUI()
 					if config.E == "Header" then 
 						obj = StdUi:Header(anchor, config.L.ANY or config.L[cL])
 						obj:SetAllPoints()			
-						obj:SetJustifyH("MIDDLE")						
+						obj:SetJustifyH("CENTER")						
 						obj:SetFontSize(config.S or 14)	
 					end 
 					
@@ -11402,7 +11619,7 @@ function Action.ToggleMainUI()
 			local Scroll, ScrollTable, Key, SetQueue, SetBlocker, LuaButton, LuaEditor, QLuaButton, QLuaEditor, AutoHidden
 			
 			local AutoHiddenEvents				= {
-				--["ACTIVE_TALENT_GROUP_CHANGED"]	= true, -- Not exist in Classic 
+				["ACTIVE_TALENT_GROUP_CHANGED"]	= true, 
 				["BAG_UPDATE"]					= true,
 				["BAG_UPDATE_COOLDOWN"]			= true,
 				["PLAYER_EQUIPMENT_CHANGED"]	= true,
@@ -11679,6 +11896,11 @@ function Action.ToggleMainUI()
 					ScrollTable:ClearSelection() 
 				end 
 			end)
+			TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", function(callbackEvent)
+				if ScrollTable:IsVisible() then 
+					ScrollTable:MakeUpdate() -- Update Actions list if learned/unlearned points and if talent tree is changed
+				end 
+			end)
 			
 			-- UI: Key 
 			Key 						= StdUi:SimpleEditBox(anchor, 150, themeHeight, "")	
@@ -11722,7 +11944,8 @@ function Action.ToggleMainUI()
 						--Action.Print(L["DEBUG"] .. data:Link() .. " " .. L["TAB"][3]["QUEUEBLOCKED"])
 					else
 						if button == "LeftButton" then 	
-							data:SetQueue(self.SetToggleOptions)							
+							local action = getmetatable(data).__index
+							action:SetQueue(self.SetToggleOptions)								
 						elseif button == "RightButton" then 						
 							Action.CraftMacro("Queue: " .. data.TableKeyName, [[#showtooltip ]] .. data:Info() .. "\n" .. [[/run Action.MacroQueue("]] .. data.TableKeyName .. [[", { Priority = 1 })]], 1, true, true)	
 						end
@@ -13235,7 +13458,7 @@ function Action.ToggleMainUI()
 					end 
 					Button:SetValue(rowData.Button)
 					isTotem:SetChecked(rowData.isTotem)
-					InputBox:SetNumber(rowData.Name)	
+					InputBox:SetText(rowData.Name)	
 					InputBox:ClearFocus()
 				end 				
 			end 			
@@ -14045,7 +14268,7 @@ function Action.ToggleMainUI()
 					TMW:Fire("TMW_ACTION_HEALING_ENGINE_UI_PROFILE", "Changed", "")
 				end								
 				slider.FontStringTitle = StdUi:Subtitle(PanelOptions, "")
-				slider.FontStringTitle:SetJustifyH("MIDDLE")
+				slider.FontStringTitle:SetJustifyH("CENTER")
 				slider:MakeTextUpdate(specDB[db])				
 				StdUi:GlueAbove(slider.FontStringTitle, slider)
 				if tooltipText then 
@@ -14180,7 +14403,7 @@ function Action.ToggleMainUI()
 				end
 				
 				for k, v in pairs(db) do 										
-					if k == "PredictOptions" then 						
+					if k == "PredictOptions" and PredictOptions then 						
 						local isChanged 
 						for k1, v1 in ipairs(v) do 
 							if PredictOptions.value[k1] ~= v1 then 
@@ -14195,7 +14418,7 @@ function Action.ToggleMainUI()
 						end 
 					end 
 					
-					if k == "SelectStopOptions" then 
+					if k == "SelectStopOptions" and SelectStopOptions then 
 						local isChanged 
 						for k1, v1 in ipairs(v) do 
 							if SelectStopOptions.value[k1] ~= v1 then 
@@ -14210,14 +14433,14 @@ function Action.ToggleMainUI()
 						end 						
 					end 	
 					
-					if k == "SelectSortMethod" then
+					if k == "SelectSortMethod" and SelectSortMethod then
 						if SelectSortMethod:GetValue() ~= v then 
 							SelectSortMethod:SetValue(v) 
 							-- OnValueChanged will set specDB and make Action.Print 
 						end 
 					end 
 					
-					if k == "AfterTargetEnemyOrBossDelay" then 
+					if k == "AfterTargetEnemyOrBossDelay" and AfterTargetEnemyOrBossDelay then 
 						if AfterTargetEnemyOrBossDelay:GetValue() ~= v then 
 							AfterTargetEnemyOrBossDelay:SetValue(v) 
 							-- OnValueChanged will set specDB
@@ -14225,7 +14448,7 @@ function Action.ToggleMainUI()
 						end 
 					end 
 					
-					if k == "AfterMouseoverEnemyDelay" then 
+					if k == "AfterMouseoverEnemyDelay" and AfterMouseoverEnemyDelay then 
 						if AfterMouseoverEnemyDelay:GetValue() ~= v then 
 							AfterMouseoverEnemyDelay:SetValue(v) 
 							-- OnValueChanged will set specDB
@@ -14233,7 +14456,7 @@ function Action.ToggleMainUI()
 						end 
 					end 
 					
-					if k == "SelectPets" then 
+					if k == "SelectPets" and SelectPets then 
 						if SelectPets:GetChecked() ~= v then 
 							SelectPets:SetChecked(v)
 							specDB[k] = v 
@@ -14241,7 +14464,7 @@ function Action.ToggleMainUI()
 						end 
 					end 
 					
-					if k == "SelectResurrects" then 
+					if k == "SelectResurrects" and SelectResurrects then 
 						if SelectResurrects:GetChecked() ~= v then 
 							SelectResurrects:SetChecked(v)
 							specDB[k] = v 
@@ -14528,7 +14751,7 @@ function Action.ToggleMainUI()
 					gname = "",
 					textTT = L["TAB"]["ROWCREATEMACRO"],
                     width = 25,
-                    align = "MIDDLE",
+                    align = "CENTER",
                     index = "IndexIcon",
                     format = "icon",
                     events = {
@@ -14607,7 +14830,7 @@ function Action.ToggleMainUI()
                     name = L["TAB"][tabName]["USEDISPEL"],
 					gname = L["TAB"][tabName]["USEDISPEL"]:gsub("\n", ""),
                     width = 50,
-                    align = "MIDDLE",
+                    align = "CENTER",
                     index = "IndexDispel",
 					db = "useDispel",
                     format = "string",
@@ -14633,7 +14856,7 @@ function Action.ToggleMainUI()
                     name = L["TAB"][tabName]["USESHIELDS"],
 					gname = L["TAB"][tabName]["USESHIELDS"]:gsub("\n", ""),
                     width = 50,
-                    align = "MIDDLE",
+                    align = "CENTER",
                     index = "IndexShields",
 					db = "useShields",
                     format = "string",
@@ -14659,7 +14882,7 @@ function Action.ToggleMainUI()
                     name = L["TAB"][tabName]["USEHOTS"],
 					gname = L["TAB"][tabName]["USEHOTS"]:gsub("\n", ""),
                     width = 50,
-                    align = "MIDDLE",
+                    align = "CENTER",
                     index = "IndexHoTs",
 					db = "useHoTs",
                     format = "string",
@@ -14685,7 +14908,7 @@ function Action.ToggleMainUI()
                     name = L["TAB"][tabName]["USEUTILS"],
 					gname = L["TAB"][tabName]["USEUTILS"]:gsub("\n", ""),
                     width = 50,
-                    align = "MIDDLE",
+                    align = "CENTER",
                     index = "IndexUtils",
 					db = "useUtils",
                     format = "string",
@@ -14711,7 +14934,7 @@ function Action.ToggleMainUI()
                     name = "LUA",
 					gname = "LUA",
                     width = 35,
-                    align = "MIDDLE",
+                    align = "CENTER",
                     index = "IndexLUA",
 					db = "LUA",
                     format = "string",
@@ -15075,7 +15298,7 @@ function Action.ToggleMainUI()
 			-- UI: PanelPriority - Multipliers (title)
 			Multipliers = StdUi:Header(PanelPriority, L["TAB"][tabName]["MULTIPLIERS"])
 			Multipliers:SetAllPoints()			
-			Multipliers:SetJustifyH("MIDDLE")
+			Multipliers:SetJustifyH("CENTER")
 			Multipliers:SetFontSize(15)	
 			-- UI: PanelPriority - MultiplierIncomingDamageLimit
 			MultiplierIncomingDamageLimit 	= CreateSliderMultiplier("MultiplierIncomingDamageLimit")			
@@ -15089,7 +15312,7 @@ function Action.ToggleMainUI()
 			-- UI: PanelPriority - Offsets (title)
 			Offsets = StdUi:Header(PanelPriority, L["TAB"][tabName]["OFFSETS"])
 			Offsets:SetAllPoints()			
-			Offsets:SetJustifyH("MIDDLE")
+			Offsets:SetJustifyH("CENTER")
 			Offsets:SetFontSize(15)
 			
 			-- UI: PanelPriority - OffsetMode 
@@ -15244,7 +15467,7 @@ function Action.ToggleMainUI()
 			-- UI: PanelManaManagement - OR 
 			OR = StdUi:Header(PanelManaManagement, L["TAB"][tabName]["OR"])
 			OR:SetAllPoints()			
-			OR:SetJustifyH("MIDDLE")
+			OR:SetJustifyH("CENTER")
 			OR:SetFontSize(14)
 			
 			-- UI: PanelManaManagement - ManaManagementStopAtTTD
@@ -15316,7 +15539,7 @@ function Action.ToggleMainUI()
 				end 
 			end 			
 			HelpWindow.HelpText = StdUi:Label(HelpWindow, "")	
-			HelpWindow.HelpText:SetJustifyH("MIDDLE")
+			HelpWindow.HelpText:SetJustifyH("CENTER")
 			HelpWindow.HelpText:SetFontSize(13)
 			StdUi:GlueAcross(HelpWindow.HelpText, HelpWindow, 10, -30, -10, 30)
 			HelpWindow.ButtonOK = StdUi:Button(HelpWindow, HelpWindow:GetWidth() - 30, 35, L["TAB"][tabName]["HELPOK"])		

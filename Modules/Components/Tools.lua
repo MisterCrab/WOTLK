@@ -408,8 +408,9 @@ local function TalentMap()
 end
 
 A.Listener:Add("ACTION_EVENT_TOOLS", "PLAYER_ENTERING_WORLD", 		TalentMap)
+A.Listener:Add("ACTION_EVENT_TOOLS", "ACTIVE_TALENT_GROUP_CHANGED", TalentMap)
 --A.Listener:Add("ACTION_EVENT_TOOLS", "LEARNED_SPELL_IN_TAB", 		TalentMap)
---A.Listener:Add("ACTION_EVENT_TOOLS", "CONFIRM_TALENT_WIPE", 		TalentMap)
+A.Listener:Add("ACTION_EVENT_TOOLS", "CONFIRM_TALENT_WIPE", 		TalentMap)
 A.Listener:Add("ACTION_EVENT_TOOLS", "CHARACTER_POINTS_CHANGED", 	TalentMap)
 
 -------------------------------------------------------------------------------

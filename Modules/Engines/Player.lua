@@ -54,6 +54,9 @@ local 	 UnitLevel,    UnitPower, 	 UnitPowerMax, 	  UnitStagger, 	  UnitAttackSp
 local 	 GetPowerRegen,    GetShapeshiftForm, 	 GetCritChance,    GetHaste, 	GetComboPoints =
 	  _G.GetPowerRegen, _G.GetShapeshiftForm, _G.GetCritChance, _G.GetHaste, _G.GetComboPoints
 	  
+local 	GetTotemInfo, 	 GetTotemTimeLeft =
+	 _G.GetTotemInfo, _G.GetTotemTimeLeft	  
+	  
 local 	 IsEquippedItem, 	IsStealthed, 	IsMounted, 	  IsFalling, 	IsSwimming,    IsSubmerged = 	  
 	  _G.IsEquippedItem, _G.IsStealthed, _G.IsMounted, _G.IsFalling, _G.IsSwimming, _G.IsSubmerged
 	  
@@ -65,18 +68,7 @@ local 	 C_Container = _G.C_Container
 local 	 GetContainerNumSlots, 	  									  GetContainerItemID, 	 								   GetInventoryItemID, 	  GetItemInfoInstant,    GetItemCount, 	  IsEquippableItem =	  
 	  _G.GetContainerNumSlots or C_Container.GetContainerNumSlots, _G.GetContainerItemID or C_Container.GetContainerItemID, _G.GetInventoryItemID, _G.GetItemInfoInstant, _G.GetItemCount, _G.IsEquippableItem
 	  
--- Classic GetTotemInfo
-local gameVersion				= toNum[select(2, _G.GetBuildInfo())]
-local GetTotemInfo, GetTotemTimeLeft
-if gameVersion <= 11303 then 
-	GetTotemInfo 				= LibStub("LibTotemInfo-1.0").GetTotemInfo	  
-	GetTotemTimeLeft			= LibStub("LibTotemInfo-1.0").GetTotemTimeLeft	  
-else 
-	GetTotemInfo				= _G.GetTotemInfo
-	GetTotemTimeLeft			= _G.GetTotemTimeLeft
-end 
-
--- Classic WOTLK 
+-- Glyphs WOTLK+ 
 local  GetActiveTalentGroup, 	GetGlyphSocketInfo,	   GetNumGlyphSockets = 
 	_G.GetActiveTalentGroup, _G.GetGlyphSocketInfo, _G.GetNumGlyphSockets
 	  	  	  
@@ -351,12 +343,15 @@ function Data.UpdateGlyphs()
 	wipe(DataGlyphs)
 	
 	local talentGroup = GetActiveTalentGroup() or 1
-	local enabled, _, spellID
+	local enabled, _, spellID, spellName 
 	for i = 1, GetNumGlyphSockets() do 
 		enabled, _, spellID = GetGlyphSocketInfo(i, talentGroup)
 		if enabled and spellID then 
-			DataGlyphs[spellID] = true 
-			DataGlyphs[GetSpellInfo(spellID)] = true 
+			spellName = GetSpellInfo(spellID)
+			if spellName then 
+				DataGlyphs[spellID] = true 
+				DataGlyphs[spellName] = true 
+			end 
 		end 
 	end 
 end 
@@ -600,6 +595,11 @@ function Player:CancelBuff(buffName)
 		--[[
 		for i = 1, huge do			
 			local Name = UnitAura("player", i, "HELPFUL PLAYER")
+			
+			if type(Name) == "table" then 	
+				Name = Name.name
+			end  			
+			
 			if Name then	
 				if Name == buffName then 
 					CancelUnitBuff("player", i, "HELPFUL PLAYER")								
@@ -669,29 +669,22 @@ function Player:GetDeBuffsUnitCount(...)
 	return units, counter
 end 
 
--- Classic: Totems 
-function Player:GetTotemInfo(i)
-	-- @return: haveTotem, totemName, startTime, duration, icon, spellid, rank = GetTotemInfo(1 through 4)
-	-- <https://wow.gamepedia.com/API_GetTotemInfo>
-	-- Added return value by the lib (not in Blizzard old interface):
-	--     spellid - int, the totem's spell id.
-	--     rank    - int (1 to 8) or nil, the rank of the totem spell.
-	--               nil indicates that there is no rank for this totem.
-	-- These return values are valid until 1.13.4 game version, after it uses default API
-	return GetTotemInfo(i)
-end 
-
-function Player:GetTotemTimeLeft(i)
-	-- @return: number (timeLeft = GetTotemTimeLeft(1 through 4))
-	-- Example: <https://github.com/SwimmingTiger/LibTotemInfo/issues/2>
-	return GetTotemTimeLeft(i)
-end 
-
 -- WOTLK: Glyphs
 function Player:HasGlyph(spell)
 	-- @usage Player:HasGlyph(spellName) or Player:HasGlyph(spellID)
 	-- @return boolean 
 	return DataGlyphs[spell]
+end 
+
+-- totems 
+function Player:GetTotemInfo(i)
+	-- @return: haveTotem, totemName, startTime, duration, icon
+	return GetTotemInfo(i)
+end 
+
+function Player:GetTotemTimeLeft(i)
+	-- @return: number
+	return GetTotemTimeLeft(i)
 end 
 
 -- crit_chance

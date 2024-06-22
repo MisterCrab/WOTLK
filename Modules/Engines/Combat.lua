@@ -893,9 +893,9 @@ CombatTracker.logDied							= function(...)
 end	
 
 --[[ This Logs the DR (Diminishing Returns) for enemy unit PvE dr or player ]]
-CombatTracker.logDR								= function(timestamp, EVENT, DestGUID, destFlags, spellName)
+CombatTracker.logDR								= function(timestamp, EVENT, DestGUID, destFlags, spellID)
 	if isEnemy(destFlags) then 
-		local drCat = DRData:GetCategoryBySpellID(spellName) -- this works for spellName
+		local drCat = DRData:GetCategoryBySpellID(spellID)
 		if drCat and (DRData:IsPvECategory(drCat) or isPlayer(destFlags)) then
 			local CombatTrackerDataGUID = CombatTrackerData[DestGUID]
 			if not CombatTrackerDataGUID.DR then 
@@ -1820,7 +1820,7 @@ local COMBAT_LOG_EVENT_UNFILTERED 				= function(...)
 	
 	-- Diminishing (DR-Tracker)
 	if CombatTrackerOnEventDR[EVENT] and (auraType == "DEBUFF" or a18 == "DEBUFF") then 
-		CombatTrackerOnEventDR[EVENT](timestamp, EVENT, DestGUID, destFlags, spellName)
+		CombatTrackerOnEventDR[EVENT](timestamp, EVENT, DestGUID, destFlags, spellID)
 	end 
 	
 	-- Loss of Control (Classic only)
@@ -2281,20 +2281,46 @@ A.CombatTracker									= {
 	end,
 	--[[ Get DR: Diminishing (only enemy) ]]
 	GetDR 										= function(self, unitID, drCat)
-		-- @return Tick (number: 100% -> 0%), Remain (number: 0 -> 18), Application (number: 0 -> 5), ApplicationMax (number: 5 <-> 0)
-		-- Default 100% means no DR at all, and 0 if no ticks then no remaning time, Application is how much DR was applied and how much by that category can be applied totally 
-		-- About Tick:
-		-- Ticks go like 100 -> 50 -> 25 -> 0 or for Taunt 100 -> 65 -> 42 -> 27 -> 0
-		-- 100 no DR, 0 full DR 
+		-- @return: DR_Tick (@number), DR_Remain (@number: 0 -> 18), DR_Application (@number: 0 -> 5), DR_ApplicationMax (@number: 5 <-> 0)
+		-- DR_Tick is Tick (number: 100 -> 50 -> 25 -> 0) where 0 is fully imun, 100 is no imun
+		-- "taunt" has unique Tick (number: 100 -> 65 -> 42 -> 27 -> 0)
+		-- DR_Remain is remain in seconds time before DR_Application will be reset
+		-- DR_Application is how much DR stacks were applied currently and DR_ApplicationMax is how much by that category can be applied in total 
 		--[[ drCat accepts:
-			"root"           
-			"stun"      -- PvE unlocked     
-			"disorient"      
-			"disarm" 	-- added in DRList		   
-			"silence"        
-			"taunt"     -- PvE unlocked      
-			"incapacitate"   
-			"knockback" 
+			"disorient"						-- TBC Retail
+			"incapacitate"					-- Any
+			"silence"						-- WOTLK+ Retail
+			"stun"							-- Any
+			"random_stun"					-- non-Retail 
+			"taunt"							-- Retail 
+			"root"							-- Any 
+			"random_root"					-- non-Retail
+			"disarm"						-- Classic+ Retail
+			"knockback"						-- Retail
+			"counterattack"					-- TBC+ non-Retail
+			"chastise"						-- TBC 
+			"kidney_shot"					-- Classic TBC 
+			"unstable_affliction"			-- TBC 
+			"death_coil"					-- TBC 
+			"fear"							-- Classic+ non-Retail
+			"mind_control"					-- Classic+ non-Retail 
+			"horror"						-- WOTLK+ non-Retail
+			"opener_stun"					-- WOTLK 
+			"scatter"						-- TBC+ non-Retail
+			"cyclone"						-- WOTLK+ non-Retail
+			"charge"						-- WOTLK 
+			"deep_freeze_rof"				-- CATA+ non-Retail
+			"bind_elemental"				-- CATA+ non-Retail
+			"frost_shock"					-- Classic 
+			
+			non-Player unitID considered as PvE spells and accepts only: 
+			"stun", "kidney_shot"						-- Classic 
+			"stun", "random_stun", "kidney_shot"		-- TBC 
+			"stun", "random_stun", "opener_stun"		-- WOTLK 
+			"stun", "random_stun", "cyclone"			-- CATA 
+			"taunt", "stun"								-- Retail 
+			
+			Same note should be kept in Unit(unitID):IsControlAble, Unit(unitID):GetDR(), CombatTracker.GetDR(unitID)
 		]]
 		local GUID 								= GetGUID(unitID)		
 		local DR 								= CombatTrackerData[GUID] and CombatTrackerData[GUID].DR and CombatTrackerData[GUID].DR[drCat]
@@ -2676,7 +2702,8 @@ A.UnitCooldown 									= {
 }
  
 -- Tracks Freezing Trap 
-A.UnitCooldown:Register(CONST.SPELLID_FREEZING_TRAP, 15)
+A.UnitCooldown:Register(CONST.SPELLID_FREEZING_TRAP, 30)
+A.UnitCooldown:Register(CONST.SPELLID_FREEZING_TRAP2, 30)
 
 -------------------------------------------------------------------------------
 -- API: LossOfControl

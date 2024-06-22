@@ -17,8 +17,7 @@ local AuraVariableNumber 					= Env.AuraVariableNumber
 local strlowerCache  						= TMW.strlowerCache
 
 local LibStub								= _G.LibStub
-local HealComm 								= LibStub("LibHealComm-4.0", true) -- Note: Leave it with true in case if will need to disable lib, seems lib causing unexpected lua errors in PvP 
-local LibRangeCheck  						= LibStub("LibRangeCheck-2.0")
+local LibRangeCheck  						= LibStub("LibRangeCheck-3.0")
 local LibBossIDs							= LibStub("LibBossIDs-1.0").BossIDs
 
 local A   									= _G.Action	
@@ -36,7 +35,6 @@ local MouseHasFrame							= A.MouseHasFrame
 local UnitInLOS								= A.UnitInLOS
 
 local TeamCache								= A.TeamCache
-local TeamCachethreatData					= TeamCache.threatData
 local TeamCacheFriendly 					= TeamCache.Friendly
 local TeamCacheFriendlyUNITs				= TeamCacheFriendly.UNITs
 local TeamCacheFriendlyGUIDs				= TeamCacheFriendly.GUIDs
@@ -49,8 +47,7 @@ local TeamCacheEnemyIndexToPLAYERs			= TeamCacheEnemy.IndexToPLAYERs
 local TeamCacheEnemyIndexToPETs				= TeamCacheEnemy.IndexToPETs
 local ActiveUnitPlates						= MultiUnits:GetActiveUnitPlates()
 local ActiveUnitPlatesAny					= MultiUnits:GetActiveUnitPlatesAny()
-	  
-local ALL_HEALS								= HealComm and HealComm.ALL_HEALS	  
+
 local CACHE_DEFAULT_TIMER_UNIT				= CONST.CACHE_DEFAULT_TIMER_UNIT
 
 local GameLocale 							= A.FormatGameLocale(_G.GetLocale())	  
@@ -58,14 +55,11 @@ local CombatLogGetCurrentEventInfo			= _G.CombatLogGetCurrentEventInfo
 local GetUnitSpeed							= _G.GetUnitSpeed
 local GetSpellInfo							= _G.GetSpellInfo
 local GetPartyAssignment 					= _G.GetPartyAssignment	  
-local UnitIsUnit, UnitPlayerOrPetInRaid, UnitInAnyGroup, UnitPlayerOrPetInParty, UnitInRange, UnitLevel, UnitRace, UnitClass, UnitClassification, UnitExists, UnitIsConnected, UnitIsCharmed, UnitIsGhost, UnitIsDeadOrGhost, UnitIsFeignDeath, UnitIsPlayer, UnitPlayerControlled, UnitCanAttack, UnitIsEnemy, UnitAttackSpeed,
-	  UnitPowerType, UnitPowerMax, UnitPower, UnitName, UnitCanCooperate, UnitCreatureType, UnitCreatureFamily, UnitHealth, UnitHealthMax, UnitGUID, UnitHasIncomingResurrection, UnitIsVisible, UnitDebuff, UnitCastingInfo, UnitChannelInfo =
-	  UnitIsUnit, UnitPlayerOrPetInRaid, UnitInAnyGroup, UnitPlayerOrPetInParty, UnitInRange, UnitLevel, UnitRace, UnitClass, UnitClassification, UnitExists, UnitIsConnected, UnitIsCharmed, UnitIsGhost, UnitIsDeadOrGhost, UnitIsFeignDeath, UnitIsPlayer, UnitPlayerControlled, UnitCanAttack, UnitIsEnemy, UnitAttackSpeed,
-	  UnitPowerType, UnitPowerMax, UnitPower, UnitName, UnitCanCooperate, UnitCreatureType, UnitCreatureFamily, UnitHealth, UnitHealthMax, UnitGUID, UnitHasIncomingResurrection, UnitIsVisible, UnitDebuff, UnitCastingInfo, UnitChannelInfo
-local UnitAura 								= _G.UnitAura	  
-	  
-local UnitThreatSituation					= _G.UnitThreatSituation
-local UnitDetailedThreatSituation			= _G.UnitDetailedThreatSituation
+local UnitIsUnit, UnitPlayerOrPetInRaid, UnitInAnyGroup, UnitPlayerOrPetInParty, UnitInRange, UnitLevel, UnitThreatSituation, UnitRace, UnitClass, UnitClassification, UnitExists, UnitIsConnected, UnitIsCharmed, UnitIsGhost, UnitIsDeadOrGhost, UnitIsFeignDeath, UnitIsPlayer, UnitPlayerControlled, UnitCanAttack, UnitIsEnemy, UnitAttackSpeed,
+	  UnitPowerType, UnitPowerMax, UnitPower, UnitName, UnitCanCooperate, UnitCreatureType, UnitCreatureFamily, UnitHealth, UnitHealthMax, UnitGetIncomingHeals, UnitGUID, UnitHasIncomingResurrection, UnitIsVisible, UnitDebuff, UnitCastingInfo, UnitChannelInfo =
+	  UnitIsUnit, UnitPlayerOrPetInRaid, UnitInAnyGroup, UnitPlayerOrPetInParty, UnitInRange, UnitLevel, UnitThreatSituation, UnitRace, UnitClass, UnitClassification, UnitExists, UnitIsConnected, UnitIsCharmed, UnitIsGhost, UnitIsDeadOrGhost, UnitIsFeignDeath, UnitIsPlayer, UnitPlayerControlled, UnitCanAttack, UnitIsEnemy, UnitAttackSpeed,
+	  UnitPowerType, UnitPowerMax, UnitPower, UnitName, UnitCanCooperate, UnitCreatureType, UnitCreatureFamily, UnitHealth, UnitHealthMax, UnitGetIncomingHeals, UnitGUID, UnitHasIncomingResurrection, UnitIsVisible, UnitDebuff, UnitCastingInfo, UnitChannelInfo
+local UnitAura 								= _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex
 -------------------------------------------------------------------------------
 -- Remap
 -------------------------------------------------------------------------------
@@ -2948,24 +2942,49 @@ A.Unit = PseudoClass({
 		
 		return 0, 0, 0
 	end, "UnitGUID"),
-	IsControlAble 							= Cache:Pass(function(self, drCat, drDiminishing)
+	IsControlAble 							= Cache:Pass(function(self, drCat, DR_Tick)
 		-- @return boolean 
-		-- drDiminishing is Tick (number: 100 -> 50 -> 25 -> 0) where 0 is fully imun, 100% no imun - can be fully duration CC'ed 
+		-- DR_Tick is Tick (number: 100 -> 50 -> 25 -> 0) where 0 is fully imun, 100 is no imun
 		-- "taunt" has unique Tick (number: 100 -> 65 -> 42 -> 27 -> 0)
+		-- DR_Remain is remain in seconds time before DR_Application will be reset
+		-- DR_Application is how much DR stacks were applied currently and DR_ApplicationMax is how much by that category can be applied in total 
 		--[[ drCat accepts:
-			"incapacitate"
-			"silence"
-			"stun"							-- PvE unlocked  
-			"root"
-			"disarm"						-- Added in original DRList	
-			"random_stun"
-			"random_root"					-- May be removed in the future!
-			"fear"
-			"mind_control"
-			"frost_shock"
-			"kidney_shot"	
+			"disorient"						-- TBC Retail
+			"incapacitate"					-- Any
+			"silence"						-- WOTLK+ Retail
+			"stun"							-- Any
+			"random_stun"					-- non-Retail 
+			"taunt"							-- Retail 
+			"root"							-- Any 
+			"random_root"					-- non-Retail
+			"disarm"						-- Classic+ Retail
+			"knockback"						-- Retail
+			"counterattack"					-- TBC+ non-Retail
+			"chastise"						-- TBC 
+			"kidney_shot"					-- Classic TBC 
+			"unstable_affliction"			-- TBC 
+			"death_coil"					-- TBC 
+			"fear"							-- Classic+ non-Retail
+			"mind_control"					-- Classic+ non-Retail 
+			"horror"						-- WOTLK+ non-Retail
+			"opener_stun"					-- WOTLK 
+			"scatter"						-- TBC+ non-Retail
+			"cyclone"						-- WOTLK+ non-Retail
+			"charge"						-- WOTLK 
+			"deep_freeze_rof"				-- CATA+ non-Retail
+			"bind_elemental"				-- CATA+ non-Retail
+			"frost_shock"					-- Classic 
+			
+			non-Player unitID considered as PvE spells and accepts only: 
+			"stun", "kidney_shot"						-- Classic 
+			"stun", "random_stun", "kidney_shot"		-- TBC 
+			"stun", "random_stun", "opener_stun"		-- WOTLK 
+			"stun", "random_stun", "cyclone"			-- CATA 
+			"taunt", "stun"								-- Retail 
+			
+			Same note should be kept in Unit(unitID):IsControlAble, Unit(unitID):GetDR(), CombatTracker.GetDR(unitID)
 		]]
-		-- Nill-able: drDiminishing
+		-- Nill-able: DR_Tick, if its nil function returns true whenever non-imun drCat is apply able
 		local unitID 						= self.UnitID 
 		if not A.IsInPvP then 
 			return not self(unitID):IsBoss() and InfoControlAbleClassification[self(unitID):Classification()] and (not drCat or self(unitID):GetDR(drCat) > (drDiminishing or 0)) and (drCat ~= "fear" or self(unitID):HasDeBuffs(AuraList.FearImunDeBuffs) == 0)
@@ -3022,47 +3041,32 @@ A.Unit = PseudoClass({
 			end 
 		end 
 	end, "UnitID"),
-	ThreatSituation							= Cache:Pass(function(self, otherunitID)  
-		-- @return number, number, number 
-		-- Returns: status (0 -> 3), percent of threat, value or threat 
+	ThreatSituation							= Cache:Pass(function(self, otherunit)  
+		-- @return number 
+		-- Returns: status (0 -> 3), percent of threat, value or threat 		
 		-- Nill-able: otherunit
 		local unitID 						= self.UnitID
-		if unitID then 
-			local GUID 						= UnitGUID(unitID)					
-			if GUID and TeamCachethreatData[GUID] then 
-				if otherunitID and not UnitIsUnit(otherunitID, TeamCachethreatData[GUID].unit) then 
-					-- By specified otherunitID
-					-- Note: I prefer avoid use this as much as it possible since less performance 
-					local _, status, scaledPercent, _, threatValue = UnitDetailedThreatSituation(unitID, otherunitID) 
-					if threatValue and threatValue < 0 then
-						threatValue = threatValue + 410065408
-					end					
-					return status or 0, scaledPercent or 0, threatValue or 0
-				else 
-					-- By own unit's target 
-					return TeamCachethreatData[GUID].status, TeamCachethreatData[GUID].scaledPercent, TeamCachethreatData[GUID].threatValue       
-				end 
-			end 
-		end 
-		return 0, 0, 0
+		return UnitThreatSituation(unitID, otherunit or "target") or 0	       
 	end, "UnitID"),
-	IsTanking 								= Cache:Pass(function(self, otherunitID, range)  
+	IsTanking 								= Cache:Pass(function(self, otherunit, range)  
 		-- @return boolean 
 		-- Nill-able: otherunit, range
-		local unitID 						= self.UnitID	
-		local ThreatSituation 				= self(unitID):ThreatSituation(otherunitID) -- cacheed defaultly own target but if need to check something additional here is otherunitID
-		return (A.IsInPvP and UnitIsUnit(unitID, (otherunitID or "target") .. "target")) or (not A.IsInPvP and ThreatSituation >= 3) or self(unitID):IsTankingAoE(range)	       
+		local unitID 						= self.UnitID
+		local ThreatThreshold 				= 3			
+		local ThreatSituation 				= self(unitID):ThreatSituation(otherunit or "target")
+		return ((A.IsInPvP and UnitIsUnit(unitID, (otherunit or "target") .. "target")) or (not A.IsInPvP and ThreatSituation >= ThreatThreshold)) or self(unitID):IsTankingAoE(range)	       
 	end, "UnitID"),
 	IsTankingAoE 							= Cache:Pass(function(self, range) 
 		-- @return boolean 
 		-- Nill-able: range
 		local unitID 						= self.UnitID
+		local ThreatThreshold 				= 3
 		for unit in pairs(ActiveUnitPlates) do
-			local ThreatSituation 		= self(unitID):ThreatSituation() -- cacheed defaultly own target 
-			if ((A.IsInPvP and UnitIsUnit(unitID, unit .. "target")) or (not A.IsInPvP and ThreatSituation >= 3)) and (not range or self(unit .. "target"):CanInterract(range)) then 
+			local ThreatSituation 			= self(unitID):ThreatSituation(unit)
+			if ((A.IsInPvP and UnitIsUnit(unitID, unit .. "target")) or (not A.IsInPvP and ThreatSituation >= ThreatThreshold)) and (not range or self(unit .. "target"):CanInterract(range)) then 
 				return true  
 			end
-		end       
+		end       		
 	end, "UnitID"),
 	IsPenalty								= Cache:Pass(function(self)  
 		-- @return boolean 
@@ -3107,22 +3111,47 @@ A.Unit = PseudoClass({
 	end, "UnitID"),
 	-- Combat: Diminishing
 	GetDR 									= Cache:Pass(function(self, drCat) 
-		-- @return: DR_Tick (@number), DR_Remain (@number), DR_Application (@number), DR_ApplicationMax (@number)
-		-- drDiminishing is Tick (number: 100 -> 50 -> 25 -> 0) where 0 is fully imun, 100% no imun - can be fully duration CC'ed 
+		-- @return: DR_Tick (@number), DR_Remain (@number: 0 -> 18), DR_Application (@number: 0 -> 5), DR_ApplicationMax (@number: 5 <-> 0)
+		-- DR_Tick is Tick (number: 100 -> 50 -> 25 -> 0) where 0 is fully imun, 100 is no imun
 		-- "taunt" has unique Tick (number: 100 -> 65 -> 42 -> 27 -> 0)
+		-- DR_Remain is remain in seconds time before DR_Application will be reset
+		-- DR_Application is how much DR stacks were applied currently and DR_ApplicationMax is how much by that category can be applied in total 
 		--[[ drCat accepts:
-			"incapacitate"
-			"silence"
-			"stun"							-- PvE unlocked  
-			"root"
-			"disarm"						-- Added in original DRList	
-			"random_stun"
-			"random_root"					-- May be removed in the future!
-			"fear"
-			"mind_control"
-			"frost_shock"
-			"kidney_shot"	
-		]]		
+			"disorient"						-- TBC Retail
+			"incapacitate"					-- Any
+			"silence"						-- WOTLK+ Retail
+			"stun"							-- Any
+			"random_stun"					-- non-Retail 
+			"taunt"							-- Retail 
+			"root"							-- Any 
+			"random_root"					-- non-Retail
+			"disarm"						-- Classic+ Retail
+			"knockback"						-- Retail
+			"counterattack"					-- TBC+ non-Retail
+			"chastise"						-- TBC 
+			"kidney_shot"					-- Classic TBC 
+			"unstable_affliction"			-- TBC 
+			"death_coil"					-- TBC 
+			"fear"							-- Classic+ non-Retail
+			"mind_control"					-- Classic+ non-Retail 
+			"horror"						-- WOTLK+ non-Retail
+			"opener_stun"					-- WOTLK 
+			"scatter"						-- TBC+ non-Retail
+			"cyclone"						-- WOTLK+ non-Retail
+			"charge"						-- WOTLK 
+			"deep_freeze_rof"				-- CATA+ non-Retail
+			"bind_elemental"				-- CATA+ non-Retail
+			"frost_shock"					-- Classic 
+			
+			non-Player unitID considered as PvE spells and accepts only: 
+			"stun", "kidney_shot"						-- Classic 
+			"stun", "random_stun", "kidney_shot"		-- TBC 
+			"stun", "random_stun", "opener_stun"		-- WOTLK 
+			"stun", "random_stun", "cyclone"			-- CATA 
+			"taunt", "stun"								-- Retail 
+			
+			Same note should be kept in Unit(unitID):IsControlAble, Unit(unitID):GetDR(), CombatTracker.GetDR(unitID)
+		]]
 		local unitID 						= self.UnitID
 		return CombatTracker:GetDR(unitID, drCat)
 	end, "UnitID"),
@@ -3286,38 +3315,11 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID
 		return UnitHasIncomingResurrection(unitID)
 	end, "UnitID"),
-	GetIncomingHeals						= Cache:Wrap(function(self, castTime, unitGUID)
+	GetIncomingHeals						= Cache:Pass(function(self)
 		-- @return number 
-		-- Nill-able: unitGUID
-		if not HealComm or not castTime or castTime <= 0 then 
-			return 0
-		end 
-		
 		local unitID 						= self.UnitID
-		local GUID 							= unitGUID or UnitGUID(unitID)
-		
-		if not GUID then 
-			return 0 
-		end 
-		
-		return (HealComm:GetOthersHealAmount(GUID, ALL_HEALS, TMW.time + castTime) or 0) * HealComm:GetHealModifier(GUID) -- Better by others since if we will include our heals it will funky use accidentally downrank
-	end, "UnitGUID"),
-	GetIncomingHealsIncSelf					= Cache:Wrap(function(self, castTime, unitGUID)
-		-- @return number 
-		-- Nill-able: unitGUID
-		if not HealComm or not castTime or castTime <= 0 then 
-			return 0
-		end 
-		
-		local unitID 						= self.UnitID
-		local GUID 							= unitGUID or UnitGUID(unitID)
-		
-		if not GUID then 
-			return 0 
-		end 
-		
-		return (HealComm:GetHealAmount(GUID, ALL_HEALS, TMW.time + castTime) or 0) * HealComm:GetHealModifier(GUID) -- Includes self incoming on a unitID 
-	end, "UnitGUID"),
+		return UnitGetIncomingHeals(unitID) or 0
+	end, "UnitID"),
 	GetRange 								= Cache:Wrap(function(self)
 		-- @return number (max), number (min)
 		local unitID 						= self.UnitID
@@ -3339,9 +3341,9 @@ A.Unit = PseudoClass({
 	CanInterract							= Cache:Pass(function(self, range, orBooleanInRange) 
 		-- @return boolean  
 		local unitID 						= self.UnitID
-		local min_range 					= self(unitID):GetRange()
+		local min_range 					= self(unitID):GetRange() 
 		
-		return min_range > 0 and (min_range <= range or orBooleanInRange)	
+		return min_range and min_range > 0 and ((range and min_range <= range) or orBooleanInRange)	
 	end, "UnitID"),
 	CanInterrupt							= Cache:Pass(function(self, kickAble, auras, minX, maxX)
 		-- @return boolean 
@@ -3605,6 +3607,15 @@ A.Unit = PseudoClass({
 		for i = 1, huge do			
 			spellName, _, spellCount, _, spellDuration, spellExpirationTime, _,_,_, spellID = UnitAura(unitID, i, filter)
 			
+			
+			if type(spellName) == "table" then 		
+				spellCount = spellName.charges
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break
 			elseif auraTable[spellID] then 
@@ -3635,6 +3646,14 @@ A.Unit = PseudoClass({
 		local _, spellName, spellID, spellCount, spellDuration, spellExpirationTime	
 		for i = 1, huge do			
 			spellName, _, spellCount, _, spellDuration, spellExpirationTime, _,_,_, spellID = UnitAura(unitID, i, filter)
+						
+			if type(spellName) == "table" then 		
+				spellCount = spellName.charges
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
 			
 			if not spellName then 
 				break
@@ -3689,6 +3708,13 @@ A.Unit = PseudoClass({
 		for i = 1, huge do 
 			spellName, _, _, _, spellDuration, spellExpirationTime, _, _, _, spellID = UnitAura(unitID, i, filter)
 			
+			if type(spellName) == "table" then 	
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break 			
 			elseif AssociativeTables[spell][byID and spellID or spellName] then 
@@ -3721,6 +3747,13 @@ A.Unit = PseudoClass({
 		local _, spellName, spellID, spellCount		
 		for i = 1, huge do 
 			spellName, _, spellCount, _, _, _, _, _, _, spellID = UnitAura(unitID, i, filter)
+			
+			if type(spellName) == "table" then 		
+				spellCount = spellName.charges
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break 			
 			elseif AssociativeTables[spell][byID and spellID or spellName] then 
@@ -3747,6 +3780,14 @@ A.Unit = PseudoClass({
 		local _, spellName, spellID, spellDuration, spellExpirationTime		
 		for i = 1, huge do 
 			spellName, _, _, _, spellDuration, spellExpirationTime, _, _, _, spellID = UnitAura(unitID, i, filter)
+			
+			if type(spellName) == "table" then 	
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break 			
 			elseif AssociativeTables[spell][byID and spellID or spellName] then 
@@ -3779,6 +3820,14 @@ A.Unit = PseudoClass({
 		for i = 1, huge do			
 			spellName, _, spellCount, _, spellDuration, spellExpirationTime, _,_,_, spellID = UnitAura(unitID, i, filter)
 			
+			if type(spellName) == "table" then 		
+				spellCount = spellName.charges
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break 
 			elseif auraTable[spellID] then 
@@ -3807,6 +3856,14 @@ A.Unit = PseudoClass({
 		for i = 1, huge do			
 			spellName, _, spellCount, _, spellDuration, spellExpirationTime, _,_,_, spellID = UnitAura(unitID, i, filter)
 			
+			if type(spellName) == "table" then 		
+				spellCount = spellName.charges
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break
 			elseif spellName == auraName then 
@@ -3829,6 +3886,14 @@ A.Unit = PseudoClass({
 		local _, spellName, spellID, spellDuration, spellExpirationTime		
 		for i = 1, huge do 
 			spellName, _, _, _, spellDuration, spellExpirationTime, _, _, _, spellID = UnitAura(unitID, i, filter)
+			
+			if type(spellName) == "table" then 		
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break  
 			elseif AssociativeTables[spell][byID and spellID or spellName] then 
@@ -3852,6 +3917,14 @@ A.Unit = PseudoClass({
 		local _, spellName, spellID, spellDuration, spellExpirationTime		
 		for i = 1, huge do 
 			spellName, _, _, _, spellDuration, spellExpirationTime, _, _, _, spellID = UnitAura(unitID, i, filter)
+
+			if type(spellName) == "table" then 	
+				spellDuration = spellName.duration
+				spellExpirationTime = spellName.expirationTime
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break 			
 			elseif AssociativeTables[spell][byID and spellID or spellName] then 
@@ -3879,6 +3952,13 @@ A.Unit = PseudoClass({
 		local _, spellName, spellID, spellCount		
 		for i = 1, huge do 
 			spellName, _, spellCount, _, _, _, _, _, _, spellID = UnitAura(unitID, i, filter)
+			
+			if type(spellName) == "table" then 		
+				spellCount = spellName.charges
+				spellID = spellName.spellId
+				spellName = spellName.name
+			end  			
+			
 			if not spellName then 
 				break 			
 			elseif AssociativeTables[spell][byID and spellID or spellName] then 

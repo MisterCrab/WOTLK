@@ -510,7 +510,7 @@ BlackBackground:SetSize(273, 30)
 BlackBackground:SetPoint("TOPLEFT", 0, 12) 
 BlackBackground:SetShown(false)
 BlackBackground.IsEnable = true
-BlackBackground.texture = BlackBackground:CreateTexture(nil, "TOOLTIP")
+BlackBackground.texture = BlackBackground:CreateTexture(nil, "OVERLAY")
 BlackBackground.texture:SetAllPoints(true)
 BlackBackground.texture:SetColorTexture(0, 0, 0, 1)
 
@@ -524,7 +524,7 @@ local function CreateRankFrame(name, anchor, x, y)
 	frame:SetSize(1, 1)
 	frame:SetScale(1)
 	frame:SetPoint(anchor, x, y)
-	frame.texture = frame:CreateTexture(nil, "TOOLTIP")
+	frame.texture = frame:CreateTexture(nil, "OVERLAY")
 	frame.texture:SetAllPoints(true)
 	frame.texture:SetColorTexture(0, 0, 0, 1.0)
 	return frame
@@ -673,6 +673,11 @@ local function UpdateCVAR()
 			Print("cameraDistanceMaxZoomFactor " .. cameraDistanceMaxZoomFactor .. " => " .. 4)	
 		end		
 	end 
+	
+	-- Description fix
+	if toNum[GetCVar("breakUpLargeNumbers") or 1] ~= 0 then 
+		SetCVar("breakUpLargeNumbers", 0)
+	end	
 	
     -- WM removal
     if GetCVar("screenshotQuality") ~= "10" then 
