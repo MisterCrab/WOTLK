@@ -3878,7 +3878,7 @@ A.Unit = PseudoClass({
 		-- current remain, total applied duration	
 		-- Nill-able: caster, byID
 		local unitID 						= self.UnitID	
-		local filter -- default "HELPFUL"
+		local filter 						= "HELPFUL"
 		if caster then 
 			filter = "HELPFUL PLAYER"
 		end 
@@ -3908,7 +3908,7 @@ A.Unit = PseudoClass({
 		-- Returns sorted by highest: current remain, total applied duration	
 		-- Nill-able: caster, byID
 		local unitID 						= self.UnitID	
-		local filter -- default "HELPFUL"
+		local filter 						= "HELPFUL"
 		if caster then 
 			filter = "HELPFUL PLAYER"
 		end 
@@ -3944,7 +3944,7 @@ A.Unit = PseudoClass({
 		-- @return number 
 		-- Nill-able: caster, byID
 		local unitID 						= self.UnitID	
-		local filter -- default "HELPFUL"
+		local filter 						= "HELPFUL"
 		if caster then 
 			filter = "HELPFUL PLAYER"
 		end 
