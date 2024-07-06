@@ -6645,12 +6645,14 @@ local ColorPicker 						= {
 			local objects = self:tFindByOption(self.StdUiObjects[element], option)
 			if objects and next(objects) then 
 				for obj, method in pairs(objects) do 										
-					obj[method](obj, tStdUiConfig.r, tStdUiConfig.g, tStdUiConfig.b, tStdUiConfig.a)
-					
-					-- Refresh highlight 
-					obj.origBackdropBorderColor = nil 
-					if obj.target then 
-						obj.target.origBackdropBorderColor = nil 
+					if type(obj) == "table" then -- exclude texture from stdUi.config (related to updates with BackdropTemplateMixin)
+						obj[method](obj, tStdUiConfig.r, tStdUiConfig.g, tStdUiConfig.b, tStdUiConfig.a)
+						
+						-- Refresh highlight 
+						obj.origBackdropBorderColor = nil 
+						if obj.target then 
+							obj.target.origBackdropBorderColor = nil 
+						end 	
 					end 					
 				end 
 			end 
