@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "06.07.2024"
+local DateTime 														= "10.07.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -15883,6 +15883,10 @@ function Action.GetCurrentSpecializationID()
 	local specID
 	for i = 1, #specIDs do
 		local localizedName, _, points = GetTalentTabInfo(i)
+		if type(points) == "string" then 
+			_, localizedName, _, _, points = GetTalentTabInfo(i)
+		end 
+		
 		specs[specIDs[i]][4] = localizedName
 		if points > biggest then
 			biggest = points
