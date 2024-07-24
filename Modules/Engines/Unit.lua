@@ -419,8 +419,8 @@ local AuraList = {
         31661, -- Dragon's Breath
         19503, -- Scatter Shot        
         -- Rooted CC
-        53313, -- Entangling Roots
-        42917, -- Frost Nova
+        --53313, -- Entangling Roots
+        --42917, -- Frost Nova
     },
     -- Imun Specific Buffs 
     FearImun = {

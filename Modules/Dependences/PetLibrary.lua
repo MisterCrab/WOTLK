@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 18)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 19)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -105,7 +105,7 @@ local UnitGUID							= _G.UnitGUID
 local UnitName							= _G.UnitName	
 local UnitIsUnit						= _G.UnitIsUnit	
 local GARRISON_SWITCH_SPECIALIZATIONS	= _G.GARRISON_SWITCH_SPECIALIZATIONS or ""
-local MAX_ACTION_SLOTS					= 120
+local MAX_ACTION_SLOTS					= isClassic and 60 or 120
 
 Lib.IsCallAble 							= true -- Default true for attemp to call pet as Hunter, after that we will know if its call able or not through error message 
 Lib.Food								= {
