@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 19)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 20)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -93,8 +93,10 @@ local wipe 								= _G.wipe
 local isClassic							= A.StdUi.isClassic
 local owner								= isClassic and "PlayerClass" or "PlayerSpec"
 	  
-local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 GetSpellBookItemInfo, 	  PickupSpellBookItem, 	  PetHasSpellbook =
-	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, _G.GetSpellBookItemInfo, _G.PickupSpellBookItem, _G.PetHasSpellbook	
+local C_SpellBook						= _G.C_SpellBook	  
+local C_Spell 							= _G.Spell
+local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 PickupSpellBookItem, 	 PetHasSpellbook =
+	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_Spell and C_Spell.PickupSpell or _G.PickupSpellBookItem, _G.PetHasSpellbook	
 
 local GameLocale 						= _G.GetLocale()
 local GetUnitSpeed						= _G.GetUnitSpeed
@@ -1413,7 +1415,15 @@ function Lib:IsSpellKnown(spell)
 	-- usage: Lib:IsSpellKnown(@table object-action, @string, @number)
 	-- 'spell' accepts spellName, spellID and Action.Object
 	-- Note: Pet must be active i.e. exists and alive to have it working
-	return GetSpellBookItemInfo(GetSpellName(spell)) and true -- Only this function is best way to check if spell known so far 
+	local s = GetSpellBookItemInfo(GetSpellName(spell))
+	if s then 
+		if type(s) ~= "table" then 
+			return true 
+		else 
+			return s.itemType and s.itemType > 0 and true
+		end 		
+	end 
+	-- Only this function is best way to check if spell known so far 
 end 
 
 function Lib:GetRemainDuration(pet)
