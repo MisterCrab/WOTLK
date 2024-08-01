@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 22)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 23)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -964,8 +964,13 @@ local function UpdateKnownSpells()
 		local spellObj
 		for i = 1, (HasPetSpells() or 0) do -- HasPetSpells() is nil if pet does not have spellbook
 			spellObj = GetSpellBookItemInfo(i, PET_BOOK) 
-			KnownSpells[spellObj.name] = true 
-			KnownSpells[spellObj.spellID] = true 
+			if spellObj.name then 
+				KnownSpells[spellObj.name] = true 
+			end 
+			
+			if spellObj.spellID then 
+				KnownSpells[spellObj.spellID] = true 
+			end 
 		end		
 	end 
 end 
