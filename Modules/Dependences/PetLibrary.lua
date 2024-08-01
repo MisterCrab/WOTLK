@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 20)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 21)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -95,8 +95,8 @@ local owner								= isClassic and "PlayerClass" or "PlayerSpec"
 	  
 local C_SpellBook						= _G.C_SpellBook	  
 local C_Spell 							= _G.Spell
-local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 PickupSpellBookItem, 	 PetHasSpellbook =
-	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_Spell and C_Spell.PickupSpell or _G.PickupSpellBookItem, _G.PetHasSpellbook	
+local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 PickupSpellBookItem, 					  HasPetSpells,    PetHasSpellbook =
+	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_Spell and C_Spell.PickupSpell or _G.PickupSpellBookItem, C_Spell and C_Spell.HasPetSpells, _G.PetHasSpellbook
 
 local GameLocale 						= _G.GetLocale()
 local GetUnitSpeed						= _G.GetUnitSpeed
@@ -108,6 +108,9 @@ local UnitName							= _G.UnitName
 local UnitIsUnit						= _G.UnitIsUnit	
 local GARRISON_SWITCH_SPECIALIZATIONS	= _G.GARRISON_SWITCH_SPECIALIZATIONS or ""
 local MAX_ACTION_SLOTS					= isClassic and 60 or 120
+
+local Enum								= _G.Enum
+local PET_BOOK							= Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Pet or 1
 
 Lib.IsCallAble 							= true -- Default true for attemp to call pet as Hunter, after that we will know if its call able or not through error message 
 Lib.Food								= {
@@ -122,6 +125,7 @@ Lib.Data 								= {
 	isInitializedTrackers				= false,
 	isClassic							= isClassic,
 	owner								= owner,
+	KnownSpells							= {},
 	Actions								= {
 		--[[ Structure:
 		[owner] 						= { -- Retail: specID / Classic: classNameENG upper case
@@ -952,8 +956,23 @@ local function UpdateFoodType(...)
 	end 
 end 
 
+local function UpdateKnownSpells()
+	if C_SpellBook and C_SpellBook.GetSpellBookItemInfo and C_SpellBook.HasPetSpells then 
+		local KnownSpells = Lib.Data.KnownSpells
+		wipe(KnownSpells)
+		
+		local spellObj
+		for i = 1, (HasPetSpells() or 0) do -- HasPetSpells() is nil if pet does not have spellbook
+			spellObj = GetSpellBookItemInfo(i, PET_BOOK) 
+			KnownSpells[spellObj.name] = true 
+			KnownSpells[spellObj.spellID] = true 
+		end		
+	end 
+end 
+
 local function UpdateMainPet()
-	UpdateFoodType(GetPetFoodTypes())		
+	UpdateFoodType(GetPetFoodTypes())	
+	UpdateKnownSpells()
 	
 	Lib.GUID  			= UnitGUID("pet")
 	Lib.Name 			= UnitName("pet")	
@@ -1415,13 +1434,10 @@ function Lib:IsSpellKnown(spell)
 	-- usage: Lib:IsSpellKnown(@table object-action, @string, @number)
 	-- 'spell' accepts spellName, spellID and Action.Object
 	-- Note: Pet must be active i.e. exists and alive to have it working
-	local s = GetSpellBookItemInfo(GetSpellName(spell))
-	if s then 
-		if type(s) ~= "table" then 
-			return true 
-		else 
-			return s.itemType and s.itemType > 0 and true
-		end 		
+	if C_SpellBook and C_SpellBook.GetSpellBookItemInfo then 
+		return self.Data.KnownSpells[GetSpellName(spell)]
+	else 
+		return GetSpellBookItemInfo(GetSpellName(spell)) and true
 	end 
 	-- Only this function is best way to check if spell known so far 
 end 
