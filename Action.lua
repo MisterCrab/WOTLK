@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "01.08.2024"
+local DateTime 														= "07.08.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -8625,7 +8625,7 @@ local Interrupts 				= {
 					if thisCast.lastEndTime ~= castEndTime or thisCast.countGCD ~= countGCD then 
 						local castFullTime 			= castEndTime - castStartTime
 						local min, max				
-						if not isClassic and Action.IsInPvP and spellName == A_GetSpellInfo(209525) then -- Smoothing Mist
+						if Action.IsInPvP and ((not isClassic and spellName == A_GetSpellInfo(209525)) or spellName == A_GetSpellInfo(47540)) then -- Smoothing Mist or Penance
 							min, max 				= 3, 18
 						else 
 							min, max 				= A_InterruptGetSliders(category)
