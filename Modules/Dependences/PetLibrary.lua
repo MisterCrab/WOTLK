@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 23)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 24)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -95,8 +95,8 @@ local owner								= isClassic and "PlayerClass" or "PlayerSpec"
 	  
 local C_SpellBook						= _G.C_SpellBook	  
 local C_Spell 							= _G.Spell
-local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 PickupSpellBookItem, 					  		  HasPetSpells,    PetHasSpellbook =
-	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_Spell and C_Spell.PickupSpell or _G.PickupSpellBookItem, C_SpellBook and C_SpellBook.HasPetSpells, _G.PetHasSpellbook
+local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 		 		 PickupSpellBookItem, 					  		  HasPetSpells,    PetHasSpellbook =
+	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_SpellBook and C_SpellBook.PickupSpellBookItem or _G.PickupSpellBookItem, C_SpellBook and C_SpellBook.HasPetSpells, _G.PetHasSpellbook
 
 local GameLocale 						= _G.GetLocale()
 local GetUnitSpeed						= _G.GetUnitSpeed
@@ -571,7 +571,12 @@ local function SetActionButton(spellName, actionSlot)
 		return "InCombatLockdown"
 	end 
 	
-	PickupSpellBookItem(spellName)
+	if C_Spell and C_Spell.PickupSpellBookItem then 
+		PickupSpellBookItem(Lib.Data.KnownSpells[spellName] or 0, PET_BOOK)
+	else 
+		PickupSpellBookItem(spellName)
+	end 
+	
 	if GetCursorInfo() == "petaction" then 
 		local slot 
 			
@@ -965,11 +970,11 @@ local function UpdateKnownSpells()
 		for i = 1, (HasPetSpells() or 0) do -- HasPetSpells() is nil if pet does not have spellbook
 			spellObj = GetSpellBookItemInfo(i, PET_BOOK) 
 			if spellObj.name then 
-				KnownSpells[spellObj.name] = true 
+				KnownSpells[spellObj.name] = i 
 			end 
 			
 			if spellObj.spellID then 
-				KnownSpells[spellObj.spellID] = true 
+				KnownSpells[spellObj.spellID] = i 
 			end 
 		end		
 	end 
@@ -1440,7 +1445,7 @@ function Lib:IsSpellKnown(spell)
 	-- 'spell' accepts spellName, spellID and Action.Object
 	-- Note: Pet must be active i.e. exists and alive to have it working
 	if C_SpellBook and C_SpellBook.GetSpellBookItemInfo then 
-		return self.Data.KnownSpells[GetSpellName(spell)]
+		return self.Data.KnownSpells[GetSpellName(spell)] and true 
 	else 
 		return GetSpellBookItemInfo(GetSpellName(spell)) and true
 	end 
