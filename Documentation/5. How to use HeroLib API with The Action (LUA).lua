@@ -171,14 +171,15 @@ local A = setmetatable(Action[Action.PlayerClass], { __index = Action })
 
 -- Simcraft Imported
 -- HeroLib
-local HL     = HeroLib
-local Cache  = HeroCache
-local Unit   = HL.Unit
-local Player = Unit.Player
-local Target = Unit.Target
-local Pet    = Unit.Pet
-local Spell  = HL.Spell
-local Item   = HL.Item
+local HL     		= HeroLib
+local Cache  		= HeroCache
+local Unit   		= HL.Unit
+local Player 		= Unit.Player
+local Target 		= Unit.Target
+local Pet    		= Unit.Pet
+local MultiSpell 	= HL.MultiSpell
+local Spell  		= HL.Spell
+local Item   		= HL.Item
 -- HeroRotation
 local HR   = HeroRotation
 
