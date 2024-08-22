@@ -273,7 +273,7 @@ local function OnEvent(event, ...)
 			TeamCacheFriendly.MaxSize = 40
 		elseif IsInGroup() then
 			TeamCacheFriendly.Type = "party"   
-			TeamCacheFriendly.MaxSize = TeamCacheFriendly.Size - 1
+			TeamCacheFriendly.MaxSize = 5
 		else 
 			TeamCacheFriendly.Type = nil 
 			TeamCacheFriendly.MaxSize = TeamCacheFriendly.Size
@@ -284,7 +284,7 @@ local function OnEvent(event, ...)
 		TeamCacheFriendlyGUIDs[guid] 	= player 		
 		
 		if TeamCacheFriendly.Size > 0 and TeamCacheFriendly.Type then 
-			counter = 0
+			counter = TeamCacheFriendly.Type == "party" and 1 or 0
 			for i = 1, huge do 
 				member = TeamCacheFriendly.Type .. i
 				guid   = UnitGUID(member)
