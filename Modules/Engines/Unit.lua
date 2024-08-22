@@ -4190,7 +4190,7 @@ A.FriendlyTeam = PseudoClass({
 			end 
 		end
 		
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") then
 			duration = A_Unit("player"):HasDeBuffs(spells) 
 			if duration ~= 0 then 
 				return duration, "player" 
@@ -4225,7 +4225,7 @@ A.FriendlyTeam = PseudoClass({
 			end 
 		end  
 		
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") then
 			duration = A_Unit("player"):HasBuffs(spells) 
 			if duration ~= 0 then 
 				return duration, "player" 
@@ -4260,7 +4260,7 @@ A.FriendlyTeam = PseudoClass({
 			end 
 		end  
 		
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") then
 			duration = A_Unit("player"):HasDeBuffs(spells) 
 			if duration ~= 0 then 
 				return duration, "player" 
@@ -4296,7 +4296,7 @@ A.FriendlyTeam = PseudoClass({
 			end                        
 		end  
 		
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") and A_Unit("player"):TimeToDie() <= seconds then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") and A_Unit("player"):TimeToDie() <= seconds then
 			counter = counter + 1 
 			if counter >= count then 
 				return true, counter, "player"
@@ -4329,7 +4329,7 @@ A.FriendlyTeam = PseudoClass({
 			end                        
 		end  
 		
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") then
 			value = value + A_Unit("player"):TimeToDie()
 			members = members + 1
 		end 	
@@ -4362,7 +4362,7 @@ A.FriendlyTeam = PseudoClass({
 			end 
 		end		
 		
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") and A_Unit("player"):HasBuffs(spells, source) == 0 then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") and A_Unit("player"):HasBuffs(spells, source) == 0 then
 			return true, "player"
 		end 		
 		
@@ -4390,7 +4390,7 @@ A.FriendlyTeam = PseudoClass({
 			end 
 		end 
 
-		if TeamCacheFriendly.Type ~= "raid" and CheckUnitByRole(ROLE, "player") and A_Unit("player"):CombatTime() > 0 and (not combatTime or A_Unit("player"):CombatTime() <= combatTime) then
+		if not TeamCacheFriendly.Type and CheckUnitByRole(ROLE, "player") and A_Unit("player"):CombatTime() > 0 and (not combatTime or A_Unit("player"):CombatTime() <= combatTime) then
 			return true, "player"
 		end 			
 		
