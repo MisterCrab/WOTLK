@@ -281,7 +281,13 @@ local function OnEvent(event, ...)
 		
 		guid = UnitGUID(player)
 		TeamCacheFriendlyUNITs[player] 	= guid
-		TeamCacheFriendlyGUIDs[guid] 	= player 		
+		TeamCacheFriendlyGUIDs[guid] 	= player 	
+		if TeamCacheFriendly.Type == "party" then 
+			TeamCacheFriendlyIndexToPLAYERs[5] = player
+			if A.PlayerClass == "SHAMAN" then 
+				TeamCacheFriendly.hasShaman = true 
+			end 
+		end 		
 		
 		if TeamCacheFriendly.Size > 0 and TeamCacheFriendly.Type then 
 			counter = TeamCacheFriendly.Type == "party" and 1 or 0
