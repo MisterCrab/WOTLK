@@ -1,8 +1,12 @@
-if not _G.ElvUI then 
+local _G, getmetatable 					= _G, getmetatable
+
+local C_AddOns = _G.C_AddOns 
+local IsAddOnLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or _G.IsAddOnLoaded
+if not _G.ElvUI and not IsAddOnLoaded("!InstanceSpellCollector") then 
 	return 
 end
 
-local _G, getmetatable 					= _G, getmetatable
+
 local hooksecurefunc					= _G.hooksecurefunc	  
 local CreateFrame						= _G.CreateFrame	  
 local EnumerateFrames					= _G.EnumerateFrames
