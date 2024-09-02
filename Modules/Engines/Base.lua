@@ -289,6 +289,15 @@ local function OnEvent(event, ...)
 			end 
 		end 		
 		
+		guid = UnitGUID(pet)
+		if guid then 
+			TeamCacheFriendlyUNITs[pet] 	= guid
+			TeamCacheFriendlyGUIDs[guid] 	= pet	
+			if TeamCacheFriendly.Type == "party" then 
+				TeamCacheFriendlyIndexToPETs[5]	= pet
+			end 
+		end 				
+		
 		if TeamCacheFriendly.Size > 0 and TeamCacheFriendly.Type then 
 			counter = TeamCacheFriendly.Type == "party" and 1 or 0
 			for i = 1, huge do 
