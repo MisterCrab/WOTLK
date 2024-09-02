@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "02.09.2024"
+local DateTime 														= "03.09.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -27,6 +27,7 @@ local Env 															= TMW.CNDT.Env
 local GetGCD														= TMW.GetGCD
 local strlowerCache  												= TMW.strlowerCache
 local safecall														= TMW.safecall
+TMW.GCD 															= TMW.GCD or GetGCD() -- Fixes nil able compare error because UpdateGlobals launches with delay
 
 local LibStub														= _G.LibStub
 local StdUi 														= LibStub("StdUi"):NewInstance()
