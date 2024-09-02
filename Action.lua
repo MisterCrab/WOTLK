@@ -4244,7 +4244,7 @@ function StdUi:tGenerateHealingEngineUnitIDs(optionsTable)
 	local t = {}
 	
 	local unitID
-	for _, unit in ipairs({ "focus", "player", "party", "raid", "partypet", "raidpet" }) do 
+	for _, unit in ipairs({ "focus", "player", "pet", "party", "raid", "partypet", "raidpet" }) do 
 		if unit:match("raid") then 			
 			for i = 1, 40 do 
 				unitID = unit .. i

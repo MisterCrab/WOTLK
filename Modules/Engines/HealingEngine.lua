@@ -52,7 +52,7 @@ local AuraIsValid						= A.AuraIsValid
 local BuildToC							= A.BuildToC
 local StdUi								= A.StdUi
 local RunLua							= StdUi.RunLua
-local isClassic							= StdUi.isClassic
+local isClassic							= StdUi.isClassic 
 
 local GetLOS							= _G.GetLOS
 
@@ -120,6 +120,7 @@ local 	 UnitGUID, 	  UnitIsUnit 		=
 local PredictOptions, SelectStopOptions, dbUnitIDs, db, profileActionDB 
 local inCombat, inGroup, maxGroupSize  
 local player 							= "player"	 
+local pet 								= "pet" 
 local focus 							= "focus"
 local target 							= "target"
 local mouseover							= "mouseover"
@@ -516,7 +517,7 @@ do
 		end,
 		CanRessurect					= function(self)
 			local unitID 				= self.Unit 
-			return not inCombat and not self.isSelf and self.isPlayer and db.SelectResurrects and not A_Unit(unitID):IsGhost() and not A_Unit(unitID):GetIncomingResurrection() and (not isClassic or playerClass ~= "DRUID")
+			return not inCombat and not self.isSelf and self.isPlayer and db.SelectResurrects and not A_Unit(unitID):IsGhost() and not A_Unit(unitID):GetIncomingResurrection() and (BuildToC >= 20000 or playerClass ~= "DRUID")
 		end,
 		SetupOffsets 					= function(self, manualOffset, autoOffset)
 			if manualOffset == 0 then 
@@ -669,17 +670,18 @@ do
 end 
 
 local member, memberGUID, memberData
-local playerGUID, focusGUID 
+local playerGUID, petGUID, focusGUID 
 local function OnUpdate()   
     -- Wipe previous 
 	UnitIDs:Wipe() 
 	SortedUnitIDs:Wipe()
 	SortedUnitIDs_MostlyIncDMG:Wipe()
 	QueueOrder:Wipe()
-	playerGUID, focusGUID 				= nil, nil 
+	playerGUID, petGUID, focusGUID 		= nil, nil, nil
 	
-	-- Player (solo/party)
-    if inGroup ~= "raid" then 
+	-- Solo
+    if not inGroup then 
+		-- Player 
 		member 							= player  
 		memberGUID 						= TeamCacheFriendlyUNITs[member]	
 		if memberGUID then 
@@ -693,16 +695,31 @@ local function OnUpdate()
 				SortedUnitIDs_MostlyIncDMG[#SortedUnitIDs_MostlyIncDMG + 1] = memberData
 			end 
 		end 
+		
+		-- Pet
+		member 							= pet  
+		memberGUID 						= TeamCacheFriendlyUNITs[member]	
+		if memberGUID then 
+			petGUID						= memberGUID -- Save for future referrence
+			memberData 					= UnitIDs[member]
+			memberData:Setup(member, memberGUID, true)				
+			FrequencyTemp.MHP 			= (FrequencyTemp.MHP or 0) + memberData.MHP 
+			FrequencyTemp.AHP 			= (FrequencyTemp.AHP or 0) + memberData.realAHP				
+			if memberData.isSelectAble then 
+				SortedUnitIDs[#SortedUnitIDs + 1] 							= memberData
+				SortedUnitIDs_MostlyIncDMG[#SortedUnitIDs_MostlyIncDMG + 1] = memberData
+			end 
+		end 
     end 
 	
 	-- Focus 
-	if not TeamCacheFriendlyGUIDs[focus] and not A_Unit(focus):IsEnemy() then 
+	if BuildToC >= 20000 then 
 		-- Replaces party/raid unit by self
 		-- We have to replace member by focus only in case if focus is not member of the group
 		-- This need for /focus macros otherwise toggles will not work through specific unit (e.g. raid1, party1) if its equal to focus unit
 		member 							= focus
 		memberGUID						= UnitGUID(member)		
-		if memberGUID and memberGUID ~= playerGUID then 
+		if memberGUID and memberGUID ~= playerGUID and memberGUID ~= petGUID and not TeamCacheFriendlyGUIDs[memberGUID] and not A_Unit(focus):IsEnemy() then 
 			focusGUID					= memberGUID -- Save for future referrence
 			memberData 					= UnitIDs[member]
 			memberData:Setup(member, memberGUID, A_Unit(member):IsPlayer() or false)	
@@ -713,13 +730,13 @@ local function OnUpdate()
 				SortedUnitIDs_MostlyIncDMG[#SortedUnitIDs_MostlyIncDMG + 1] = memberData
 			end 
 		end 
-	end
+	end 
             
 	-- Group 
 	if inGroup then 
 		for i = 1, maxGroupSize do
 			-- Players 
-			member 						= TeamCacheFriendlyIndexToPLAYERs[i]   
+			member 						= TeamCacheFriendlyIndexToPLAYERs[i]   	-- 5th index is player in party group
 			memberGUID 					= member and TeamCacheFriendlyUNITs[member]					
 			if memberGUID and memberGUID ~= focusGUID then				
 				memberData 				= UnitIDs[member]
@@ -733,7 +750,7 @@ local function OnUpdate()
 			end 
 			
 			-- Pets
-			member 						= TeamCacheFriendlyIndexToPETs[i]
+			member 						= TeamCacheFriendlyIndexToPETs[i]		-- 5th index is player in party group
 			memberGUID 					= member and TeamCacheFriendlyUNITs[member]
 			if memberGUID and memberGUID ~= focusGUID then 
 				memberData 				= UnitIDs[member]
@@ -1407,7 +1424,7 @@ function HealingEngine.GetOptionsByUnitID(unitID, unitGUID)
 	-- Note: Don't change key-values in returned [5] table, only for referrence usage!
 	local GUID = unitGUID or UnitGUID(unitID)
 	if GUID then 
-		if GUID == focusGUID then 
+		if GUID == focusGUID and BuildToC >= 20000 then 
 			local dbUnit = dbUnitIDs.focus
 			if dbUnit then 
 				return dbUnit.useDispel, dbUnit.useShields, dbUnit.useHoTs, dbUnit.useUtils, dbUnit
