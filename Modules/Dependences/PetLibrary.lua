@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 24)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 25)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -256,7 +256,23 @@ Lib.Data 								= {
 			},
 		},
 		[CONST.WARLOCK_DESTRUCTION or 267] 	= {},
+		[CONST.DEATHKNIGHT_BLOOD or 250] 	= {
+			[26125] = { -- TWW: Ghoul by Raise Dead if not taken override improvement
+				name = "Ghoul",
+				duration = 60,
+			},
+		},
+		[CONST.DEATHKNIGHT_FROST or 251] 	= {
+			[26125] = { -- TWW: Ghoul by Raise Dead if not taken override improvement
+				name = "Ghoul",
+				duration = 60,
+			},
+		},
 		[CONST.DEATHKNIGHT_UNHOLY or 252] 	= {
+			[26125] = { -- TWW: Ghoul by Raise Dead if not taken override improvement
+				name = "Ghoul",
+				duration = 60,
+			},		
 			[99541] = { -- talent All Will Serve
 				name = "Risen Skulker",
 				duration = huge,
@@ -265,7 +281,7 @@ Lib.Data 								= {
 				name = "Zombie",
 				duration = 20,
 			},
-		},
+		},		
 	},
 	FoodTypes							= setmetatable(
 		-- Formats localization to English locale
@@ -354,9 +370,9 @@ Lib.Data 								= {
 				["Frutta"]				 = "Fruit", 			-- [6]				
 				["과일"]				 	 = "Fruit", 			-- [6] Refference				
 				["Carne Cruda"]			 = "Raw Meat", 			-- [7]				
-				["날고기"]			 		 = "Raw Meat", 			-- [7] Refference				
+				["날고기"]			 	 = "Raw Meat", 			-- [7] Refference				
 				["Pesce Crudo"]			 = "Raw Fish", 			-- [8]
-				["날생선"]			 		= "Raw Fish", 			-- [8] Refference
+				["날생선"]			 	= "Raw Fish", 			-- [8] Refference
 				["Bocconcini Meccanici"] = "Mechanical Bits", 	-- [9] Retail 
 			},
 			koKR				= {
@@ -366,31 +382,31 @@ Lib.Data 								= {
 				["빵"]					= "Bread", 				-- [4]	 			
 				["버섯"]					= "Fungus", 			-- [5] 				
 				["과일"]					= "Fruit", 				-- [6]	 			
-				["날고기"]					= "Raw Meat", 			-- [7]				
-				["날생선"]					= "Raw Fish", 			-- [8] 
-				["기계 부품"]				= "Mechanical Bits", 	-- [9] Retail 
+				["날고기"]				= "Raw Meat", 			-- [7]				
+				["날생선"]				= "Raw Fish", 			-- [8] 
+				["기계 부품"]			= "Mechanical Bits", 	-- [9] Retail 
 			},
 			zhCN				= {
-				["肉"]					= "Meat", 				-- [1] 
-				["鱼"]					= "Fish", 				-- [2] 
+				["肉"]				= "Meat", 				-- [1] 
+				["鱼"]				= "Fish", 				-- [2] 
 				["奶酪"]				= "Cheese", 			-- [3]	 			
 				["面包"]				= "Bread", 				-- [4]	 			
 				["蘑菇"]				= "Fungus", 			-- [5] 				
 				["水果"]				= "Fruit", 				-- [6]				
 				["生肉"]				= "Raw Meat", 			-- [7]	 			
 				["生鱼"]				= "Raw Fish", 			-- [8] 
-				["机械零件"]				= "Mechanical Bits", 	-- [9] Retail 
+				["机械零件"]			= "Mechanical Bits", 	-- [9] Retail 
 			},
 			zhTW				= {
-				["肉"]					= "Meat", 				-- [1] 
-				["魚"]					= "Fish", 				-- [2] 
+				["肉"]				= "Meat", 				-- [1] 
+				["魚"]				= "Fish", 				-- [2] 
 				["乳酪"]				= "Cheese", 			-- [3] 				
 				["麵包"]				= "Bread", 				-- [4] 				
 				["蘑菇"]				= "Fungus", 			-- [5] 				
 				["水果"]				= "Fruit", 				-- [6] 				
 				["生肉"]				= "Raw Meat", 			-- [7] 				
 				["生魚"]				= "Raw Fish", 			-- [8] 
-				["機械零件"]				= "Mechanical Bits", 	-- [9] Retail 
+				["機械零件"]			= "Mechanical Bits", 	-- [9] Retail 
 			},		
 		},
 		{
