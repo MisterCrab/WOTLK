@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 25)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 26)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -587,7 +587,7 @@ local function SetActionButton(spellName, actionSlot)
 		return "InCombatLockdown"
 	end 
 	
-	if C_Spell and C_Spell.PickupSpellBookItem then 
+	if C_SpellBook and C_SpellBook.PickupSpellBookItem then 
 		PickupSpellBookItem(Lib.Data.KnownSpells[spellName] or 0, PET_BOOK)
 	else 
 		PickupSpellBookItem(spellName)
