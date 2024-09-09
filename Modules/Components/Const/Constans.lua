@@ -46,7 +46,7 @@ _G.ACTION_CONST_SHADOWFORM											= dir .. [[Spell_Shadow_Shadowform]]
 
 -- Class portraits
 _G.ACTION_CONST_PORTRAIT_WARRIOR									= dir .. [[ClassIcon_Warrior]]
-_G.ACTION_CONST_PORTRAIT_PALADIN									= dir .. [[ClassIcon_Paladin]]
+_G.ACTION_CONST_PORTRAIT_PALADIN									= 236260														-- Custom because in TWW it making conflict with Divine Hammer
 _G.ACTION_CONST_PORTRAIT_HUNTER										= dir .. [[ClassIcon_Hunter]]
 _G.ACTION_CONST_PORTRAIT_ROGUE										= dir .. [[ClassIcon_Rogue]]
 _G.ACTION_CONST_PORTRAIT_PRIEST										= dir .. [[ClassIcon_Priest]]
