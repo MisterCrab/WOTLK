@@ -838,8 +838,8 @@ local function SetColorTarget()
 	-- If we have no one to heal or we have already selected unit that need to heal
 	if 	healingTarget == none or healingTargetGUID == none or healingTargetGUID == UnitGUID(target) or 
 		-- TBC+ if user playing through /focus binds
-		(BuildToC >= 20000 and healingTargetGUID == UnitGUID(focus) and (not A_Unit(target):IsExists() or A_Unit(target):IsEnemy())) 		
-	then			
+		(BuildToC >= 20000 and healingTargetGUID == UnitGUID(focus) and (not A_Unit(target):IsExists() or A_Unit(target):IsEnemy() or (not SelectStopOptions[1] and not SelectStopOptions[2] and not SelectStopOptions[3] and not SelectStopOptions[4] and not SelectStopOptions[5] and not SelectStopOptions[6]))) 		
+	then		
 		return frame:SetColor(none)
 	end	
 	
