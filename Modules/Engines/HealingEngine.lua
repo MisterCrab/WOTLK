@@ -702,7 +702,7 @@ local function OnUpdate()
 		if memberGUID then 
 			petGUID						= memberGUID -- Save for future referrence
 			memberData 					= UnitIDs[member]
-			memberData:Setup(member, memberGUID, true)				
+			memberData:Setup(member, memberGUID, false)				
 			FrequencyTemp.MHP 			= (FrequencyTemp.MHP or 0) + memberData.MHP 
 			FrequencyTemp.AHP 			= (FrequencyTemp.AHP or 0) + memberData.realAHP				
 			if memberData.isSelectAble then 

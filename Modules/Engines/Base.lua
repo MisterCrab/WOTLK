@@ -324,8 +324,8 @@ local function OnEvent(event, ...)
 				end 
 
 				if counter >= TeamCacheFriendly.Size or i >= TeamCacheFriendly.MaxSize then 
-					if counter >= TeamCacheFriendly.Size then 
-						TeamCacheFriendly.MaxSize = counter
+					if counter >= TeamCacheFriendly.Size and TeamCacheFriendly.Type ~= "party" then 
+						TeamCacheFriendly.MaxSize = counter -- only update non-party max size e.g. to understand raid10, raid15, raid20, raid40
 					end 
 					break 
 				end 	
