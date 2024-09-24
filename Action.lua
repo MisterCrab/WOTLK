@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "22.09.2024"
+local DateTime 														= "25.09.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -5226,7 +5226,7 @@ local function tCompare(default, new, upkey, skip)
 	if (new == nil or next(new) == nil) and default ~= nil then 
 		result = tMerge(result, default)		
 	else 		
-		if default ~= nil then 
+		if type(default) == "table" then 
 			for k, v in pairs(default) do
 				if not skip and new[k] ~= nil then 
 					if type(v) == "table" then 
