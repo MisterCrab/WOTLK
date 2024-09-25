@@ -790,10 +790,10 @@ local function TrueScaleInit()
 	Listener:Add("ACTION_EVENT_UTILS", "DISPLAY_SIZE_CHANGED", 		ConsoleUpdate	)
 	Listener:Add("ACTION_EVENT_UTILS", "UI_SCALE_CHANGED", 			ConsoleUpdate	)
 	
-	-- [[ RETIRED API ]] 
+	-- [[ COMPATIBILITY FOR OLD INTERFACE ]] 
 	--Listener:Add("ACTION_EVENT_UTILS", "PLAYER_ENTERING_WORLD", 	ConsoleUpdate	)
 	--Listener:Add("ACTION_EVENT_UTILS", "CVAR_UPDATE",				UpdateCVAR		)
-	if VideoOptionsFrame then 
+	if VideoOptionsFrame then
 		VideoOptionsFrame:HookScript("OnHide", 						ConsoleUpdate	)
 	end 
 	
@@ -807,7 +807,10 @@ local function TrueScaleInit()
 		TMW:RegisterCallback("TMW_ACTION_IS_INITIALIZED", 			UpdateCVAR		) 
 	end 
 	
-	SettingsPanel:HookScript("OnHide", 								ConsoleUpdate	) 		
+	if SettingsPanel then 
+		SettingsPanel:HookScript("OnHide", 							ConsoleUpdate	) 		
+	end 
+	
     ConsoleUpdate()
 	
     TMW:UnregisterCallback("TMW_SAFESETUP_COMPLETE", TrueScaleInit, "TMW_TEMP_SAFESETUP_COMPLETE")
