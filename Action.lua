@@ -38,8 +38,8 @@ local isClassic														= _G.WOW_PROJECT_ID == _G.WOW_PROJECT_WRATH_CLASSIC
 StdUi.isClassic 													= isClassic	  
 local owner															= isClassic and "PlayerClass" or "PlayerSpec" 
 
-local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate, 	 GetMouseFocus,	   GetCVar,	   SetCVar,	   GetBindingFromClick,    GetSpellInfo = 
-	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetMouseFocus, _G.GetCVar, _G.SetCVar, _G.GetBindingFromClick, _G.GetSpellInfo
+local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate, 	 GetMouseFocus,	   					  GetCVar,	  SetCVar,	  GetBindingFromClick,    GetSpellInfo = 
+	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetMouseFocus or _G.GetMouseFoci, _G.GetCVar, _G.SetCVar, _G.GetBindingFromClick, _G.GetSpellInfo
 	  
 local 	 UnitName, 	  UnitClass,    UnitExists,    UnitIsUnit,    UnitGUID, 	UnitAura, 	 									  UnitPower,    UnitIsOwnerOrControllerOfUnit = 
 	  _G.UnitName, _G.UnitClass, _G.UnitExists, _G.UnitIsUnit, _G.UnitGUID,  _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex, _G.UnitPower, _G.UnitIsOwnerOrControllerOfUnit	  
