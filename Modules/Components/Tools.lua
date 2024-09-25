@@ -22,7 +22,7 @@ local ActionTimers 				= A.Data.T
 local GetToggle					= A.GetToggle
 	  
 local Timer						= _G.C_Timer 
-local GetMouseFocus				= _G.GetMouseFocus
+local GetMouseFocus				= _G.GetMouseFocus or _G.GetMouseFoci
 local IsAddOnLoaded 			= _G.IsAddOnLoaded
 
 local CreateFrame 				= _G.CreateFrame
