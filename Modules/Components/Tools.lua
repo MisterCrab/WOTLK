@@ -610,8 +610,9 @@ A.Utils 						= Utils
 function A.MouseHasFrame()
     local focus = A_Unit("mouseover"):IsExists() and GetMouseFocus()
     if focus then
-        local frame = not focus:IsForbidden() and focus:GetName()
-        return not frame or (frame and frame ~= "WorldFrame")
+		--  !! Code below is written for GetMouseFoci !!
+		local frame = next(focus[1])
+        return frame ~= 0
     end
     return false
 end

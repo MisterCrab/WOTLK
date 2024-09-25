@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "25.09.2024"
+local DateTime 														= "26.09.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -8978,10 +8978,11 @@ local Cursor; Cursor 		= {
 					end 
 				elseif self:IsVisible() and self:GetEffectiveAlpha() >= 1 then
 					-- GameTooltip 
-					local focus = GetMouseFocus() 					
-					if focus and not focus:IsForbidden() then
+					local focus = GetMouseFocus() 	
+					--  !! Code below is written for GetMouseFoci !!
+					if focus and focus[1] then
 						local GameTooltipTable 
-						if focus:GetName() == "WorldFrame" then 
+						if next(focus[1]) == 0 then -- WorldFrame 
 							GameTooltipTable = pActionDB[6][M]["GameToolTip"][GameLocale]
 						else 
 							GameTooltipTable = pActionDB[6][M]["UI"][GameLocale]
