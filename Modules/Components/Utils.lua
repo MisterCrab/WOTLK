@@ -789,12 +789,26 @@ local function TrueScaleInit()
     
 	Listener:Add("ACTION_EVENT_UTILS", "DISPLAY_SIZE_CHANGED", 		ConsoleUpdate	)
 	Listener:Add("ACTION_EVENT_UTILS", "UI_SCALE_CHANGED", 			ConsoleUpdate	)
+	
+	-- [[ RETIRED API ]] 
 	--Listener:Add("ACTION_EVENT_UTILS", "PLAYER_ENTERING_WORLD", 	ConsoleUpdate	)
-	--Listener:Add("ACTION_EVENT_UTILS", "CVAR_UPDATE",				UpdateCVAR		)		
-	VideoOptionsFrame:HookScript("OnHide", 							ConsoleUpdate	)
-	InterfaceOptionsFrame:HookScript("OnHide", 						UpdateCVAR		)
-	TMW:RegisterCallback("TMW_ACTION_IS_INITIALIZED", 				UpdateCVAR		) -- For GetToggle things we have to make post call
-	ConsoleUpdate()
+	--Listener:Add("ACTION_EVENT_UTILS", "CVAR_UPDATE",				UpdateCVAR		)
+	if VideoOptionsFrame then 
+		VideoOptionsFrame:HookScript("OnHide", 						ConsoleUpdate	)
+	end 
+	
+	if InterfaceOptionsFrame then 
+		InterfaceOptionsFrame:HookScript("OnHide", 					UpdateCVAR		)
+	end 
+	--------------------------------------------------------------------------------
+	
+	-- ONLY CLASSIC: For GetToggle things we have to make post call	
+	if isClassic then 
+		TMW:RegisterCallback("TMW_ACTION_IS_INITIALIZED", 			UpdateCVAR		) 
+	end 
+	
+	SettingsPanel:HookScript("OnHide", 								ConsoleUpdate	) 		
+    ConsoleUpdate()
 	
     TMW:UnregisterCallback("TMW_SAFESETUP_COMPLETE", TrueScaleInit, "TMW_TEMP_SAFESETUP_COMPLETE")
 end
