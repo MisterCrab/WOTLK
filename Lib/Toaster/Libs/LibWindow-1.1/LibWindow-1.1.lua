@@ -10,7 +10,7 @@ Dependencies: none
 License: Public Domain
 ]]
 
-local MAJOR = "LibWindow-1.1-custom"
+local MAJOR = "LibWindow-1.1"
 local MINOR = tonumber(("$Revision: 19 $"):match("(%d+)"))
 
 local lib = LibStub:NewLibrary(MAJOR,MINOR)
