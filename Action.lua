@@ -10111,9 +10111,9 @@ function Action.ToggleMainUI()
 		MainUI.resizer = StdUi:CreateResizer(MainUI)
 		if MainUI.resizer then 							
 			function MainUI.UpdateResizeForKids(kids)
-				for _, kid in ipairs(kids) do								
+				for _, kid in ipairs(kids) do							
 					-- EasyLayout (kid parent)
-					if kid.layout then 
+					if kid.layout and kid.rows then 
 						kid:DoLayout()
 					end 	
 					-- Dropdown (kid parent)
@@ -10179,48 +10179,60 @@ function Action.ToggleMainUI()
 			end
 
 			local lastUpdate	
-			function MainUI.UpdateResize(manual) 
-				if not manual and TMW.time - (lastUpdate or 0) < 0.0001 then 
+			function MainUI.UpdateResize(self, _, manual) 
+				if not manual and TMW.time - (lastUpdate or 0) < 0.05 then 
 					return 
 				end 
 				
-				if manual then 
-					tabFrame:CustomDrawButtons()
-				end 
-				
+				tabFrame:CustomDrawButtons()
 				lastUpdate 	= manual == true and 0 or TMW.time 												
-				local spec	= Action.PlayerClass .. CL
+				local spec	= Action.PlayerSpec .. CL
 				for i, tab in ipairs(tabFrame.tabs) do	
 					if tab.childs[spec] then	
 						-- Easy Layout (base parent)
 						local anchor = StdUi:GetAnchor(tab, spec)
-						if anchor.layout and (manual or (i > 2 and i ~= 8)) then 
+						if anchor.layout and anchor.rows then -- and (manual or (i > 2 and i ~= 8)) then 
 							anchor:DoLayout()
 						end	
 
 						MainUI.UpdateResizeForKids(StdUi:GetAnchorKids(tab, spec))		
 					end 	
-				end 								
+				end
 			end
 			
-			MainUI.resizer.resizer.resizeButton:HookScript("OnMouseUp", function()				
-				MainUI.UpdateResize(true)
+			local isSizing = false
+			MainUI.resizer.resizer.resizeButton:HookScript("OnMouseUp", function()	
+				isSizing = false
+				MainUI:SetScript("OnUpdate", nil)
+				MainUI:UpdateResize(nil, true)
 			end)
-			MainUI:HookScript("OnSizeChanged", function(self) 				
-				MainUI.UpdateResize(false) 
+			MainUI.resizer.resizer.resizeButton:HookScript("OnMouseDown", function()	
+				isSizing = true
+				MainUI:SetScript("OnUpdate", MainUI.UpdateResize)
 			end)
-			-- I don't know how to fix layout overleap problem caused by resizer after hide, so I did some trick through this:
-			-- If you have a better idea let me know 
+			-- Next events making semi-fix overleap problem
+			MainUI.resizer.resizer.resizeButton:HookScript("OnLeave", function() 
+				if not isSizing then 
+					MainUI:UpdateResize(nil, true)
+				end 
+			end)
+			MainUI.resizer.resizer.resizeButton:HookScript("OnEnter", function() 
+				if not isSizing then 
+					MainUI:UpdateResize(nil, true)
+				end 
+			end)			
+			-- I don't know how to fix layout overleap problem caused by resizer after finish, so I did some trick through this:
+			-- If you have a better idea let me know - just please no coroutine
 			MainUI:HookScript("OnHide", function(self) 
 				MainUI.RememberTab = tabFrame.selected 
 				tabFrame:SelectTab(tabFrame.tabs[1].name)		
-				MainUI.UpdateResize(true)
+				MainUI:UpdateResize(nil, true)
 			end)
 			MainUI:HookScript("OnShow", function(self)
 				if MainUI.RememberTab then 
 					tabFrame:SelectTab(tabFrame.tabs[MainUI.RememberTab].name)
 				end 				
-				MainUI.UpdateResize(true)
+				MainUI:UpdateResize(nil, true)
 				TMW:TT(self.resizer.resizer.resizeButton, L["RESIZE"], L["RESIZE_TOOLTIP"], 1, 1)
 			end)
 		end 
