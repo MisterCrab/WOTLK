@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "26.09.2024"
+local DateTime 														= "28.09.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -38,8 +38,8 @@ local isClassic														= _G.WOW_PROJECT_ID == _G.WOW_PROJECT_WRATH_CLASSIC
 StdUi.isClassic 													= isClassic	  
 local owner															= isClassic and "PlayerClass" or "PlayerSpec" 
 
-local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate, 	 GetMouseFocus,	   					  GetCVar,	  SetCVar,	  GetBindingFromClick,    GetSpellInfo = 
-	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetMouseFocus or _G.GetMouseFoci, _G.GetCVar, _G.SetCVar, _G.GetBindingFromClick, _G.GetSpellInfo
+local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate,    GetCVar,	 SetCVar,	 GetBindingFromClick,    GetSpellInfo = 
+	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetCVar, _G.SetCVar, _G.GetBindingFromClick, _G.GetSpellInfo
 	  
 local 	 UnitName, 	  UnitClass,    UnitExists,    UnitIsUnit,    UnitGUID, 	UnitAura, 	 									  UnitPower,    UnitIsOwnerOrControllerOfUnit = 
 	  _G.UnitName, _G.UnitClass, _G.UnitExists, _G.UnitIsUnit, _G.UnitGUID,  _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex, _G.UnitPower, _G.UnitIsOwnerOrControllerOfUnit	  
@@ -89,6 +89,18 @@ Action.StdUi 														= StdUi
 Action.BuildToC														= select(4, _G.GetBuildInfo())
 Action.PlayerRace 													= select(2, _G.UnitRace("player"))
 Action.PlayerClassName, Action.PlayerClass, Action.PlayerClassID  	= UnitClass("player")
+
+-- Backwards compatibility for GetMouseFocus	  
+local GetMouseFocus = _G.GetMouseFocus
+local GetMouseFoci 	= _G.GetMouseFoci
+function Action.GetMouseFocus()
+    if GetMouseFoci then
+        local frames = GetMouseFoci()
+        return frames and frames[1]
+    else
+        return GetMouseFocus()
+    end
+end 
 
 -- Remap
 local 	MacroLibrary, 
@@ -8978,11 +8990,10 @@ local Cursor; Cursor 		= {
 					end 
 				elseif self:IsVisible() and self:GetEffectiveAlpha() >= 1 then
 					-- GameTooltip 
-					local focus = GetMouseFocus() 	
-					--  !! Code below is written for GetMouseFoci !!
-					if focus and focus[1] then
+					local focus = Action.GetMouseFocus() 	
+					if focus and (not focus.IsForbidden or not focus:IsForbidden()) then
 						local GameTooltipTable 
-						if next(focus[1]) == 0 then -- WorldFrame 
+						if focus.GetName and focus:GetName() == "WorldFrame" then 
 							GameTooltipTable = pActionDB[6][M]["GameToolTip"][GameLocale]
 						else 
 							GameTooltipTable = pActionDB[6][M]["UI"][GameLocale]
