@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "28.09.2024"
+local DateTime 														= "29.09.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -11922,7 +11922,7 @@ function Action.ToggleMainUI()
 						tinsert(self.Data, setmetatable({ 
 							Enabled = Enabled, 				
 							Name = (v:Info()) or "",
-							Icon = (v:Icon()) or ActionConst.TRUE_PORTRAIT_PICKPOCKET,
+							Icon = (v.Type == "Spell" and (select(2, Action.GetSpellTexture(v, v.TextureID)))) or (v:Icon()) or ActionConst.TRUE_PORTRAIT_PICKPOCKET,
 							TableKeyName = k,
 						}, { __index = Action[specID][k] or Action }))
 					end 

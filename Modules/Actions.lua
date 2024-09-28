@@ -30,6 +30,7 @@ local LoC 					= A.LossOfControl
 local MultiUnits			= A.MultiUnits
 local GetToggle				= A.GetToggle
 local BurstIsON				= A.BurstIsON
+local BuildToC				= A.BuildToC
 local Enum 					= A.Enum
 local TriggerGCD			= Enum.TriggerGCD
 local SpellDuration			= Enum.SpellDuration
@@ -110,13 +111,14 @@ local GameLocale 			= _G.GetLocale()
 local GetCVar				= _G.GetCVar or _G.C_CVar.GetCVar
 
 -- Spell 
+local C_Spell				= _G.C_Spell
 local Spell					= _G.Spell
 
 local 	 IsPlayerSpell,    IsUsableSpell, 	 IsHelpfulSpell, 	IsHarmfulSpell,    IsAttackSpell, 	 IsCurrentSpell =
 	  _G.IsPlayerSpell, _G.IsUsableSpell, _G.IsHelpfulSpell, _G.IsHarmfulSpell, _G.IsAttackSpell, _G.IsCurrentSpell
 
-local 	  GetSpellTexture, 	  GetSpellLink,    GetSpellInfo, 	GetSpellDescription, 	GetSpellCount,	   GetSpellPowerCost, 	  CooldownDuration,    GetSpellCharges,    GetHaste, 	GetShapeshiftFormCooldown, 	  GetSpellBaseCooldown,    GetSpellAutocast = 
-	  TMW.GetSpellTexture, _G.GetSpellLink, _G.GetSpellInfo, _G.GetSpellDescription, _G.GetSpellCount, 	_G.GetSpellPowerCost, Env.CooldownDuration, _G.GetSpellCharges, _G.GetHaste, _G.GetShapeshiftFormCooldown, _G.GetSpellBaseCooldown, _G.GetSpellAutocast
+local 	  GetSpellTexture, 	  GetSpellLink,    									   GetSpellInfo, 	GetSpellDescription, 	GetSpellCount,	   GetSpellPowerCost, 	  CooldownDuration,    GetSpellCharges,    GetHaste, 	GetShapeshiftFormCooldown, 	  GetSpellBaseCooldown,    GetSpellAutocast = 
+	  TMW.GetSpellTexture, _G.GetSpellLink, C_Spell and C_Spell.GetSpellInfo or _G.GetSpellInfo, _G.GetSpellDescription, _G.GetSpellCount, 	_G.GetSpellPowerCost, Env.CooldownDuration, _G.GetSpellCharges, _G.GetHaste, _G.GetShapeshiftFormCooldown, _G.GetSpellBaseCooldown, _G.GetSpellAutocast
 
 -- Item 	  
 local 	 IsUsableItem, 	  IsHelpfulItem, 	IsHarmfulItem, 	  IsCurrentItem  =
@@ -1326,8 +1328,19 @@ end
 
 -- Spell  
 local spellinfocache = setmetatable({}, { __index = function(t, v)
-    local a = { GetSpellInfo(v) }
-	t[v] = a
+    local a
+	if C_Spell and C_Spell.GetSpellInfo then 
+		local s = GetSpellInfo(v)
+		if s then 
+			a = { s.name, s.rank, s.iconID, s.castTime, s.minRange, s.maxRange, s.spellID, s.originalIconID }
+		else 
+			a = { }
+		end 
+	else 
+		a = { GetSpellInfo(v) }
+	end 
+	
+    t[v] = a
     return a
 end })
 
@@ -1429,6 +1442,39 @@ end
 -- Swap Colored Texture
 function A:GetColoredSwapTexture(custom)
     return "state; texture", {Color = A.Data.C[self.Color] or self.Color, Alpha = 1, Texture = ""}, custom or self.ID
+end 
+
+-------------------------------------------------------------------------------
+-- Cache Manager
+-------------------------------------------------------------------------------
+do 
+	if BuildToC >= 100000 then 
+		local function WipeCache()
+			wipe(TMW.GetSpellTexture)
+			
+			wipe(spellbasecache)	
+			wipe(spellinfocache)
+			
+			wipe(spellpowercache)
+			wipe(descriptioncache)
+			
+			wipe(itemspellcache)
+			wipe(iteminfocache)		
+			
+			-- Update Actions tab in UI if AutoHidden is enabled
+			TMW:Fire("TMW_ACTION_SPELL_BOOK_CHANGED")
+		end 
+
+		-- Post-Init 
+		TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED", function()
+			Listener:Add("ACTION_EVENT_ACTIONS", "SPELLS_CHANGED", WipeCache)
+			Listener:Add("ACTION_EVENT_ACTIONS", "PLAYER_TALENT_UPDATE", WipeCache)
+			Listener:Add("ACTION_EVENT_ACTIONS", "ACTIVE_TALENT_GROUP_CHANGED", WipeCache)
+			TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", WipeCache)
+			TMW:RegisterCallback("TMW_ACTION_MODE_CHANGED", WipeCache)
+			return true -- Signal RegisterSelfDestructingCallback to unregister
+		end)
+	end 
 end 
 
 -------------------------------------------------------------------------------
