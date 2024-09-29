@@ -949,6 +949,10 @@ function A:IsExists(replacementByPass)
 	if self.Type == "Spell" then 
 		-- DON'T USE HERE A.GetSpellInfo COZ IT'S CACHE WHICH WILL WORK WRONG DUE RACE CHANGES
 		local spellName, _, _, _, _, _, spellID = GetSpellInfo((self:Info())) 
+		if type(spellName) == "table" then 
+			spellID = spellName.spellID
+			spellName = spellName.name
+		end 		
 		-- spellID will be nil in case of if it's not a player's spell 
 		-- spellName will not be equal to self:Info() if it's replacement spell like "Chi-Torpedo" and "Roll"
 		return (not replacementByPass or spellName == self:Info()) and type(spellID) == "number" and (IsPlayerSpell(spellID) or (Pet:IsActive() and Pet:IsSpellKnown(spellID)) or FindSpellBookSlotBySpellID(spellID, false))
