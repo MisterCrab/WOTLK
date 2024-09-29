@@ -10197,7 +10197,7 @@ function Action.ToggleMainUI()
 				
 				tabFrame:CustomDrawButtons()
 				lastUpdate 	= manual == true and 0 or TMW.time 												
-				local spec	= Action.PlayerSpec .. CL
+				local spec	= Action.PlayerClass .. CL
 				for i, tab in ipairs(tabFrame.tabs) do	
 					if tab.childs[spec] then	
 						-- Easy Layout (base parent)
