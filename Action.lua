@@ -185,6 +185,7 @@ local Localization = {
 		SLASH = {
 			LIST = "List of slash commands:",
 			OPENCONFIGMENU = "shows config menu",
+			OPENCONFIGMENUTOASTER = "shows config menu of the Toaster",
 			HELP = "shows help info",
 			QUEUEHOWTO = "macro (toggle) for sequence system (Queue), the TABLENAME is a label reference for SpellName|ItemName (in english)",
 			QUEUEEXAMPLE = "example of Queue usage",
@@ -738,6 +739,7 @@ local Localization = {
 		SLASH = {
 			LIST = "Список слеш команд:",
 			OPENCONFIGMENU = "открыть конфиг меню",
+			OPENCONFIGMENUTOASTER = "открыть конфиг меню Toaster",
 			HELP = "помощь и информация",
 			QUEUEHOWTO = "макрос (переключатель) для системы очередности (Очередь), там где TABLENAME это метка для ИмениСпособности|ИмениПредмета (на английском)",
 			QUEUEEXAMPLE = "пример использования Очереди",
@@ -1293,6 +1295,7 @@ local Localization = {
 		SLASH = {
 			LIST = "Liste der Slash-Befehle:",
 			OPENCONFIGMENU = "Menü Öffnen",
+			OPENCONFIGMENUTOASTER = "Menü Öffnen Toaster",
 			HELP = "Zeigt dir die Hilfe an",
 			QUEUEHOWTO = "Makro (Toggle) für Sequenzsystem (Queue), TABLENAME ist eine Bezeichnung für SpellName | ItemName (auf Englisch)",
 			QUEUEEXAMPLE = "Beispiel für das Sequenzsystem",
@@ -1848,6 +1851,7 @@ local Localization = {
 		SLASH = {
 			LIST = "Liste des commandes slash:",
 			OPENCONFIGMENU = "Voir le menu de configuration",
+			OPENCONFIGMENUTOASTER = "Voir le menu de configuration Toaster",
 			HELP = "Voir le menu d'aide",
 			QUEUEHOWTO = "macro (toggle) pour la séquence système (Queue), la TABLENAME est la table de référence pour les noms de sort et d'objet SpellName|ItemName (on english)",
 			QUEUEEXAMPLE = "exemple d'utilisation de Queue(file d'attende)",
@@ -2401,6 +2405,7 @@ local Localization = {
 		SLASH = {
 			LIST = "Lista comandi:",
 			OPENCONFIGMENU = "mostra il menu di configurazione",
+			OPENCONFIGMENUTOASTER = "mostra il menu di configurazione Toaster",
 			HELP = "mostra info di aiuto",
 			QUEUEHOWTO = "macro (toggle) per il sistema di coda (Coda), la TABLENAME é etichetta di riferimento per incantesimo|oggetto (in inglese)",
 			QUEUEEXAMPLE = "esempio per uso della Coda",
@@ -2956,6 +2961,7 @@ local Localization = {
 		SLASH = {
 			LIST = "Lista de comandos:",
 			OPENCONFIGMENU = "Mostrar menú de configuración",
+			OPENCONFIGMENUTOASTER = "Mostrar menú de configuración Toaster",
 			HELP = "Mostrar ayuda",
 			QUEUEHOWTO = "macro (toggle) para sistema de secuencia (Cola), TABLENAME es una etiqueta de referencia para SpellName|ItemName (en inglés)",
 			QUEUEEXAMPLE = "ejemplo de uso de Cola",
@@ -3509,6 +3515,7 @@ local Localization = {
 		SLASH = {
 			LIST = "Lista de comandos:",
 			OPENCONFIGMENU = "exibe o menu de configurações",
+			OPENCONFIGMENUTOASTER = "exibe o menu de configurações Toaster",
 			HELP = "exibe informações de ajuda",
 			QUEUEHOWTO = "macro (ativável) para o sistema de sequência (Queue), o TABLENAME é uma referência para o SpellName|ItemName (em Inglês)",
 			QUEUEEXAMPLE = "exemplo de uso da Queue",
@@ -16209,6 +16216,7 @@ local function OnInitialize()
     A_Print(L["SLASH"]["LIST"])
 	A_Print("|cff00cc66/action|r - "  .. L["SLASH"]["OPENCONFIGMENU"])
 	A_Print("|cff00cc66/action help|r - " .. L["SLASH"]["HELP"])		
+	A_Print("|cff00cc66/action toaster|r - " .. L["SLASH"]["OPENCONFIGMENUTOASTER"])	
 
 	----------------------------------	
 	-- Initialization
@@ -16248,14 +16256,18 @@ local function OnInitialize()
 	-- UnitHealthTool
 	UnitHealthTool:Initialize()
 	
-	-- Minimap 
+	-- Minimap
 	if not Action.Minimap and LibDBIcon then 
 		local ldbObject = {
 			type = "launcher",
 			icon = ActionConst.AUTOTARGET, 
 			label = "ActionUI",
 			OnClick = function(self, button)
-				A_ToggleMainUI()
+				if button == "RightButton" and Action.Toaster.IsInitialized then 
+					Action.Toaster:Toggle()
+				else 
+					A_ToggleMainUI()
+				end 
 			end,
 			OnTooltipShow = function(tooltip)
 				tooltip:AddLine("ActionUI")
@@ -16517,16 +16529,23 @@ function Action:ADDON_LOADED(event, addonName)
 			return 
 		end 
 		if not input or #input > 0 then 
-			-- without checks for another options for /action since right now only "help" enough even if user did wrong input 
-			A_Print(L["SLASH"]["LIST"])
-			A_Print("|cff00cc66/action|r - " .. L["SLASH"]["OPENCONFIGMENU"])
-			A_Print('|cff00cc66/run Action.MacroQueue("TABLE_NAME")|r - ' .. L["SLASH"]["QUEUEHOWTO"])
-			A_Print('|cff00cc66/run Action.MacroQueue("WordofGlory")|r - ' .. L["SLASH"]["QUEUEEXAMPLE"])		
-			A_Print('|cff00cc66/run Action.MacroBlocker("TABLE_NAME")|r - ' .. L["SLASH"]["BLOCKHOWTO"])
-			A_Print('|cff00cc66/run Action.MacroBlocker("FelRush")|r - ' .. L["SLASH"]["BLOCKEXAMPLE"])	
-			A_Print(L["SLASH"]["RIGHTCLICKGUIDANCE"])
-			A_Print(L["SLASH"]["INTERFACEGUIDANCE"])
-			A_Print(L["SLASH"]["INTERFACEGUIDANCEGLOBAL"])			
+			if input:lower() == "toaster" and Action.Toaster.IsInitialized then 
+				Action.Toaster:Toggle()
+			else 
+				A_Print(L["SLASH"]["LIST"])
+				A_Print("|cff00cc66/action|r - " .. L["SLASH"]["OPENCONFIGMENU"])
+				A_Print("|cff00cc66/action toaster|r - " .. L["SLASH"]["OPENCONFIGMENUTOASTER"])
+				A_Print('|cff00cc66/run Action.MacroQueue("TABLE_NAME")|r - ' .. L["SLASH"]["QUEUEHOWTO"])
+				A_Print('|cff00cc66/run Action.MacroQueue("WordofGlory")|r - ' .. L["SLASH"]["QUEUEEXAMPLE"])		
+				A_Print('|cff00cc66/run Action.MacroBlocker("TABLE_NAME")|r - ' .. L["SLASH"]["BLOCKHOWTO"])
+				A_Print('|cff00cc66/run Action.MacroBlocker("FelRush")|r - ' .. L["SLASH"]["BLOCKEXAMPLE"])	
+				A_Print(L["SLASH"]["RIGHTCLICKGUIDANCE"])
+				A_Print(L["SLASH"]["INTERFACEGUIDANCE"])
+				A_Print(L["SLASH"]["INTERFACEGUIDANCEEACHSPEC"])
+				A_Print(L["SLASH"]["INTERFACEGUIDANCEALLSPECS"])
+				A_Print(L["SLASH"]["INTERFACEGUIDANCEGLOBAL"])
+				A_Print(L["SLASH"]["ATTENTION"])
+			end 		
 		else 
 			A_ToggleMainUI()
 		end 

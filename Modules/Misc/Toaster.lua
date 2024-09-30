@@ -707,7 +707,7 @@ if Toaster and AceDB and AceConfigRegistry and AceConfigDialog and AceLocale and
 		
 		-- Creates function to open options panel
 		local optionsFrame 				= _G.InterfaceOptionsFrame or _G.SettingsPanel or _G.Settings
-		local openToCategory 			= _G.InterfaceOptionsFrame_OpenToCategory or (_G.SettingsPanel and _G.SettingsPanel.OpenToCategory) or _G.Settings.OpenToCategory
+		local openToCategory 			= _G.InterfaceOptionsFrame_OpenToCategory or _G.Settings.OpenToCategory
 		function Toaster:Toggle() 		
 			if optionsFrame:IsVisible() then
 				optionsFrame:Hide()
