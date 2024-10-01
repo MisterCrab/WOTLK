@@ -1471,7 +1471,7 @@ do
 
 		-- Post-Init 
 		TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED", function()
-			Listener:Add("ACTION_EVENT_ACTIONS", "SPELLS_CHANGED", WipeCache)
+			--Listener:Add("ACTION_EVENT_ACTIONS", "SPELLS_CHANGED", WipeCache) -- commented because it wipes cache in combat which we don't want to 
 			Listener:Add("ACTION_EVENT_ACTIONS", "PLAYER_TALENT_UPDATE", WipeCache)
 			Listener:Add("ACTION_EVENT_ACTIONS", "ACTIVE_TALENT_GROUP_CHANGED", WipeCache)
 			TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", WipeCache)
