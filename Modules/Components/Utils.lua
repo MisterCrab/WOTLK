@@ -1079,3 +1079,16 @@ local function LockToggle()
 	end 
 end 
 hooksecurefunc(TMW, "LockToggle", LockToggle)
+
+-------------------------------------------------------------------------------
+-- TMW GetCurrentSpecialization fix
+-------------------------------------------------------------------------------
+-- Fixes error "Message: ...nterface/AddOns/TellMeWhen/Components/Core/Utils.lua:1496: attempt to perform arithmetic on local 'i' (a nil value)"
+-- Cata-and-earlier
+local A_GetCurrentSpecialization = A.GetCurrentSpecialization
+local TMW_GetCurrentSpecialization = TMW.GetCurrentSpecialization
+if A_GetCurrentSpecialization and TMW_GetCurrentSpecialization then 
+	function TMW.GetCurrentSpecialization(...)
+		return TMW_GetCurrentSpecialization(...) or A_GetCurrentSpecialization()
+	end 
+end
