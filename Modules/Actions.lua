@@ -948,7 +948,7 @@ function A:IsExists(replacementByPass)
 	-- @return boolean
 	if self.Type == "Spell" then 
 		-- DON'T USE HERE A.GetSpellInfo COZ IT'S CACHE WHICH WILL WORK WRONG DUE RACE CHANGES
-		local spellName, _, _, _, _, _, spellID = GetSpellInfo((self:Info())) 
+		local spellName, _, _, _, _, _, spellID = GetSpellInfo((self:Info()) or "") 
 		if type(spellName) == "table" then 
 			spellID = spellName.spellID
 			spellName = spellName.name
