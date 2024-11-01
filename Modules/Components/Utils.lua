@@ -443,7 +443,7 @@ end
 -- Icons
 -------------------------------------------------------------------------------
 -- Note: icon can be "TMW:icon:1S2PCb9iygE4" (as GUID) or "TellMeWhen_Group1_Icon1" (as ID)
-function Env.IsIconShown(icon)
+function Env.IsIconPhysicallyShown(icon)
 	-- @return boolean, if icon physically shown	
     local FRAME = TMW:GetDataOwner(icon)
     return (FRAME and FRAME.attributes.realAlpha == 1) or false
