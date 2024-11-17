@@ -883,7 +883,7 @@ local function UpdateTargetLOS()
 end
 
 local function PLAYER_TARGET_CHANGED()
-	ClearHealingTarget()
+	SetColorTarget()
 	-- [3] @target enemy or [4] @target boss
 	if db.AfterTargetEnemyOrBossDelay > 0 and (not SelectStopOptions[3] or not SelectStopOptions[4]) then 
 		if ((not SelectStopOptions[3] and A_Unit(target):IsEnemy()) or (not SelectStopOptions[4] and A_Unit(target):IsBoss())) then 
@@ -900,7 +900,7 @@ local function PLAYER_TARGET_CHANGED()
 end 
 
 local function UPDATE_MOUSEOVER_UNIT()
-	ClearHealingTarget()
+	SetColorTarget()
 	-- [2] @mouseover enemy 
 	if db.AfterMouseoverEnemyDelay > 0 and not SelectStopOptions[2] then 
 		if A_Unit(mouseover):IsEnemy() then 
@@ -944,6 +944,9 @@ local function Initialize()
 
 	if A.IamHealer or (isClassic and GetToggle(1, "HE_AnyRole")) then 
 		if not Data.IsRunning then 
+			if BuildToC >= 20000 then 
+				Listener:Add("ACTION_EVENT_HEALINGENGINE", "PLAYER_FOCUS_CHANGED", 	SetColorTarget)
+			end 		
 			Listener:Add("ACTION_EVENT_HEALINGENGINE", "PLAYER_TARGET_CHANGED", 	PLAYER_TARGET_CHANGED)
 			Listener:Add("ACTION_EVENT_HEALINGENGINE", "UPDATE_MOUSEOVER_UNIT", 	UPDATE_MOUSEOVER_UNIT)
 			Listener:Add("ACTION_EVENT_HEALINGENGINE", "UNIT_TARGET", 				UNIT_TARGET)
@@ -980,6 +983,9 @@ local function Initialize()
 		end 
 	else
 		if Data.IsRunning then
+			if BuildToC >= 20000 then 
+				Listener:Remove("ACTION_EVENT_HEALINGENGINE", "PLAYER_FOCUS_CHANGED")
+			end 		
 			Listener:Remove("ACTION_EVENT_HEALINGENGINE", "PLAYER_TARGET_CHANGED")
 			Listener:Remove("ACTION_EVENT_HEALINGENGINE", "UPDATE_MOUSEOVER_UNIT")
 			Listener:Remove("ACTION_EVENT_HEALINGENGINE", "UNIT_TARGET")
@@ -1092,19 +1098,23 @@ end
 function HealingEngine.SetTargetMostlyIncDMG(delay)
 	-- Sets in HealingEngine specified unitID with delay which will prevent reset target during next few seconds 	
 	if #SortedUnitIDs_MostlyIncDMG > 0 then 
-		healingTargetDelay 	= TMW.time + (delay or 2)
+		local wasSet = SortedUnitIDs_MostlyIncDMG[1].Unit == healingTarget
+		healingTargetDelay 	= TMW.time + (delay or 0.5)
 		healingTargetGUID 	= SortedUnitIDs_MostlyIncDMG[1].GUID
 		healingTarget		= SortedUnitIDs_MostlyIncDMG[1].Unit
-		frame:SetColor(healingTarget) 
+		if healingTarget and not wasSet then 
+			frame:SetColor(healingTarget) 
+		end
 	end 
 end 
 
 function HealingEngine.SetTarget(unitID, delay)
 	-- Sets in HealingEngine specified unitID with delay which will prevent reset target during next few seconds 	
+	local wasSet = unitID == healingTarget
 	healingTargetGUID 		= TeamCacheFriendlyUNITs[unitID] or UnitGUID(unitID)
 	healingTarget			= TeamCacheFriendlyGUIDs[healingTargetGUID]
-	if healingTarget then 
-		healingTargetDelay 	= TMW.time + (delay or 2)
+	if healingTarget and not wasSet then 
+		healingTargetDelay 	= TMW.time + (delay or 0.5)
 		frame:SetColor(healingTarget)		 
 	end 
 end
