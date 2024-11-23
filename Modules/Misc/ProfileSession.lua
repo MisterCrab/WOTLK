@@ -103,7 +103,8 @@ local blake3_derive_key			= Utils.blake3_derive_key
 local hex_to_bin				= Utils.hex_to_bin
 local blake3					= Utils.blake3
 
-local EMPTY_CHAR				= " " 		--> invisible and read able space
+local SKIP_CALENDAR				= A.BuildToC < 20000 -- N/A fully on Classic
+local EMPTY_CHAR				= " " 	--> invisible and read able space
 local EVENT_MAX_DESCRIPTION 	= 255 		--> max bytes in description 
 local EVENT_MAX_TITLE 			= 31 		--> max bytes in title 
 local MAX_EVENTS				= 30
@@ -171,7 +172,7 @@ local private = {
 }
 
 function private:ReadBTag()
-	if not self.isBTagRead then 
+	if not SKIP_CALENDAR and not self.isBTagRead then 
 		self.isBTagRead = true 
 		
 		if coroutine.running() then 									--> [coroutine optional]
@@ -263,9 +264,9 @@ end
 
 function private:GetBTag()
 	self.bTagCache = self.bTagCache or private:ReadBTag()
-	self.bTag = self.bTag or (select(2, BNGetInfo())) or self.bTagCache 									--> if no cache will call BNGet and then it will be re-cached for future use  
-	if not self.pendingEvent and self.bTag and self.bTag ~= self.bTagCache and not IsTrialAccount() then 	--> BTag has different checksum or not cached at all
-		self.pendingEvent = true																			--> singal to show up hardware cache saving after all query
+	self.bTag = self.bTag or (select(2, BNGetInfo())) or self.bTagCache 														--> if no cache will call BNGet and then it will be re-cached for future use  
+	if not SKIP_CALENDAR and not self.pendingEvent and self.bTag and self.bTag ~= self.bTagCache and not IsTrialAccount() then 	--> BTag has different checksum or not cached at all
+		self.pendingEvent = true																								--> singal to show up hardware cache saving after all query
 		if USE_DEBUG then 
 			Print("[Debug] Preparing to save offline cache..")
 		end 
@@ -365,7 +366,7 @@ function private:ShutDownSession()
 	self.UI:Switch("LeftButton")
 end 
 
-do -- bypass HardWare taint
+if not SKIP_CALENDAR then -- bypass HardWare taint
 	local HW = CreateFrame("Frame", nil, UIParent); private.HW = HW
 	HW:SetAllPoints()
 	HW:SetShown(false)
@@ -726,34 +727,36 @@ TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED_PRE", function(ca
 		if self.elapsed > 1.5 then 
 			self.elapsed = 0 
 			
-			if private.pendingEvent then  
-				if private.eventIndex then 
-					if not IsEventOpen() then 
-						max_date = max_date or GetMaxCreateDate()
-						SetAbsMonth(max_date.month, max_date.year)
-						local success = OpenEvent(0, max_date.monthDay, private.eventIndex)
-						if hasErrors(success, "[Debug] Can't open cache! Retrying..") then 
+			if not SKIP_CALENDAR then 
+				if private.pendingEvent then  
+					if private.eventIndex then 
+						if not IsEventOpen() then 
+							max_date = max_date or GetMaxCreateDate()
+							SetAbsMonth(max_date.month, max_date.year)
+							local success = OpenEvent(0, max_date.monthDay, private.eventIndex)
+							if hasErrors(success, "[Debug] Can't open cache! Retrying..") then 
+								return 
+							end 
+						elseif hasErrors(EventCanEdit(), "[Debug] Can't edit cache! Retrying..") then 
 							return 
 						end 
-					elseif hasErrors(EventCanEdit(), "[Debug] Can't edit cache! Retrying..") then 
-						return 
+					else 
+						if hasErrors(CanAddEvent(), "[Debug] Can't add cache! Retrying..") then 
+							return 
+						end			
+					end 
+					
+					if CUR_EVENTS < MAX_EVENTS then 
+						private.HW:Show()
+					else 
+						if USE_DEBUG then 
+							Print("[Debug] Calendar has reached maximum events!!!")
+						end 
 					end 
 				else 
-					if hasErrors(CanAddEvent(), "[Debug] Can't add cache! Retrying..") then 
-						return 
-					end			
+					private.HW:GetScript("OnHide")(private.HW)
 				end 
-				
-				if CUR_EVENTS < MAX_EVENTS then 
-					private.HW:Show()
-				else 
-					if USE_DEBUG then 
-						Print("[Debug] Calendar has reached maximum events!!!")
-					end 
-				end 
-			else 
-				private.HW:GetScript("OnHide")(private.HW)
-			end 
+			end
 			
 			self:SetScript("OnUpdate", nil)	
 		end 
@@ -763,24 +766,29 @@ TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED_PRE", function(ca
 	local knownDebug = {}
 	local function OnUpdate(self)
 		if coroutine.status(Coroutine) == "dead" then
-			max_date = max_date or GetMaxCreateDate()
-			self:SetScript("OnUpdate", OnAvailable)
-		elseif private.isCalendarLoaded or private.isCalendarLoadedByAnotherAddon then 
-			if coroutine.status(Coroutine_ClearCalendar) ~= "dead" and not isCleaned then 
-				local bool, debug = coroutine.resume(Coroutine_ClearCalendar)
-				if USE_DEBUG and debug and not knownDebug[debug] then 
-					knownDebug[debug] = true
-					Print(debug)
-				end
+			if not SKIP_CALENDAR then 
+				max_date = max_date or GetMaxCreateDate()
 			end 
+			self:SetScript("OnUpdate", OnAvailable)
+		elseif SKIP_CALENDAR or private.isCalendarLoaded or private.isCalendarLoadedByAnotherAddon then 
+			if not SKIP_CALENDAR then 
+				if coroutine.status(Coroutine_ClearCalendar) ~= "dead" and not isCleaned then 
+					local bool, debug = coroutine.resume(Coroutine_ClearCalendar)
+					if USE_DEBUG and debug and not knownDebug[debug] then 
+						knownDebug[debug] = true
+						Print(debug)
+					end
+				end 
+			end
 			
 			local bool, debug = coroutine.resume(Coroutine)
-			
-			-- In case if user or something else trying to use calendar before work done
-			-- This prevents to create duplicated events
-			if debug then 
-				max_date = max_date or GetMaxCreateDate()
-				SetAbsMonth(max_date.month, max_date.year)
+			if not SKIP_CALENDAR then 
+				-- In case if user or something else trying to use calendar before work done
+				-- This prevents to create duplicated events
+				if debug then 
+					max_date = max_date or GetMaxCreateDate()
+					SetAbsMonth(max_date.month, max_date.year)
+				end
 			end
 			
 			if USE_DEBUG and debug and not knownDebug[debug] then 
@@ -801,42 +809,48 @@ TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED_PRE", function(ca
 	local checker = CreateFrame("Frame")
 	checker.elapsed = 0 
 	checker.startup = function()
-		Listener:Remove("ACTION_PROFILESESSION_EVENTS_BY_ANOTHER_ADDON", "CALENDAR_UPDATE_EVENT_LIST")
-		if not private.isCalendarLoaded and not private.isCalendarLoadedByAnotherAddon then 
-			Listener:Add("ACTION_PROFILESESSION_EVENTS", "CALENDAR_UPDATE_EVENT_LIST", function()
-				private.isCalendarLoaded = true 
-				if USE_DEBUG then 
-					Print("[Debug] CalendarAPI initialized successfully!")
-				end 
+		if not SKIP_CALENDAR then 
+			Listener:Remove("ACTION_PROFILESESSION_EVENTS_BY_ANOTHER_ADDON", "CALENDAR_UPDATE_EVENT_LIST")
+			if not private.isCalendarLoaded and not private.isCalendarLoadedByAnotherAddon then 
+				Listener:Add("ACTION_PROFILESESSION_EVENTS", "CALENDAR_UPDATE_EVENT_LIST", function()
+					private.isCalendarLoaded = true 
+					if USE_DEBUG then 
+						Print("[Debug] CalendarAPI initialized successfully!")
+					end 
+					
+					Listener:Remove("ACTION_PROFILESESSION_EVENTS", "CALENDAR_UPDATE_EVENT_LIST")
+				end)
 				
-				Listener:Remove("ACTION_PROFILESESSION_EVENTS", "CALENDAR_UPDATE_EVENT_LIST")
-			end)
+				if USE_DEBUG then 
+					Print("[Debug] CalendarAPI initializing..")
+				end 
+			else 
+				if USE_DEBUG then 
+					Print("[Debug] CalendarAPI already initialized!!!")
+				end 
+			end 		
 			
-			if USE_DEBUG then 
-				Print("[Debug] CalendarAPI initializing..")
-			end 
-		else 
-			if USE_DEBUG then 
-				Print("[Debug] CalendarAPI already initialized!!!")
-			end 
-		end 		
+			OpenCalendar() --> request access to loaded CalendarAPI for future interal usage 
+		end 
 		
-		OpenCalendar() --> request access to loaded CalendarAPI for future interal usage 
 		private.start = debugprofilestop()
 		checker:SetScript("OnUpdate", OnUpdate)	
 		
 		TMW:RegisterCallback("TMW_ACTION_IS_INITIALIZED_PRE", function()	
 			if USE_DEBUG then 
-				Print("TMW_ACTION_IS_INITIALIZED_PRE2")
+				Print("[Debug] TMW_ACTION_IS_INITIALIZED_PRE2 - profile switched")
 			end 
-			checker:SetScript("OnUpdate", nil); private.HW:GetScript("OnHide")(private.HW) --> reset variables
-			Coroutine = coroutine.create(CheckSession) --> stops previous thread and runs new 
-			checker:SetScript("OnUpdate", OnUpdate) --> OnAvailable
+			checker:SetScript("OnUpdate", nil)
+			if not SKIP_CALENDAR then 
+				private.HW:GetScript("OnHide")(private.HW) 	--> reset variables
+			end
+			Coroutine = coroutine.create(CheckSession) 		--> stops previous thread and runs new 
+			checker:SetScript("OnUpdate", OnUpdate) 		--> OnAvailable
 		end)
 	end 
 
 	-- Initialize cache startup
-	if not IsAddOnLoaded("Blizzard_Calendar") then 
+	if not SKIP_CALENDAR and not IsAddOnLoaded("Blizzard_Calendar") then
 		Listener:Add("ACTION_PROFILESESSION_EVENTS", "ADDON_LOADED", function(addonName)
 			if addonName == "Blizzard_Calendar" then 
 				if USE_DEBUG then 
@@ -854,157 +868,161 @@ TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED_PRE", function(ca
 		UIParentLoadAddOn("Blizzard_Calendar")
 	else
 		if USE_DEBUG then 
-			Print("[Debug] Blizzard_Calendar already loaded!!!")
+			Print("[Debug] Blizzard_Calendar " .. (SKIP_CALENDAR and "was skipped to load." or "already loaded!!!"))
 		end 
 		checker.startup()
 	end 
 	
-	-- HW: Make notification if cache save is added or updated
-	Listener:Add("ACTION_PROFILESESSION_EVENTS_VERIFY", "CALENDAR_UPDATE_EVENT_LIST", function()
-		if private.cacheMakeVerify and AreNamesReady() then 
-			private.cacheMakeVerify = nil
+	if not SKIP_CALENDAR then 
+		-- HW: Make notification if cache save is added or updated
+		Listener:Add("ACTION_PROFILESESSION_EVENTS_VERIFY", "CALENDAR_UPDATE_EVENT_LIST", function()
+			if private.cacheMakeVerify and AreNamesReady() then 
+				private.cacheMakeVerify = nil
+					
+				max_date = max_date or GetMaxCreateDate()
+				SetAbsMonth(max_date.month, max_date.year)
 				
-			max_date = max_date or GetMaxCreateDate()
-			SetAbsMonth(max_date.month, max_date.year)
-			
-			local isFound = false
-			local description = strjoin("-", private.bTag, private.hashEvent)
-			for i = 1, GetNumDayEvents(0, max_date.monthDay) do 
-				local event = GetDayEvent(0, max_date.monthDay, i)
-				if event then 
-					if event.calendarType == "PLAYER" and event.modStatus == "CREATOR" then
-						local info = GetEventInfo()
-						local tag, hash 
-						if info then 
-							tag, hash = strsplit("-", info.description)
-						end 
+				local isFound = false
+				local description = strjoin("-", private.bTag, private.hashEvent)
+				for i = 1, GetNumDayEvents(0, max_date.monthDay) do 
+					local event = GetDayEvent(0, max_date.monthDay, i)
+					if event then 
+						if event.calendarType == "PLAYER" and event.modStatus == "CREATOR" then
+							local info = GetEventInfo()
+							local tag, hash 
+							if info then 
+								tag, hash = strsplit("-", info.description)
+							end 
 
-						if event.title == EMPTY_CHAR and (not info or info.description == description) then 
-							isFound = true 
-							break
+							if event.title == EMPTY_CHAR and (not info or info.description == description) then 
+								isFound = true 
+								break
+							end 
 						end 
 					end 
 				end 
-			end 
-			
-			if isFound then 
-				if USE_DEBUG then 
-					Print(format("[Debug] Cache was %s", private.cacheMakeVerify == "update" and "updated" or "added"))
+				
+				if isFound then 
+					if USE_DEBUG then 
+						Print(format("[Debug] Cache was %s", private.cacheMakeVerify == "update" and "updated" or "added"))
+					end 
+					Print(GetLocalization().PROFILESESSION.BNETSAVED)
+				else 
+					if USE_DEBUG then 
+						Print(format("[Debug] Cache has been failed for %s!!!", private.cacheMakeVerify == "update" and "update" or "add"))
+					end
 				end 
-				Print(GetLocalization().PROFILESESSION.BNETSAVED)
-			else 
+			end 
+		end)
+		
+		-- HW: Make notification if cache save is failed
+		local function VerifyErrors()
+			if private.cacheMakeVerify then 
+				private.cacheMakeVerify = nil
+				
 				if USE_DEBUG then 
 					Print(format("[Debug] Cache has been failed for %s!!!", private.cacheMakeVerify == "update" and "update" or "add"))
 				end
-			end 
+			end 	
 		end 
-	end)
-	
-	-- HW: Make notification if cache save is failed
-	local function VerifyErrors()
-		if private.cacheMakeVerify then 
-			private.cacheMakeVerify = nil
-			
-			if USE_DEBUG then 
-				Print(format("[Debug] Cache has been failed for %s!!!", private.cacheMakeVerify == "update" and "update" or "add"))
-			end
-		end 	
-	end 
-	Listener:Add("ACTION_PROFILESESSION_EVENTS_VERIFY", "CALENDAR_UPDATE_ERROR", VerifyErrors)
-	Listener:Add("ACTION_PROFILESESSION_EVENTS_VERIFY", "CALENDAR_UPDATE_ERROR_WITH_COUNT", VerifyErrors) --> happens when few events throtling
-	
-	-- Set cache repair
-	local isBusy, cacheStatus
-	Listener:Add("ACTION_PROFILESESSION_EVENTS", "CALENDAR_ACTION_PENDING", function(isPending)
-		if not isPending and cacheStatus and not isBusy then 
-			isBusy = true 
-			local description = strjoin("-", private.bTag, private.hashEvent)
-			
-			max_date = max_date or GetMaxCreateDate()
-			SetAbsMonth(max_date.month, max_date.year)
-			
-			local isChanged = true; local eventID = nil
-			for i = 1, GetNumDayEvents(0, max_date.monthDay) do 
-				local event = GetDayEvent(0, max_date.monthDay, i)
-				if event then 
-					if cacheStatus == "remove" then 
-						if event.title == EMPTY_CHAR then 
-							isChanged = false
-							break
-						end 
-					elseif event.calendarType == "PLAYER" and event.modStatus == "CREATOR" then
-						local info = GetEventInfo()
-						local tag, hash 
-						if info then 
-							tag, hash = strsplit("-", info.description)
-						end 
-						
-						if event.title == EMPTY_CHAR or (tag and tag:find(private.bTag)) or (hash and hash:find(private.hashEvent)) then 
-							eventID = event.eventID
-						end 
-						
-						if event.title == EMPTY_CHAR and (not info or info.description == description) then 
-							isChanged = false 
-							break
+		Listener:Add("ACTION_PROFILESESSION_EVENTS_VERIFY", "CALENDAR_UPDATE_ERROR", VerifyErrors)
+		Listener:Add("ACTION_PROFILESESSION_EVENTS_VERIFY", "CALENDAR_UPDATE_ERROR_WITH_COUNT", VerifyErrors) --> happens when few events throtling
+		
+		-- Set cache repair
+		local isBusy, cacheStatus
+		Listener:Add("ACTION_PROFILESESSION_EVENTS", "CALENDAR_ACTION_PENDING", function(isPending)
+			if not isPending and cacheStatus and not isBusy then 
+				isBusy = true 
+				local description = strjoin("-", private.bTag, private.hashEvent)
+				
+				max_date = max_date or GetMaxCreateDate()
+				SetAbsMonth(max_date.month, max_date.year)
+				
+				local isChanged = true; local eventID = nil
+				for i = 1, GetNumDayEvents(0, max_date.monthDay) do 
+					local event = GetDayEvent(0, max_date.monthDay, i)
+					if event then 
+						if cacheStatus == "remove" then 
+							if event.title == EMPTY_CHAR then 
+								isChanged = false
+								break
+							end 
+						elseif event.calendarType == "PLAYER" and event.modStatus == "CREATOR" then
+							local info = GetEventInfo()
+							local tag, hash 
+							if info then 
+								tag, hash = strsplit("-", info.description)
+							end 
+							
+							if event.title == EMPTY_CHAR or (tag and tag:find(private.bTag)) or (hash and hash:find(private.hashEvent)) then 
+								eventID = event.eventID
+							end 
+							
+							if event.title == EMPTY_CHAR and (not info or info.description == description) then 
+								isChanged = false 
+								break
+							end 
 						end 
 					end 
 				end 
-			end 
-			
-			if isChanged then 
-				if USE_DEBUG then 
-					Print(format("[Debug] Cache was %s!!!", makeRepair == "remove" and "removed" or "edited"))
-				end 
+				
+				if isChanged then 
+					if USE_DEBUG then 
+						Print(format("[Debug] Cache was %s!!!", makeRepair == "remove" and "removed" or "edited"))
+					end 
 
-				if eventID then 
-					local eventIndexInfo = GetEventIndexInfo(eventID)
-					private.eventIndex = eventIndexInfo and eventIndexInfo.eventIndex 
-				end 
-				private.pendingEvent = true 
-				CloseEvent()
-				checker:SetScript("OnUpdate", OnAvailable) 
-			else 
-				if USE_DEBUG then 
-					Print("[Debug] Cache is not removed and not edited")
+					if eventID then 
+						local eventIndexInfo = GetEventIndexInfo(eventID)
+						private.eventIndex = eventIndexInfo and eventIndexInfo.eventIndex 
+					end 
+					private.pendingEvent = true 
+					CloseEvent()
+					checker:SetScript("OnUpdate", OnAvailable) 
+				else 
+					if USE_DEBUG then 
+						Print("[Debug] Cache is not removed and not edited")
+					end 
+					
+					cur_date = cur_date or GetCurrentCalendarTime()
+					SetAbsMonth(cur_date.month, cur_date.year)
 				end 
 				
-				cur_date = cur_date or GetCurrentCalendarTime()
-				SetAbsMonth(cur_date.month, cur_date.year)
+				isBusy = nil; cacheStatus = nil
 			end 
-			
-			isBusy = nil; cacheStatus = nil
-		end 
-	end)
-	
-	-- Set hook to handle remove cache
-	hooksecurefunc(C_Calendar, "ContextMenuEventRemove", function(...)
-		cacheStatus = "remove"
-	end)
-	
-	-- Set hook to handle edit cache
-	hooksecurefunc(C_Calendar, "UpdateEvent", function(isProfileSession)
-		if not isProfileSession then 
-			cacheStatus = "edit"
-		end 
-	end)
+		end)
+		
+		-- Set hook to handle remove cache
+		hooksecurefunc(C_Calendar, "ContextMenuEventRemove", function(...)
+			cacheStatus = "remove"
+		end)
+		
+		-- Set hook to handle edit cache
+		hooksecurefunc(C_Calendar, "UpdateEvent", function(isProfileSession)
+			if not isProfileSession then 
+				cacheStatus = "edit"
+			end 
+		end)
+	end
 	
 	return true --> signal to unregister callback
 end)
 
--- Check status of CalendarAPI, /reload causes it loaded, initial login not
-Listener:Add("ACTION_PROFILESESSION_EVENTS", "PLAYER_ENTERING_WORLD", function(isInitialLogin, isReloadingUi)
-	private.isCalendarLoaded = not isInitialLogin
-	Listener:Remove("ACTION_PROFILESESSION_EVENTS", "PLAYER_ENTERING_WORLD")
-end)
+-- Check status of CalendarAPI, /reload causes it to be loaded, initial login not
+if not SKIP_CALENDAR then 
+	Listener:Add("ACTION_PROFILESESSION_EVENTS", "PLAYER_ENTERING_WORLD", function(isInitialLogin, isReloadingUi)
+		private.isCalendarLoaded = not isInitialLogin
+		Listener:Remove("ACTION_PROFILESESSION_EVENTS", "PLAYER_ENTERING_WORLD")
+	end)
 
-Listener:Add("ACTION_PROFILESESSION_EVENTS_BY_ANOTHER_ADDON", "CALENDAR_UPDATE_EVENT_LIST", function()
-	if not private.isCalendarLoadedByAnotherAddon then 
-		private.isCalendarLoadedByAnotherAddon = true 
-		if USE_DEBUG then 
-			Print("[Debug] CalendarAPI initialized successfully by another addon!")
+	Listener:Add("ACTION_PROFILESESSION_EVENTS_BY_ANOTHER_ADDON", "CALENDAR_UPDATE_EVENT_LIST", function()
+		if not private.isCalendarLoadedByAnotherAddon then 
+			private.isCalendarLoadedByAnotherAddon = true 
+			if USE_DEBUG then 
+				Print("[Debug] CalendarAPI initialized successfully by another addon!")
+			end 
 		end 
-	end 
-end)
+	end)
+end 
 
 -----------------------------------------------------------------
 -- API 
@@ -1253,6 +1271,20 @@ ProfileSession:Setup(dev_key or "cdb0db7b6f82440a270838ce2951853facbc017a9eb1c8b
 -- Tips:
 -- I recommend to make google sheets table that will hold associated Discord/email user with hash key instead of writting commentary near the key. 
 -- You can hold user key under Discord's profile notes for each user.
+-- Recommended internal layout of session lock to avoid bypassing it through editing this file, example:
+local lastKnownSecs 
+A[3] = function(icon)
+  local remain_profile, remain_profile_secs, userStatus, profileName, locales = A.ProfileSession:GetSession()
+  if A.CurrentProfile ~= profileName or type(remain_profile_secs) ~= "number" or remain_profile_secs <= 0 or (lastKnownSecs and lastKnownSecs == remain_profile_secs) then
+    if not lastKnownSecs then 
+      lastKnownSecs = remain_profile_secs
+    end 
+    return
+  end 
+  -- your profile code
+end
+-- Modify example above with own locales as an additional check or add any other your locks as extra
+
 
 
 
