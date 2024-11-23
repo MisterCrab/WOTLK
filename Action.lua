@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "17.11.2024"
+local DateTime 														= "24.11.2024"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -9816,7 +9816,8 @@ function Action.ToggleMainUI()
 			if profileName then 
 				if MainUI.Session.fontHeight ~= "compact" then 
 					MainUI.Session.fontHeight = "compact"
-					MainUI.Session:SetFontSize( select(2, MainUI.Session:GetFont()) * 1.015 )
+					MainUI.Session.fontSize = MainUI.Session.fontSize or select(2, MainUI.Session:GetFont())
+					MainUI.Session:SetFontSize( MainUI.Session.fontSize * 1.015 )
 				end
 				
 				userStatus 	  = userStatus or "UNKNOWN"
@@ -9828,7 +9829,8 @@ function Action.ToggleMainUI()
 			else 
 				if MainUI.Session.fontHeight ~= "normal" then 
 					MainUI.Session.fontHeight = "normal"
-					MainUI.Session:SetFontSize( select(2, MainUI.Session:GetFont()) * 1.05 )
+					MainUI.Session.fontSize = MainUI.Session.fontSize or select(2, MainUI.Session:GetFont())
+					MainUI.Session:SetFontSize( MainUI.Session.fontSize * 1.05 )
 				end 
 				
 				MainUI.Session:SetText(strjoin("", L["TAB"]["SESSION"], remain))
