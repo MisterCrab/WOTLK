@@ -116,7 +116,7 @@ local function IsDrinkingOrEating()
 	-- @return boolean 
 	local auraName
 	for i = 1, huge do 
-		auraName = UnitBuff(player, i, "HELPFUL PLAYER")
+		auraName = UnitBuff(player, i, "HELPFUL")
 		if not auraName then 
 			break 
 		elseif FoodAndDrink[auraName] and not FoodAndDrinkBlacklist[auraName] then 
