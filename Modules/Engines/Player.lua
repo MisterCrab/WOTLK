@@ -260,10 +260,12 @@ end
 
 function Data.logSwapLocked()
 	Data.isSwapLocked = true 
+	Listener:Add("ACTION_EVENT_PLAYER_SWAP_EQUIP", "BAG_UPDATE_DELAYED", Data.logSwapUnlocked)
 end 
 
 function Data.logSwapUnlocked()
 	Data.isSwapLocked = false 
+	Listener:Remove("ACTION_EVENT_PLAYER_SWAP_EQUIP", "BAG_UPDATE_DELAYED", Data.logSwapUnlocked)
 end 
 
 function Data.logBag()
