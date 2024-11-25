@@ -3567,7 +3567,7 @@ A.Unit = PseudoClass({
 				
 		if foundData then 
 			-- Since LARGE_NUMBER_SEPERATOR is no longer correct and TMW has no fix for this we will use AuraTooltipNumberPacked function by index for now instead of AuraTooltipNumber
-			local kindKey = kindKey or ((filter == "HARMFUL" or filter == "PLAYER") and "isHarmful") or "isHelpful"
+			local kindKey = kindKey or (filter ~= "HELPFUL" and "isHarmful") or "isHelpful"
 			local requestedIndex = requestedIndex or 1
 			return AuraTooltipNumberPacked(unitID, name, kindKey, caster, requestedIndex)
 		end 
@@ -3614,7 +3614,7 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID		
 		local filter
 		if caster then 
-			filter = "PLAYER"
+			filter = "HARMFUL PLAYER"
 		else 
 			filter = "HARMFUL"
 		end 
@@ -3654,7 +3654,7 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID		
 		local filter
 		if caster then 
-			filter = "PLAYER"
+			filter = "HARMFUL PLAYER"
 		else 
 			filter = "HARMFUL"
 		end 
@@ -3713,7 +3713,7 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID		
 		local filter
 		if caster then 
-			filter = "PLAYER"
+			filter = "HARMFUL PLAYER"
 		else 
 			filter = "HARMFUL"
 		end 
@@ -3755,7 +3755,7 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID
 		local filter
 		if caster then 
-			filter = "PLAYER"
+			filter = "HARMFUL PLAYER"
 		else 
 			filter = "HARMFUL"
 		end 
@@ -3787,7 +3787,7 @@ A.Unit = PseudoClass({
 		local unitID 						= self.UnitID
 		local filter
 		if debuff then 
-			filter = "PLAYER"
+			filter = "HARMFUL PLAYER"
 		else 
 			filter = "HELPFUL"
 		end 
