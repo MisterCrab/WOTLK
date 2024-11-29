@@ -1,6 +1,7 @@
 local ADDON_NAME 													= ...
-local _G															= _G
+local _G, math														= _G, math
 local TMW 															= _G.TMW
+local huge															= math.huge
 local dir															= [[Interface\AddOns\]] .. ADDON_NAME .. [[\Media\]]
 -- TellMeWhen
 _G.ACTION_CONST_TMW_DEFAULT_STATE_HIDE 								= TMW.CONST.STATE.DEFAULT_HIDE
@@ -76,7 +77,7 @@ _G.ACTION_CONST_SPELLID_FREEZING_TRAP2								= 60192
 _G.ACTION_CONST_PICKPOCKET											= 5967
 
 -- Global
-_G.ACTION_CONST_AURAS_MAX_LIMIT										= 16
+_G.ACTION_CONST_AURAS_MAX_LIMIT										= huge -- Classic 16, TBC 40, WOTLK+ unlimited
 _G.ACTION_CONST_MAX_BOSS_FRAMES 									= _G.MAX_BOSS_FRAMES
 _G.ACTION_CONST_UNKNOWN												= _G.UNKNOWN
 _G.ACTION_CONST_CAMERA_MAX_FACTOR									= _G.BINDING_NAME_VEHICLECAMERAZOOMOUT
