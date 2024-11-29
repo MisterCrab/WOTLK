@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- TellMeWhen Utils
 -------------------------------------------------------------------------------
-local _G, assert, error, tostring, select, type, next, math =
-	  _G, assert, error, tostring, select, type, next, math
+local _G, assert, error, tostring, select, type, next, math, pairs =
+	  _G, assert, error, tostring, select, type, next, math, pairs
 	  
 local TMW 						= _G.TMW
 local CNDT 						= TMW.CNDT
@@ -18,70 +18,132 @@ local toNum 					= A.toNum
 local Print 					= A.Print
 local ActionDataColor			= A.Data.C
 local ActionDataUniversalColor 	= A.Data.UC
+local BuildToC					= A.BuildToC
 
 local isClassic					= A.StdUi.isClassic
 local owner 					= isClassic and "PlayerClass" or "PlayerSpec" 
 local ownerColor				= ActionDataUniversalColor[0]
+local ownerVersion				= BuildToC < 20000 and "Classic" or BuildToC < 30000 and "TBC" or BuildToC < 40000 and "WOTLK" or BuildToC < 50000 and "CATA" or BuildToC < 60000 and "MOP" or "Retail"
 local CharacterToUniversalColor	= {}
 do 
-	CharacterToUniversalColor[""] = ActionDataUniversalColor[0]
-	if isClassic then 		
-		CharacterToUniversalColor["WARRIOR"] = ActionDataUniversalColor[1]
-		CharacterToUniversalColor["PALADIN"] = ActionDataUniversalColor[2]
-		CharacterToUniversalColor["HUNTER"] = ActionDataUniversalColor[3]
-		CharacterToUniversalColor["ROGUE"] = ActionDataUniversalColor[4]
-		CharacterToUniversalColor["PRIEST"] = ActionDataUniversalColor[5]
-		CharacterToUniversalColor["SHAMAN"] = ActionDataUniversalColor[6]
-		CharacterToUniversalColor["MAGE"] = ActionDataUniversalColor[7]
-		CharacterToUniversalColor["WARLOCK"] = ActionDataUniversalColor[8]
-		CharacterToUniversalColor["MONK"] = ActionDataUniversalColor[9]
-		CharacterToUniversalColor["DRUID"] = ActionDataUniversalColor[10]
-		CharacterToUniversalColor["DEMONHUNTER"] = ActionDataUniversalColor[11]
-		CharacterToUniversalColor["DEATHKNIGHT"] = ActionDataUniversalColor[12]
-		CharacterToUniversalColor["EVOKER"] = ActionDataUniversalColor[13]		
-	else 
-		CharacterToUniversalColor[CONST.WARRIOR_ARMS] = ActionDataUniversalColor[1]	
-		CharacterToUniversalColor[CONST.WARRIOR_FURY] = ActionDataUniversalColor[2]		
-		CharacterToUniversalColor[CONST.WARRIOR_PROTECTION] = ActionDataUniversalColor[3]		
-		CharacterToUniversalColor[CONST.PALADIN_HOLY] = ActionDataUniversalColor[4]			
-		CharacterToUniversalColor[CONST.PALADIN_PROTECTION] = ActionDataUniversalColor[5]		
-		CharacterToUniversalColor[CONST.PALADIN_RETRIBUTION] = ActionDataUniversalColor[6]			
-		CharacterToUniversalColor[CONST.HUNTER_BEASTMASTERY] = ActionDataUniversalColor[7]	
-		CharacterToUniversalColor[CONST.HUNTER_MARKSMANSHIP] = ActionDataUniversalColor[8]			
-		CharacterToUniversalColor[CONST.HUNTER_SURVIVAL] = ActionDataUniversalColor[9]		
-		CharacterToUniversalColor[CONST.ROGUE_ASSASSINATION] = ActionDataUniversalColor[10]			
-		CharacterToUniversalColor[CONST.ROGUE_OUTLAW] = ActionDataUniversalColor[11]		
-		CharacterToUniversalColor[CONST.ROGUE_SUBTLETY] = ActionDataUniversalColor[12]			
-		CharacterToUniversalColor[CONST.PRIEST_DISCIPLINE] = ActionDataUniversalColor[13]			
-		CharacterToUniversalColor[CONST.PRIEST_HOLY] = ActionDataUniversalColor[14]			
-		CharacterToUniversalColor[CONST.PRIEST_SHADOW] = ActionDataUniversalColor[15]				
-		CharacterToUniversalColor[CONST.SHAMAN_ELEMENTAL] = ActionDataUniversalColor[16]			
-		CharacterToUniversalColor[CONST.SHAMAN_ENHANCEMENT] = ActionDataUniversalColor[17]	
-		CharacterToUniversalColor[CONST.SHAMAN_RESTORATION] = ActionDataUniversalColor[18]		
-		CharacterToUniversalColor[CONST.MAGE_ARCANE] = ActionDataUniversalColor[19]	
-		CharacterToUniversalColor[CONST.MAGE_FIRE] = ActionDataUniversalColor[20]	
-		CharacterToUniversalColor[CONST.MAGE_FROST] = ActionDataUniversalColor[21]		
-		CharacterToUniversalColor[CONST.WARLOCK_AFFLICTION] = ActionDataUniversalColor[22]			
-		CharacterToUniversalColor[CONST.WARLOCK_DEMONOLOGY] = ActionDataUniversalColor[23]			
-		CharacterToUniversalColor[CONST.WARLOCK_DESTRUCTION] = ActionDataUniversalColor[24]				
-		CharacterToUniversalColor[CONST.MONK_BREWMASTER] = ActionDataUniversalColor[25]	
-		CharacterToUniversalColor[CONST.MONK_MISTWEAVER] = ActionDataUniversalColor[26]	
-		CharacterToUniversalColor[CONST.MONK_WINDWALKER] = ActionDataUniversalColor[27]	
-		CharacterToUniversalColor[CONST.DRUID_BALANCE] = ActionDataUniversalColor[28]	
-		CharacterToUniversalColor[CONST.DRUID_FERAL] = ActionDataUniversalColor[29]	
-		CharacterToUniversalColor[CONST.DRUID_GUARDIAN] = ActionDataUniversalColor[30]	
-		CharacterToUniversalColor[CONST.DRUID_RESTORATION] = ActionDataUniversalColor[31]	
-		CharacterToUniversalColor[CONST.DEMONHUNTER_HAVOC] = ActionDataUniversalColor[32]	
-		CharacterToUniversalColor[CONST.DEMONHUNTER_VENGEANCE] = ActionDataUniversalColor[33]	
-		CharacterToUniversalColor[CONST.DEATHKNIGHT_BLOOD] = ActionDataUniversalColor[34]	
-		CharacterToUniversalColor[CONST.DEATHKNIGHT_FROST] = ActionDataUniversalColor[35]	
-		CharacterToUniversalColor[CONST.DEATHKNIGHT_UNHOLY] = ActionDataUniversalColor[36]	
-		CharacterToUniversalColor[CONST.EVOKER_DEVASTATION] = ActionDataUniversalColor[37]	
-		CharacterToUniversalColor[CONST.EVOKER_PRESERVATION] = ActionDataUniversalColor[38]	
-		CharacterToUniversalColor[CONST.EVOKER_AUGMENTATION] = ActionDataUniversalColor[39]			
+	local index = -1
+	for ver, val in pairs({ 
+		-- blank 
+		"", -- #0
+		Retail = {
+			CONST.WARRIOR_ARMS, 
+			CONST.WARRIOR_FURY,		
+			CONST.WARRIOR_PROTECTION,
+			CONST.PALADIN_HOLY,		
+			CONST.PALADIN_PROTECTION,		
+			CONST.PALADIN_RETRIBUTION,			
+			CONST.HUNTER_BEASTMASTERY,	
+			CONST.HUNTER_MARKSMANSHIP,			
+			CONST.HUNTER_SURVIVAL,		
+			CONST.ROGUE_ASSASSINATION,		
+			CONST.ROGUE_OUTLAW,	
+			CONST.ROGUE_SUBTLETY,		
+			CONST.PRIEST_DISCIPLINE,		
+			CONST.PRIEST_HOLY,			
+			CONST.PRIEST_SHADOW,			
+			CONST.SHAMAN_ELEMENTAL,
+			CONST.SHAMAN_ENHANCEMENT,
+			CONST.SHAMAN_RESTORATION,
+			CONST.MAGE_ARCANE,
+			CONST.MAGE_FIRE,
+			CONST.MAGE_FROST,
+			CONST.WARLOCK_AFFLICTION,
+			CONST.WARLOCK_DEMONOLOGY,
+			CONST.WARLOCK_DESTRUCTION,
+			CONST.MONK_BREWMASTER,
+			CONST.MONK_MISTWEAVER,
+			CONST.MONK_WINDWALKER,
+			CONST.DRUID_BALANCE,
+			CONST.DRUID_FERAL,
+			CONST.DRUID_GUARDIAN,
+			CONST.DRUID_RESTORATION,
+			CONST.DEMONHUNTER_HAVOC,
+			CONST.DEMONHUNTER_VENGEANCE,
+			CONST.DEATHKNIGHT_BLOOD,
+			CONST.DEATHKNIGHT_FROST,
+			CONST.DEATHKNIGHT_UNHOLY,
+			CONST.EVOKER_DEVASTATION,
+			CONST.EVOKER_PRESERVATION,
+			CONST.EVOKER_AUGMENTATION, -- #39
+		},
+		Classic  = {
+			"WARRIOR",
+			"PALADIN",
+			"HUNTER",
+			"ROGUE",
+			"PRIEST",
+			"SHAMAN",
+			"MAGE",
+			"WARLOCK",
+			"DRUID", -- #48		
+		},
+		TBC = {
+			"WARRIOR",
+			"PALADIN",
+			"HUNTER",
+			"ROGUE",
+			"PRIEST",
+			"SHAMAN",
+			"MAGE",
+			"WARLOCK",
+			"DRUID", -- #57	
+		},
+		WOTLK = {
+			"WARRIOR",
+			"PALADIN",
+			"HUNTER",
+			"ROGUE",
+			"PRIEST",
+			"SHAMAN",
+			"MAGE",
+			"WARLOCK",
+			"DRUID",
+			"DEATHKNIGHT", -- #67
+		},
+		CATA = {
+			"WARRIOR",
+			"PALADIN",
+			"HUNTER",
+			"ROGUE",
+			"PRIEST",
+			"SHAMAN",
+			"MAGE",
+			"WARLOCK",
+			"DRUID",
+			"DEATHKNIGHT", -- #77
+		},
+		MOP = {
+			"WARRIOR",
+			"PALADIN",
+			"HUNTER",
+			"ROGUE",
+			"PRIEST",
+			"SHAMAN",
+			"MAGE",
+			"WARLOCK",
+			"MONK",
+			"DRUID",
+			"DEATHKNIGHT", -- #88
+		},
+	}) do 		
+		if type(val) ~= "table" then 
+			index = index + 1
+			CharacterToUniversalColor[val] = ActionDataUniversalColor[index]
+		else 
+			CharacterToUniversalColor[ver] = {}
+			for _, classspec in pairs(val) do 
+				index = index + 1
+				CharacterToUniversalColor[ver][classspec] = ActionDataUniversalColor[index]
+			end 
+		end 
 	end 
-	
-	ownerColor = CharacterToUniversalColor[A[owner] or ""]
+
+	ownerColor = CharacterToUniversalColor[ownerVersion] and CharacterToUniversalColor[ownerVersion][A[owner]] or CharacterToUniversalColor[""]
 end 
 
 -------------------------------------------------------------------------------
@@ -597,8 +659,10 @@ local RankAoE	 		 = CreateMiscFrame("RankAoE", "TOPLEFT", 163, -2)
 local Character	 		 = CreateMiscFrame(nil, "TOPLEFT", 163, -3)
 Character.texture:SetColorTexture(ownerColor())
 TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", function()
-	ownerColor = CharacterToUniversalColor[A[owner]]
-	Character.texture:SetColorTexture(ownerColor())
+	ownerColor = CharacterToUniversalColor[ownerVersion] and CharacterToUniversalColor[ownerVersion][A[owner]] or CharacterToUniversalColor[""]
+	if ownerColor then 
+		Character.texture:SetColorTexture(ownerColor())
+	end 
 end) 
 
 local function UpdateFrames()
