@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 -- TellMeWhen Utils
 -------------------------------------------------------------------------------
-local _G, assert, error, tostring, select, type, next, math, pairs =
-	  _G, assert, error, tostring, select, type, next, math, pairs
+local _G, assert, error, tostring, select, type, next, math, pairs, ipairs, setmetatable, table =
+	  _G, assert, error, tostring, select, type, next, math, pairs, ipairs, setmetatable, table
 	  
 local TMW 						= _G.TMW
 local CNDT 						= TMW.CNDT
@@ -26,8 +26,29 @@ local ownerColor				= ActionDataUniversalColor[0]
 local ownerVersion				= BuildToC < 20000 and "Classic" or BuildToC < 30000 and "TBC" or BuildToC < 40000 and "WOTLK" or BuildToC < 50000 and "CATA" or BuildToC < 60000 and "MOP" or "Retail"
 local CharacterToUniversalColor	= {}
 do 
+	local function orderednext(t, n)
+		local key = t[t.__next]
+		if key then 
+			t.__next = t.__next + 1
+			return key, t.__source[key]
+		end
+	end
+	local function orderedpairs(t, f)
+		local keys, kn = {__source = t, __next = 1}, 1
+		for k in pairs(t) do
+			keys[kn], kn = k, kn + 1
+		end
+		sort(keys, f)
+		return orderednext, keys
+	end
+	
 	local index = -1
-	for ver, val in pairs({ 
+	local order = setmetatable({ Retail = 1, Classic = 2, TBC = 3, WOTLK = 4, CATA = 5, MOP = 6 }, { __index = function() return 0 end })
+	local function compare(a, b)
+		return order[a] < order[b]
+	end
+	
+	for ver, val in orderedpairs({ 
 		-- blank 
 		"", -- #0
 		Retail = {
@@ -130,15 +151,16 @@ do
 			"DRUID",
 			"DEATHKNIGHT", -- #88
 		},
-	}) do 		
+	}, compare) do 		
 		if type(val) ~= "table" then 
 			index = index + 1
-			CharacterToUniversalColor[val] = ActionDataUniversalColor[index]
+			CharacterToUniversalColor[val] = ActionDataUniversalColor[index]			
 		else 
 			CharacterToUniversalColor[ver] = {}
-			for _, classspec in pairs(val) do 
+			for _, classspec in ipairs(val) do 
 				index = index + 1
 				CharacterToUniversalColor[ver][classspec] = ActionDataUniversalColor[index]
+				--print(index, ver, classspec)
 			end 
 		end 
 	end 
