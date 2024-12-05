@@ -4,6 +4,8 @@
 local _G, assert, error, tostring, select, type, next, math, pairs, ipairs, setmetatable, table =
 	  _G, assert, error, tostring, select, type, next, math, pairs, ipairs, setmetatable, table
 	  
+local sort 						= table.sort	 	  
+	  
 local TMW 						= _G.TMW
 local CNDT 						= TMW.CNDT
 local Env 						= CNDT.Env
