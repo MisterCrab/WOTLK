@@ -2333,79 +2333,87 @@ A.CombatTracker									= {
 	--[[ Time To Die ]]
 	TimeToDieX									= function(self, unitID, X)
 		local UNIT 								= unitID or "target"
-		local ttd 								= A_CombatTracker:UnitHealth(UNIT) - ( A_CombatTracker:UnitHealthMax(UNIT) * (X / 100) )
-		local DMG, Hits 						= self:GetDMG(UNIT)
+		local ttd 								= 500
 		
-		if DMG >= 1 and Hits > 1 then
-			ttd = ttd / DMG
-			if ttd <= 0 then 
-				return 500
-			end 			
-		end    
+		-- Training dummy totems exception
+		if A.Zone ~= "none" or not A_Unit(UNIT):IsDummy() then 
+			local health 						= A_CombatTracker:UnitHealth(UNIT)
+			local DMG, Hits 					= self:GetDMG(UNIT)
+			
+			-- We need "health > 0" condition to ensure that the unit is still alive
+			if DMG >= 1 and Hits > 1 and health > 0 then		
+				ttd = (health - ( A_CombatTracker:UnitHealthMax(UNIT) * (X / 100) )) / DMG
+				-- ToDo: Probably this condition will fix negative numbers, if so then remove it on v2
+				if ttd <= 0 then 
+					return 500
+				end 				
+			end 
+		end		
 		
-		-- Trainer dummy totems exception 
-		if A.Zone == "none" and A_Unit(UNIT):IsDummy() then
-			ttd = 500
-		end
-		
-		return ttd or 500
+		return ttd
 	end,
 	TimeToDie									= function(self, unitID)
 		local UNIT 								= unitID or "target"		
-		local ttd 								= A_CombatTracker:UnitHealthMax(UNIT)
-		local DMG, Hits 						= self:GetDMG(UNIT)
-		
-		if DMG >= 1 and Hits > 1 then
-			ttd = A_CombatTracker:UnitHealth(UNIT) / DMG
-			if ttd <= 0 then 
-				return 500
+		local ttd 								= 500		
+
+		-- Training dummy totems exception
+		if A.Zone ~= "none" or not A_Unit(UNIT):IsDummy() then 
+			local health 						= A_CombatTracker:UnitHealth(UNIT)
+			local DMG, Hits 					= self:GetDMG(UNIT)
+			
+			-- We need "health > 0" condition to ensure that the unit is still alive
+			if DMG >= 1 and Hits > 1 and health > 0 then
+				ttd = health / DMG
+				-- ToDo: Probably this condition will fix negative numbers, if so then remove it on v2
+				if ttd <= 0 then 
+					return 500
+				end 				
 			end 
-		end    
-		
-		-- Trainer dummy totems exception 
-		if A.Zone == "none" and A_Unit(UNIT):IsDummy() then
-			ttd = 500
 		end
-		
-		return ttd or 500
+
+		return ttd
 	end,
 	TimeToDieMagicX								= function(self, unitID, X)
 		local UNIT 								= unitID or "target"		
-		local ttd 								= A_CombatTracker:UnitHealth(UNIT) - ( A_CombatTracker:UnitHealthMax(UNIT) * (X / 100) )
-		local _, Hits, _, DMG 					= self:GetDMG(UNIT)
+		local ttd 								= 500
 		
-		if DMG >= 1 and Hits > 1 then
-			ttd = ttd / DMG
-			if ttd <= 0 then 
-				return 100
-			end 			
-		end    
+		-- Training dummy totems exception
+		if A.Zone ~= "none" or not A_Unit(UNIT):IsDummy() then 
+			local health 						= A_CombatTracker:UnitHealth(UNIT)
+			local _, Hits, _, DMG 				= self:GetDMG(UNIT)
+			
+			-- We need "health > 0" condition to ensure that the unit is still alive
+			if DMG >= 1 and Hits > 1 and health > 0 then		
+				ttd = (health - ( A_CombatTracker:UnitHealthMax(UNIT) * (X / 100) )) / DMG
+				-- ToDo: Probably this condition will fix negative numbers, if so then remove it on v2
+				if ttd <= 0 then 
+					return 500
+				end 				
+			end 
+		end		
 		
-		-- Trainer dummy totems exception 
-		if A.Zone == "none" and A_Unit(UNIT):IsDummy() then
-			ttd = 500
-		end
-		
-		return ttd or 500 
+		return ttd		
 	end,
 	TimeToDieMagic								= function(self, unitID)
-		local UNIT 								= unitID or "target"		
-		local ttd 								= A_CombatTracker:UnitHealthMax(UNIT)
-		local _, Hits, _, DMG 					= self:GetDMG(UNIT)
-		
-		if DMG >= 1 and Hits > 1 then
-			ttd = A_CombatTracker:UnitHealth(UNIT) / DMG
-			if ttd <= 0 then 
-				return 100
-			end 			
-		end  
-		
-		-- Trainer dummy totems exception 
-		if A.Zone == "none" and A_Unit(UNIT):IsDummy() then
-			ttd = 500
+		local UNIT 								= unitID or "target"
+		local ttd 								= 500		
+
+		-- Training dummy totems exception
+		if A.Zone ~= "none" or not A_Unit(UNIT):IsDummy() then 
+			local health 						= A_CombatTracker:UnitHealth(UNIT)
+			local _, Hits, _, DMG 				= self:GetDMG(UNIT)
+			
+			-- We need "health > 0" condition to ensure that the unit is still alive
+			if DMG >= 1 and Hits > 1 and health > 0 then
+				ttd = health / DMG
+				-- ToDo: Probably this condition will fix negative numbers, if so then remove it on v2
+				if ttd <= 0 then 
+					return 500
+				end 				
+			end 
 		end
-		
-		return ttd or 500
+
+		return ttd		
 	end,
 	--[[ Debug Real Health ]]
 	Debug 										= function(self, command)
