@@ -8472,7 +8472,7 @@ function Action.IsQueueReady(meta)
 					and (not self.PowerCustom or UnitPower("player", self.PowerType) >= (self.PowerCost or 0)) 
 					and (self.Auto or self:RunQLua(self.UnitID)) 
 					and (not self.isCP or A_Player:ComboPoints("target") >= (self.CP or 1)) 
-					and (self.Type ~= "Spell" or self:GetSpellCastTime() == 0 or self.NoStaying or not A_Player:IsMoving())
+					and (self.Type ~= "Spell" or ((self:GetSpellCastTime() == 0 or self.NoStaying or not A_Player:IsMoving()) and (not self:IsSpellInCasting() or (ActionDataQ[2] and ActionDataQ[2].ID == self.ID)))) -- prevents double casting unless otherwise set
 		end 
     end 
 	
