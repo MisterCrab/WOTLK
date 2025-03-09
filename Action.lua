@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "09.03.2025"
+local DateTime 														= "10.03.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -8459,6 +8459,11 @@ function Action.IsQueueReady(meta)
 			return false 
 		end 
 		
+		if self.Type == "Spell" and self:IsSpellInCasting() then 
+			-- Note: Adds small delay to prevent double casting
+			self.lastCastingUpdateByQueue = TMW.time
+		end 		
+		
 		-- Check 
 		if self.Type == "SwapEquip" then 
 			return 	not A_Player:IsSwapLocked() 
@@ -8472,7 +8477,7 @@ function Action.IsQueueReady(meta)
 					and (not self.PowerCustom or UnitPower("player", self.PowerType) >= (self.PowerCost or 0)) 
 					and (self.Auto or self:RunQLua(self.UnitID)) 
 					and (not self.isCP or A_Player:ComboPoints("target") >= (self.CP or 1)) 
-					and (self.Type ~= "Spell" or ((self:GetSpellCastTime() == 0 or self.NoStaying or not A_Player:IsMoving()) and (not self:IsSpellInCasting() or (ActionDataQ[2] and ActionDataQ[2].ID == self.ID)))) -- prevents double casting unless otherwise set
+					and (self.Type ~= "Spell" or ((self:GetSpellCastTime() == 0 or self.NoStaying or not A_Player:IsMoving()) and (TMW.time - (self.lastCastingUpdateByQueue or 0) > 0.15 or (ActionDataQ[2] and ActionDataQ[2].ID == self.ID)))) -- prevents double casting unless otherwise set
 		end 
     end 
 	
