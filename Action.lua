@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "08.03.2025"
+local DateTime 														= "09.03.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -8472,7 +8472,7 @@ function Action.IsQueueReady(meta)
 					and (not self.PowerCustom or UnitPower("player", self.PowerType) >= (self.PowerCost or 0)) 
 					and (self.Auto or self:RunQLua(self.UnitID)) 
 					and (not self.isCP or A_Player:ComboPoints("target") >= (self.CP or 1)) 
-					and (self.Type ~= "Spell" or self:GetSpellCastTime() == 0 or not A_Player:IsMoving())
+					and (self.Type ~= "Spell" or self:GetSpellCastTime() == 0 or self.NoStaying or not A_Player:IsMoving())
 		end 
     end 
 	
@@ -8506,6 +8506,7 @@ function Action:SetQueue(args)
 			Silence (boolean) if true don't display print 
 			UnitID (string) specified for spells usually to check their for range on certain unit 	(passing conditions to func QueueValidCheck)
 			NoRange (boolean) will skip range check 												(passing conditions to func QueueValidCheck)
+			NoStaying (boolean) will skip moving check 												(passing conditions to func QueueValidCheck)
 			Value (boolean) sets custom fixed statement for queue
 			Priority (number) put in specified priority 
 			MetaSlot (number) usage for MSG system to set queue on fixed position 
@@ -8596,6 +8597,9 @@ function Action:SetQueue(args)
 	end 		 	
 	if args.ExtraCD then
 		ActionDataQ[priority].ExtraCD = args.ExtraCD 
+	end 	
+	if args.NoStaying then
+		ActionDataQ[priority].NoStaying = args.NoStaying 
 	end 	
 	
 	-- Ryan's fix Action:SetQueue() is missing CP passing to IsQueueReady logic
