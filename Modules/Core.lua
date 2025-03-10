@@ -300,7 +300,7 @@ end
 function A.CanUseHealingPotion(icon)
 	-- @return boolean or nil
 	local Healthstone = GetToggle(1, "HealthStone")  
-	if Healthstone >= 0 then 
+	if Healthstone >= 0 and (BuildToC < 110000 or A.ZoneID ~= 12841 or Unit(player):HasDeBuffs(320102) == 0) then -- Retail: Theater of Pain zone excluding "Blood and Glory" debuff 
 		local healthPotion = DetermineUsableObject(player, true, nil, nil, nil, A.MajorHealingPotion, A.SuperiorHealingPotion, A.GreaterHealingPotion, A.HealingPotion, A.LesserHealingPotion, A.MinorHealingPotion)
 		if healthPotion then 
 			if Healthstone >= 100 then -- AUTO 
