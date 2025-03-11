@@ -16,6 +16,7 @@ local QueueData										= A.Data.Q
 local ShouldStop									= A.ShouldStop
 local GetCurrentGCD									= A.GetCurrentGCD
 local GetPing										= A.GetPing
+local BuildToC										= A.BuildToC
 local DetermineUsableObject							= A.DetermineUsableObject
 
 local Re 											= A.Re
