@@ -1,9 +1,10 @@
-local _G, pairs, type, table, string, error =
-	  _G, pairs, type, table, string, error
+local _G, pairs, type, table, string, error, math =
+	  _G, pairs, type, table, string, error, math
 
 local format						= string.format
 local tremove						= table.remove
 local tinsert						= table.insert
+local huge 							= math.huge
 local hooksecurefunc				= _G.hooksecurefunc
 
 local TMW 							= _G.TMW
@@ -84,7 +85,7 @@ if DBM then
 			error("Bad argument 'text' (nil value) for function DBM_GetTimeRemaining")
 		end
 
-		return 0, 0
+		return huge, huge
 	end
 
 	DBM_GetTimeRemainingBySpellID = function(spellID)
@@ -98,7 +99,7 @@ if DBM then
 			return remaining, expirationTime
 		end
 
-		return 0, 0
+		return huge, huge
 	end
 
 	hooksecurefunc(DBM, "StartCombat", function(DBM, mod, delay, event)
@@ -223,7 +224,7 @@ if BigWigsLoader then
 	BigWigsLoader.RegisterMessage(owner, "BigWigs_StopNameplate", function(_, module, guid, key)
 		stop(module, nil, guid, key)
 	end)
-	BigWigsLoader.RegisterMessage(owner, "BigWigs_StopUnitNameplate", function(_, module, guid)
+	BigWigsLoader.RegisterMessage(owner, "BigWigs_ClearNameplate", function(_, module, guid)
 		stop(module, nil, guid)
 	end)
 
@@ -247,13 +248,13 @@ if BigWigsLoader then
 			error("Bad argument 'text' (nil value) for function BigWigs_GetTimeRemaining")
 		end
 
-		return 0, 0
+		return huge, huge
 	end
 	BigWigs_GetNameplateTimeRemaining = function(key)
 		local t
 		if key then
-			local expirationTime = math.huge
-			local remaining = math.huge
+			local expirationTime = huge
+			local remaining = huge
 			for k = 1, #Timers do --must check all timers, as multiple similar NPCs are possible
 				t = Timers[k]
 
@@ -275,7 +276,7 @@ if BigWigsLoader then
 		else
 			error("Bad argument 'text' (nil value) for function BigWigs_GetTimeRemaining")
 		end
-		return math.huge, math.huge
+		return huge, huge
 	end
 end
 
@@ -355,8 +356,8 @@ end
 
 function A.BossMods:GetNameplateTimer(spellID)
 	-- @return @number, @number
-	-- only works for BigWigs, returns math.huge if not found, returns time until CD or 0 if spellqueued
-	local remaining, expirationTime = math.huge, math.huge
+	-- only works for BigWigs, returns huge if not found, returns time until CD or 0 if spellqueued
+	local remaining, expirationTime = huge, huge
 	if spellID and self:HasAnyAddon() and GetToggle(1, "BossMods") then
 		if self.HasDBM then
 			return remaining, expirationTime
