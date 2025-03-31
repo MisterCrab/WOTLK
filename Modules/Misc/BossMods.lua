@@ -355,18 +355,12 @@ function A.BossMods:GetTimer(name)
 end
 
 function A.BossMods:GetNameplateTimer(spellID)
-	-- @return @number, @number
-	-- only works for BigWigs, returns huge if not found, returns time until CD or 0 if spellqueued
-	local remaining, expirationTime = huge, huge
-	if spellID and self:HasAnyAddon() and GetToggle(1, "BossMods") then
-		if self.HasDBM then
-			return remaining, expirationTime
-		end
-		if self.HasBigWigs then
-			remaining, expirationTime = BigWigs_GetNameplateTimeRemaining(spellID)
-		end
-	end
-	return remaining, expirationTime
+    -- @return @number, @number
+    -- only works for BigWigs, returns huge if not found, returns time until CD or 0 if spellqueued
+    if spellID and GetToggle(1, "BossMods") and self.HasBigWigs then
+        return BigWigs_GetNameplateTimeRemaining(spellID)
+    end
+    return huge, huge
 end
 
 function A.BossMods:IsEngage(name)
