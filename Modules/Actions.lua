@@ -669,7 +669,11 @@ function A.UpdateSpellBook(isProfileLoad)
 	end 
 end 
 
+-- "LEARNED_SPELL_IN_TAB" > "TRAINER_UPDATE" > "SKILL_LINES_CHANGED"
+-- "LEARNED_SPELL_IN_TAB" new added
+-- "SKILL_LINES_CHANGED" new added / existing level (rank) update
 Listener:Add("ACTION_EVENT_SPELL_RANKS", "LEARNED_SPELL_IN_TAB", 		A.UpdateSpellBook)
+Listener:Add("ACTION_EVENT_SPELL_RANKS", "SKILL_LINES_CHANGED", 		A.UpdateSpellBook) 
 TMW:RegisterCallback("TMW_ACTION_TALENT_MAP_UPDATED", function()
 	A.UpdateSpellBook()
 end)
