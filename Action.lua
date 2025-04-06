@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "05.04.2025"
+local DateTime 														= "06.04.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -490,6 +490,8 @@ local Localization = {
 				USETITLE = "",
 				MSG = "MSG System",
 				MSGTOOLTIP = "Checked: working\nUnchecked: not working\n\nRightClick: Create macro",
+				CHANNELS = "Channels",
+				CHANNEL = "Channel ",
 				DISABLERETOGGLE = "Block queue remove",
 				DISABLERETOGGLETOOLTIP = "Preventing by repeated message deletion from queue system\nE.g. possible spam macro without being removed\n\nRightClick: Create macro",
 				MACRO = "Macro for your group:",
@@ -1045,6 +1047,8 @@ local Localization = {
 				USETITLE = "[Каждый спек]",
 				MSG = "MSG Система",				
 				MSGTOOLTIP = "Включено: работает\nНЕ включено: не работает\n\nПравая кнопка мыши: Создать макрос",
+				CHANNELS = "Каналы",
+				CHANNEL = "Канал ",		
 				DISABLERETOGGLE = "Блокировать снятие очереди",
 				DISABLERETOGGLETOOLTIP = "Предотвращает повторным сообщением удаление из системы очереди\nИными словами позволяет спамить макрос без риска быть снятым\n\nПравая кнопка мыши: Создать макрос",
 				MACRO = "Макрос для вашей группы:",
@@ -1601,6 +1605,8 @@ local Localization = {
 				USETITLE = "",
 				MSG = "MSG System",
 				MSGTOOLTIP = "Aktiviert: Funktioniert \nDeaktiviert: Funktioniert nicht\n\nRightClick: Create macro",
+				CHANNELS = "Kanäle",
+				CHANNEL = "Kanal ",	
 				DISABLERETOGGLE = "Warteschlange entfernen",
 				DISABLERETOGGLETOOLTIP = "Verhindert durch wiederholtes Löschen von Nachrichten aus dem Warteschlangensystem\nE.g. Mögliches Spam-Makro, ohne entfernt zu werden\n\nRechtsklick: Makro erstellen",
 				MACRO = "Macro für deine Gruppe:",
@@ -2159,6 +2165,8 @@ local Localization = {
 				USETITLE = "",
 				MSG = "Système MSG ",
 				MSGTOOLTIP = "Coché: fonctionne\nDécoché: ne fonctionne pas\n\nClique droit : Créer la macro",
+				CHANNELS = "Chaînes",
+				CHANNEL = "Chaîne ",	
 				DISABLERETOGGLE = "Block queue remove",
 				DISABLERETOGGLETOOLTIP = "Préviens la répétition de retrait de message de la file d'attente\nE.g. Possible de spam la macro sans que le message soit retirer\n\nClique droit : Créer la macro",
 				MACRO = "Macro pour votre groupe:",
@@ -2714,6 +2722,8 @@ local Localization = {
 				USETITLE = "",
 				MSG = "MSG Sistema",
 				MSGTOOLTIP = "Selezionato: attivo\nNon selezionato: non attivo\n\nTastodestro: Crea macro",
+				CHANNELS = "Canali",
+				CHANNEL = "Canale ",	
 				DISABLERETOGGLE = "Blocca Coda Rimuovi",
 				DISABLERETOGGLETOOLTIP = "Previeni l'eliminazione di un incantesimo dalla coda con un messaggio ripetuto\nEsempio, consente di inviare una macro spam senza rischiare eliminazioni non volute\n\nTastodestro: Crea macro",
 				MACRO = "Macro per il tuo gruppo:",
@@ -3271,6 +3281,8 @@ local Localization = {
 				USETITLE = "",
 				MSG = "Sistema de MSG",
 				MSGTOOLTIP = "Marcado: funcionando\nDesmarcado: sin funcionar\n\nClickDerecho: Crear macro",
+				CHANNELS = "Canales",
+				CHANNEL = "Canal ",	
 				DISABLERETOGGLE = "Bloquear borrar cola",
 				DISABLERETOGGLETOOLTIP = "Prevenir la repetición de mensajes borrados de la cola del sistema\nE.j. Posible spam de macro sin ser removida\n\nClickDerecho: Crear macro",
 				MACRO = "Macro para tu grupo:",
@@ -3826,6 +3838,8 @@ local Localization = {
 				USETITLE = "",
 				MSG = "Sistema de MSG",
 				MSGTOOLTIP = "Marcado: funcionando\nDesmarcado: não funcionando\n\nRightClick: Criar macro",
+				CHANNELS = "Canais",
+				CHANNEL = "Canal ",			
 				DISABLERETOGGLE = "Bloquear remover fila",
 				DISABLERETOGGLETOOLTIP = "Prevenido devido remoções repetidas de mensagens do sistema de filas\nEx.: Possível macro de spam não sendo removido\n\nRightClick: Criar macro",
 				MACRO = "Macro para seu grupo:",
@@ -4571,7 +4585,11 @@ local Factory = {
 		},
 	},
 	[7] = {
-		MSG_Toggle = true,
+		Channels = { 
+			[1] = false, 	-- whisper
+			[2] = true, 	-- party
+			[3] = true, 	-- raid
+		}, 
 		DisableReToggle = false,
 		msgList = {},
 	},
@@ -9178,7 +9196,7 @@ local MSG; MSG 				= {
 		arenapet5			= 10, 	
 	},
 	set 					= {},
-	SetToggle				= {7, "MSG_Toggle"},
+	SetToggle				= {7, "Channels"},
 	OnEvent					= function(...)
 		local msgList = A_GetToggle(7, "msgList")
 		if type(msgList) ~= "table" or not next(msgList) then 
@@ -9251,38 +9269,64 @@ local MSG; MSG 				= {
 		end 	
 	end,
 	Reset 					= function(self)
+		A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_WHISPER")
 		A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_PARTY")
 		A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_PARTY_LEADER")
 		A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_RAID")
 		A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_RAID_LEADER")	
 	end,
 	Initialize				= function(self)
-		if A_GetToggle(7, "MSG_Toggle") then 
+		local channels = A_GetToggle(7, "Channels")
+		if channels[1] then 
+			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_WHISPER", 			self.OnEvent)
+		else 
+			A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_WHISPER")	
+		end 			
+		
+		if channels[2] then 
 			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_PARTY", 			self.OnEvent)
 			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_PARTY_LEADER", 	self.OnEvent)
-			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_RAID", 			self.OnEvent)
-			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_RAID_LEADER", 	self.OnEvent)
 		else 
-			self:Reset()
-		end 	
+			A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_PARTY")
+			A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_PARTY_LEADER")			
+		end 
+		
+		if channels[3] then 
+			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_RAID", 			self.OnEvent)
+			A_Listener:Add("ACTION_EVENT_MSG", "CHAT_MSG_RAID_LEADER", 		self.OnEvent)
+		else 
+			A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_RAID")
+			A_Listener:Remove("ACTION_EVENT_MSG", "CHAT_MSG_RAID_LEADER")			
+		end 						
+	end,
+	IsEnabled 				= function(self)
+		local channels = A_GetToggle(7, "Channels")
+		for i = 1, #channels do 
+			if channels[i] then 
+				return true 
+			end 
+		end 
 	end,
 }	
 
-function Action.ToggleMSG()
+function Action.ToggleMSG(val)
 	MSG.SetToggle[3] = L["TAB"][7]["MSG"] .. ": "
-	A_SetToggle(MSG.SetToggle)
+	A_SetToggle(MSG.SetToggle, val)
 	MSG:Initialize()	
 	if tabFrame then 
 		local spec 	= Action.PlayerClass .. CL
 		local tab 	= tabFrame.tabs[7]
-		local kid 	= tab and tab.childs[spec] and tab.childs[spec].toggleWidgets and tab.childs[spec].toggleWidgets.DisableReToggle
-		if kid then 
-			if A_GetToggle(7, "MSG_Toggle") then 
-				kid:Enable()
-			else 
-				kid:Disable()
-			end 
-		end 
+		if tab and tab.childs[spec] and tab.childs[spec].toggleWidgets and tab.childs[spec].toggleWidgets then 
+			local DisableReToggle = tab.childs[spec].toggleWidgets.DisableReToggle
+			if DisableReToggle then 
+				DisableReToggle:GetScript("OnShow")(DisableReToggle)
+			end
+			
+			local Macro = tab.childs[spec].toggleWidgets.Macro
+			if Macro then 
+				Macro:GetScript("OnTextChanged")(Macro)
+			end
+		end
 	end 
 end 
 
@@ -13905,7 +13949,7 @@ function Action.ToggleMainUI()
 		end 
 		
 		if tabName == 7 then 
-			if not Action[specID] then -- specID is Action.PlayerClass 
+			if not Action[specID] then -- specID is Action.PlayerClass if Classic or Action.PlayerSpec if Retail
 				UI_Title:SetText(L["TAB"]["NOTHING"])
 				return 
 			end 		
@@ -13916,9 +13960,9 @@ function Action.ToggleMainUI()
 			local UsePanel = StdUi:PanelWithTitle(anchor, anchor:GetWidth() - 30, 50, L["TAB"][tabName]["USETITLE"])
 			UsePanel.titlePanel.label:SetFontSize(14)
 			UsePanel.titlePanel.label:SetTextColor(UI_Title:GetTextColor())
-			StdUi:GlueTop(UsePanel.titlePanel, UsePanel, 0, -5)
-			StdUi:EasyLayout(UsePanel, { gutter = 0, padding = { top = UsePanel.titlePanel.label:GetHeight() + 10 } })			
-			local MSG_Toggle = StdUi:Checkbox(anchor, L["TAB"][tabName]["MSG"])
+			StdUi:GlueTop(UsePanel.titlePanel, UsePanel, 0, 0)
+			StdUi:EasyLayout(UsePanel, { padding = { top = UsePanel.titlePanel.label:GetHeight() + 10 } })			
+			local Channels
 			local DisableReToggle = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLERETOGGLE"])
 			local ScrollTable 
 			local Macro = StdUi:SimpleEditBox(anchor, StdUi:GetWidthByColumn(anchor, 12), 20, "")	
@@ -13945,7 +13989,7 @@ function Action.ToggleMainUI()
 					else 
 						LuaButton.FontStringLUA:SetText(themeOFF)
 					end 
-					Macro:SetText(rowData.Name and "/party " .. rowData.Name or "")
+					Macro:GetScript("OnTextChanged")(Macro, true, rowData, rowIndex)
 					Macro:ClearFocus()										
 					Key:SetText(rowData.Key)
 					Key:ClearFocus()
@@ -14027,7 +14071,7 @@ function Action.ToggleMainUI()
 				wipe(cacheData)
 				for k, v in pairs(specDB.msgList) do 
 					if v.Enabled then 
-						if Action[specID][v.Key] then -- specID is Action.PlayerClass 
+						if Action[specID][v.Key] then 
 							tinsert(cacheData, setmetatable({
 								Enabled = v.Enabled,
 								Key = v.Key,
@@ -14059,21 +14103,39 @@ function Action.ToggleMainUI()
 			end)			
 			-- [ScrollTable] END
 			
-			MSG_Toggle:SetChecked(specDB.MSG_Toggle)
-			MSG_Toggle:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-			MSG_Toggle:SetScript("OnClick", function(self, button, down)	
-				Macro:ClearFocus()	
-				Key:ClearFocus()
-				Source:ClearFocus()				
-				InputBox:ClearFocus()
+			Channels = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), 20, {
+				{ text = "/w", value = 1 },
+				{ text = "/party", value = 2 },
+				{ text = "/raid", value = 3 },
+			}, nil, true, true)
+			Channels:SetPlaceholder(" -- " .. L["TAB"][tabName]["CHANNELS"] .. " -- ") 	
+			for i, v in ipairs(Channels.optsFrame.scrollChild.items) do 
+				v:SetChecked(specDB.Channels[i])
+			end			
+			Channels.OnValueChanged = function(self, value)			
+				for i, v in ipairs(self.optsFrame.scrollChild.items) do 					
+					if specDB.Channels[i] ~= v:GetChecked() then
+						specDB.Channels[i] = v:GetChecked()
+						Action.Print(L["TAB"][tabName]["CHANNEL"] .. self.options[i].text .. ": ", specDB.Channels[i])
+						Macro:GetScript("OnTextChanged")(Macro)
+						DisableReToggle:GetScript("OnShow")(DisableReToggle)
+						MSG:Initialize()
+					end 				
+				end 				
+			end				
+			Channels:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			Channels:SetScript("OnClick", function(self, button, down)
 				if button == "LeftButton" then 
-					Action.ToggleMSG()	
+					self:ToggleOptions()
 				elseif button == "RightButton" then 
 					Action.CraftMacro(L["TAB"][tabName]["MSG"], [[/run Action.ToggleMSG()]])	
-				end				
-			end)
-			MSG_Toggle.Identify = { Type = "Checkbox", Toggle = "MSG_Toggle" }
-			StdUi:FrameTooltip(MSG_Toggle, L["TAB"][tabName]["MSGTOOLTIP"], nil, "TOPRIGHT", true)
+				end
+			end)		
+			Channels.Identify = { Type = "Dropdown", Toggle = "Channels" }			
+			Channels.FontStringTitle = StdUi:Subtitle(Channels, L["TAB"][tabName]["CHANNELS"])
+			StdUi:FrameTooltip(Channels, L["TAB"][tabName]["MSGTOOLTIP"], nil, "TOPLEFT", true)
+			StdUi:GlueAbove(Channels.FontStringTitle, Channels)
+			Channels.text:SetJustifyH("CENTER")				
 			
 			DisableReToggle:SetChecked(specDB.DisableReToggle)
 			DisableReToggle:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -14095,22 +14157,37 @@ function Action.ToggleMainUI()
 			DisableReToggle.Identify = { Type = "Checkbox", Toggle = "DisableReToggle" }
 			StdUi:FrameTooltip(DisableReToggle, L["TAB"][tabName]["DISABLERETOGGLETOOLTIP"], nil, "TOPLEFT", true)
 			DisableReToggle:SetScript("OnShow", function(self) 
-				if not MSG_Toggle:GetChecked() then 
+				if not MSG:IsEnabled() then 
 					self:Disable()
+				else 
+					self:Enable()
 				end 
 			end)
-			if not MSG_Toggle:GetChecked() then 
+			if not MSG:IsEnabled() then 
 				DisableReToggle:Disable()
 			end 
 			
-			Macro:SetScript("OnTextChanged", function(self)
-				local index = ScrollTable:GetSelection()				
+			Macro:SetScript("OnTextChanged", function(self, userInput, rowData, rowIndex)
+				local index = rowIndex or ScrollTable:GetSelection()				
 				if not index then 
 					return
 				else 
-					local data = ScrollTable:GetRow(index)					
-					if data then 
-						local thisname = "/party " .. data.Name 
+					local rowData = rowData or ScrollTable:GetRow(index)					
+					if rowData then 
+						local slashText
+						local items = Channels.optsFrame.scrollChild.items
+						local options = Channels.options
+						if items[1]:GetChecked() then 
+							slashText = "/w " .. A_Unit("player"):Name() .. " "					
+						else
+							for i = 2, #items do 
+								if items[i]:GetChecked() then 
+									slashText = options[i].text .. " "
+									break
+								end
+							end 
+						end 				
+						local thisname = rowData.Name and slashText and slashText .. rowData.Name or ""
 						if thisname ~= self:GetText() then 
 							self:SetText(thisname)
 						end 
@@ -14122,7 +14199,8 @@ function Action.ToggleMainUI()
             end)
 			Macro:SetScript("OnEscapePressed", function(self)
 				self:ClearFocus() 
-            end)						
+            end)				
+			Macro.Identify = { Type = "EditBox", Toggle = "Macro" } -- just to passthrough for Action.ToggleMSG to make Macro:GetScript("OnTextChanged")(Macro)
 			Macro:SetJustifyH("CENTER")
 			Macro.FontString = StdUi:Subtitle(Macro, L["TAB"][tabName]["MACRO"])
 			StdUi:GlueAbove(Macro.FontString, Macro) 
@@ -14190,7 +14268,7 @@ function Action.ToggleMainUI()
 				if TableKey == nil or TableKey == "" then 
 					Action.Print(L["TAB"][tabName]["KEYERROR"]) 
 					return 
-				elseif not Action[Action.PlayerClass][TableKey] then 
+				elseif not Action[specID][TableKey] then 
 					Action.Print(TableKey .. " " .. L["TAB"][tabName]["KEYERRORNOEXIST"]) 
 					return 
 				end 				
@@ -14247,7 +14325,7 @@ function Action.ToggleMainUI()
 			end)            							          
 				
 			anchor:AddRow({ margin = { left = -15, right = -15 } }):AddElement(UsePanel)	
-			UsePanel:AddRow():AddElements(MSG_Toggle, DisableReToggle, { column = "even" })
+			UsePanel:AddRow({ margin = { left = -15, right = -15 } }):AddElements(Channels, DisableReToggle, { column = "even" })
 			UsePanel:DoLayout()								
 			anchor:AddRow({ margin = { top = 10, left = -15, right = -15 } }):AddElement(ScrollTable)
 			anchor:AddRow({ margin = { left = -15, right = -15 } }):AddElement(Macro)
@@ -14294,7 +14372,7 @@ function Action.ToggleMainUI()
 			if MainUI.RememberTab == tabName then 
 				ScrollTableUpdate()
 			end	
-		end 		
+		end
 		
 		if tabName == 8 then 
 			local hasHealerSpells = Action.Unit("player"):IsHealerClass()
