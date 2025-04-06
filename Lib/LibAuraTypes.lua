@@ -5,7 +5,7 @@ Description: Provides aura classification and priority
 --]================]
 
 
-local MAJOR, MINOR = "LibAuraTypes", 37
+local MAJOR, MINOR = "LibAuraTypes", 38
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
 
@@ -14,6 +14,7 @@ local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local tocVersion = select(4,GetBuildInfo())
 local isBC = tocVersion >= 20000 and tocVersion < 30000
 local isWrath = tocVersion >= 30000
+local isCata = tocVersion >= 40000
 local isClassic = tocVersion < 20000
 
 local CROWD_CONTROL = "CROWD_CONTROL"
@@ -1211,7 +1212,7 @@ elseif isWrath then
     A({ 770, 16857 }, ANTI_STEALTH) -- Faerie Fire (normal & feral)
     A({ 61391, 53227, 61387, 61388, 61390 }, { SLOW, effect = E_SLOW }) -- Typhoon Daze
     A({ 2637, 18657, 18658 },{ CROWD_CONTROL, effect = E_INCAP }) -- Hibernate
-    A( 22570,{ CROWD_CONTROL, effect = E_INCAP }) -- Maim
+    A( 22570,{ STUN, effect = E_STUN }) -- Maim
     A( 29166, DAMAGE_INCREASE) -- Innervate
     A({ 9005, 9823, 9827, 27006 }, { STUN, effect = E_STUN }) -- Pounce Stun
     -- A({ 5217, 6793, 9845, 9846 },  DAMAGE_INCREASE) -- Tiger's Fury
@@ -1259,6 +1260,7 @@ elseif isWrath then
     A({ 33196, 33197, 33198 }, TRASH) -- Misery
     A( 47585, DAMAGE_REDUCTION2) -- Dispersion
     A( 47788, DAMAGE_REDUCTION2) -- Guardian Spirit
+    A( 64044, { CROWD_CONTROL, effect = E_STUN }) -- Psychic Horror
 
 
     -- ROGUE
@@ -1290,7 +1292,7 @@ elseif isWrath then
     A( 20230 , PHYSICAL_IMMUNITY) -- Retaliation
     A( 1719 , { DAMAGE_INCREASE2, FEAR_IMMUNITY }) -- Recklessness, Fear immunity, Damage Vuln
     A( 871,  DAMAGE_REDUCTION2) -- Shield Wall
-    A( 12292, { DAMAGE_INCREASE, FEAR_IMMUNITY }) -- Death Wish, Fear immunity
+    A( 12292, { DAMAGE_INCREASE, DAMAGE_VULNERABILITY }) -- Death Wish, Fear immunity
     A( 1715, { SLOW, effect = E_SLOW }) -- Hamstring
     A( 23694, { ROOT, effect = E_ROOT }) -- Improved Hamstring
     A( 12323, { SLOW, effect = E_SLOW }) -- Piercing Howl
@@ -1399,12 +1401,243 @@ elseif isWrath then
     A( 10326 , { FEAR, effect = E_FEAR }) -- Turn Evil
     A( 6940, DAMAGE_REDUCTION2) -- Hand of Sacrifice
 
-
     -- Racials
     A( 20549 , { STUN, effect = E_STUN }) -- War Stomp
     A( 20600 , STEALTH_DETECTION) -- Perception
     A( 28730 , SILENCE) -- Arcane Torrent
-    end
+
+
+-----------------------
+-- CATACLYSM
+-----------------------
+
+elseif isCata then
+
+    lib.data = {}
+    data = lib.data
+
+    -- DRUID
+    A( 22812 , DAMAGE_REDUCTION) -- Barkskin
+    A( 33786, { CROWD_CONTROL, effect = E_PHASED }) -- Cyclone
+    A( 19975,{ ROOT, effect = E_ROOT }) -- Roots from Nature's Grasp
+    A( 339,{ ROOT, effect = E_ROOT }) -- Entangling Roots
+    A({ 770, 16857 }, ANTI_STEALTH) -- Faerie Fire (normal & feral)
+    A( 61391, { SLOW, effect = E_SLOW }) -- Typhoon Daze
+    A( 2637,{ CROWD_CONTROL, effect = E_INCAP }) -- Hibernate
+    A( 22570,{ STUN, effect = E_STUN }) -- Maim
+    A( 29166, DAMAGE_INCREASE) -- Innervate
+    A( 9005, { STUN, effect = E_STUN }) -- Pounce Stun
+    -- A({ 5217, 6793, 9845, 9846 },  DAMAGE_INCREASE) -- Tiger's Fury
+    A( 5211, { STUN, effect = E_STUN }) -- Bash
+    A( 45334, { ROOT, effect = E_ROOT }) -- Feral Charge
+    -- A( 2893 , TRASH) -- Abolish Poison
+    A( 1850, SPEED_BOOST) -- Dash
+    A( 16689, ATTENTION) -- Nature's Grasp Buff
+    -- A({ 783, 1066 },  SPEED_BOOST) -- Travel Form & Aquatic Form
+    A( 6795 , TAUNT) -- Growl
+    A( 5209 , TAUNT) -- Challenging Roar
+    A( 33878, TRASH) -- Mangle (Bear)
+    A( 33876, TRASH) -- Mangle (Cat)
+    A( 50334, FEAR_IMMUNITY) -- Berserk
+    A( 61336, DAMAGE_REDUCTION2) -- Survival Instincts
+    A( 33891, DAMAGE_REDUCTION2) -- Tree of Life
+    A( 78675,{ SILENCE, effect = E_SILENCE }) -- Solar Beam
+
+
+    -- WARLOCK
+
+    A( 24259 , SILENCE) -- Spell Lock Silence
+    A( 6358, { CROWD_CONTROL, effect = E_DISORIENT }) -- Seduction
+    A( 5782, { CROWD_CONTROL, effect = E_FEAR }) -- Fear
+    A( 5484, { CROWD_CONTROL, effect = E_FEAR }) -- Howl of Terror
+    A( 710, { CROWD_CONTROL, effect = E_PHASED }) -- Banish
+    A( 6789, { CROWD_CONTROL, effect = E_DISORIENT }) -- Death Coil
+    A( 18223 , { SLOW, effect = E_SLOW }) -- Curse of Exhaustion
+    A( 18118 , { SLOW, effect = E_SLOW }) -- Aftermath (Destruction Talent)
+    A( 1714,  DAMAGE_DECREASE) -- Curse of Tongues
+    A( 6229, DAMAGE_ABSORB) -- Shadow Ward
+    A( 7812, DAMAGE_ABSORB) -- Sacrifice (Voidwalker)
+    A( 30108, { ANTI_DISPEL, effect = E_ANTIDISPEL }) -- Unstable Affliction
+    A({ 30153, 30195, 30197 }, { STUN, effect = E_STUN }) -- Felguard Intercept Stun
+    A({ 30414, 30283, 30413, 47846, 47847 }, { STUN, effect = E_STUN }) -- Shadowfury
+    A( 47241, DAMAGE_INCREASE2) -- Metamorphosis
+    A( 63311, { HEAVY_SLOW, effect = E_SLOW }) -- Shadowsnare (Glyph of Shadowflame)
+    A( 79462, DAMAGE_INCREASE) -- Demon Soul: Felguard
+    A( 79459, DAMAGE_INCREASE) -- Demon Soul: Imp
+
+
+    -- PRIEST
+    A( 15487, { SILENCE, effect = E_SILENCE }) -- Silence
+    A( 10060,  DAMAGE_INCREASE) -- Power Infusion
+    A( 17,  DAMAGE_ABSORB) -- Power Word: Shield
+    A( 8122, { CROWD_CONTROL, effect = E_FEAR }) -- Psychic Scream
+    A( 15407, { SLOW, effect = E_SLOW }) -- Mind Flay
+    A( 605, { CROWD_CONTROL, effect = E_PHASED }) -- Mind Control
+    A( 47585, DAMAGE_REDUCTION2) -- Dispersion
+    A( 47788, DAMAGE_REDUCTION2) -- Guardian Spirit
+    A( 64044, { CROWD_CONTROL, effect = E_STUN }) -- Psychic Horror
+    A( 64843, ATTENTION ) -- Divine Hymn
+    A( 64901, ATTENTION ) -- Hymn of Hope
+    A( 87153, DAMAGE_INCREASE ) -- Dark Archangel
+    A( 88625, { DISORIENT, effect = E_DISORIENT }) -- Holy Word: Chastise
+
+
+
+    -- ROGUE
+    A( 18425, { SILENCE, effect = E_SILENCE }) -- Improved Kick
+    A( 13750 , DAMAGE_INCREASE2) -- Adrenaline Rush
+    A( 1833, { STUN, effect = E_STUN }) -- Cheap Shot
+    A( 408, { STUN, effect = E_STUN }) -- Kidney Shot
+    A( 2070, { INCAP, effect = E_INCAP }) -- Sap
+    A( 2094 , { CROWD_CONTROL, effect = E_DISORIENT }) -- Blind
+    A( 2983,  SPEED_BOOST) -- Sprint
+    A( 5277, DAMAGE_REDUCTION2) -- Evasion
+    A( 1776, { INCAP, effect = E_INCAP }) -- Gouge
+    A( 74001, DAMAGE_REDUCTION) -- Combat Readiness
+    A( 3409, { HEAVY_SLOW, effect = E_SLOW })
+    A( 31224 , SPELL_IMMUNITY) -- Cloak of Shadows
+    A( 14251 , DAMAGE_DECREASE) -- Riposte (Disarm)
+    A( 14278 , DAMAGE_REDUCTION) -- Ghostly Strike
+    A( 1330 , { SILENCE, effect = E_SILENCE }) -- Garrote Silence
+    A( 45182, DAMAGE_REDUCTION2) -- Cheating Death
+    A( 51713, DAMAGE_INCREASE2) -- Shadow Dance
+    A( 51722, DAMAGE_DECREASE) -- Dismantle
+    A( 79126, DAMAGE_DECREASE) -- Groggy after Sap
+    A( 16511, TRASH) -- Hemorrhage
+    A( 91021, DAMAGE_VULNERABILITY) -- Find Weakness
+
+
+    -- WARRIOR
+    A( 355 , TAUNT) -- Taunt
+    A( 1161 , TAUNT) -- Challenging Shout
+    A( 18498, { SILENCE, effect = E_SILENCE }) -- Silence, Gag Order
+    A( 871,  DAMAGE_REDUCTION2) -- Shield Wall
+    A( 12292, { DAMAGE_INCREASE, DAMAGE_VULNERABILITY }) -- Death Wish, Fear immunity
+    A( 1715, { SLOW, effect = E_SLOW }) -- Hamstring
+    A( 85730, DAMAGE_INCREASE) -- Deadly Calm
+    A( 12328, DAMAGE_INCREASE) -- Sweeping Strikes
+    A({85386, 86624 }, DAMAGE_REDUCTION2) -- Die by the Sword
+    A( 56112, HEALING_REDUCTION) -- Furious Attacks
+    A( 86346, DAMAGE_VULNERABILITY) -- Colossus Smash
+    A( 23694, { ROOT, effect = E_ROOT }) -- Improved Hamstring
+    A( 12323, { SLOW, effect = E_SLOW }) -- Piercing Howl
+    A( 46924, { CROWD_CONTROL_IMMUNITY, DAMAGE_INCREASE }) -- Bladestorm
+    A( 18499, { EFFECT_IMMUNITY, FEAR_IMMUNITY }) -- Berserker Rage, (Fear/Incap)
+    A( 20253, { STUN, effect = E_STUN }) -- Intercept Stun
+    A({ 5246, 20511 }, { CROWD_CONTROL, effect = E_FEAR }) -- Intimidating Shout
+    A( 676, { DAMAGE_DECREASE, effect = E_DISARM }) -- Disarm
+    A( 12809, { STUN, effect = E_STUN }) -- Concussion Blow
+    A({ 16488, 16490, 16491 },  TRASH) -- Blood Craze
+    A( 12294, HEALING_REDUCTION) -- Mortal Strike
+    A( 7922, { STUN, effect = E_STUN }) -- Charge Stun
+    A({ 30069, 30070 },  TRASH) -- Blood Frenzy
+    A( 46968, { STUN, effect = E_STUN }) -- Shockwave
+    A( 85388, { STUN, effect = E_STUN }) -- Throwdown
+
+    -- DEATHKNIGHT
+    A( 47805, { SLOW, effect = E_SLOW }) -- Chains of Ice
+    A( 55233, DAMAGE_REDUCTION) -- Vampiric Blood
+    A( 47476, { SILENCE, effect = E_SILENCE }) -- Strangulate
+    A( 48792, DAMAGE_REDUCTION2) -- Icebound Fortitude
+    A( 49005, DAMAGE_REDUCTION) -- Mark of Blood
+    A( 48707, DAMAGE_REDUCTION) -- Anti-Magic Shell
+    A( 50461, DAMAGE_REDUCTION) -- Anti-Magic Zone
+    A( 49016, DAMAGE_INCREASE) -- Unholy Frenzy
+    A( 51271, DAMAGE_INCREASE) -- Pillar of Frost
+    A( 49039, { FEAR_IMMUNITY, EFFECT_IMMUNITY }) -- Lichborne
+
+
+    -- HUNTER
+    -- A( 62305 , CROWD_CONTROL_IMMUNITY) -- Master's Call
+    A( 13159 , SPEED_BOOST) -- Aspect of the Pack
+    A( 5118 , SPEED_BOOST) -- Aspect of the Cheetah
+    A( 15571, { SLOW, effect = E_SLOW }) -- Daze from Aspect of Cheetah/Pack
+    A( 1513, { CROWD_CONTROL, effect = E_FEAR }) -- Scare Beast
+    A( 5116 ,{ SLOW, effect = E_SLOW }) -- Concussive Shot
+    A( 19410,{ STUN, effect = E_STUN }) -- Concussive Shot Stun
+    A( 1130,  DAMAGE_VULNERABILITY) -- Hunter's Mark
+    A( 3045 , DAMAGE_INCREASE) -- Rapid Fire
+    A( 19574 , { FEAR_IMMUNITY, DAMAGE_INCREASE2 }) -- Beastial Wrath
+    A( 34471 , { FEAR_IMMUNITY, DAMAGE_INCREASE }) -- Beast Within
+    A( 19263 , DAMAGE_REDUCTION) -- Deterrence
+    A( 34501, TRASH) -- Expose Weakness
+    A( 13810,{ SLOW, effect = E_SLOW }) -- Frost Trap Aura
+    A( 3355, { CROWD_CONTROL, effect = E_INCAP }) -- Freezing Trap
+    A( 2974, { SLOW, effect = E_SLOW }) -- Wing Clip
+    A( 19229, { ROOT, effect = E_ROOT }) -- Wing Clip Root
+    A( 19306,{ ROOT, effect = E_ROOT }) -- Counterattack Root
+    A( 24394,{ STUN, effect = E_STUN }) -- Intimidation
+    A( 19386, { CROWD_CONTROL, effect = E_INCAP }) --Wyvern Sting
+    A( 19185,{ ROOT, effect = E_ROOT }) -- Entrapment
+    -- A({ 3034, 14279, 14280},  TRASH) -- Viper Sting
+    A( 19503,{ CROWD_CONTROL, effect = E_DISORIENT }) -- Scatter Shot
+    A( 25999,{ ROOT, effect = E_ROOT }) -- Boar Charge
+    A( 34490,{ SILENCE, effect = E_SILENCE }) -- Silencing Shot
+
+    -- MAGE
+    A( 31589 , { DAMAGE_DECREASE, SLOW, effect = E_SLOW }) -- Slow
+    A( 18469, { SILENCE, effect = E_SILENCE }) -- Improved Counterspell
+    A({ 118, 28271, 28272, 61025, 61305, 61721, 61780, 126819, 161353, 161354, 161355, 161372, 277787, 277792 }, { CROWD_CONTROL, effect = E_INCAP }) -- Polymorph
+
+    A( 11426, DAMAGE_ABSORB) -- Ice Barrier
+    A( 543,  DAMAGE_ABSORB) -- Fire Ward
+    A( 6143,  DAMAGE_ABSORB) -- Frost Ward
+    A( 12355, { STUN, effect = E_STUN }) -- Impact
+    A( 22959 , TRASH) -- Critical Mass
+    A( 11113, { HEAVY_SLOW, effect = E_SLOW }) -- Blast Wave
+    A( 120, { SLOW, effect = E_SLOW }) -- Cone of Cold
+    A({ 12484, 12485 }, { SLOW, effect = E_SLOW }) -- Ice Shards (Improved Blizzard)
+    A( 7321, { SLOW, effect = E_SLOW }) -- Frost Armor Chill
+    A( 83302, { FROZEN, effect = E_ROOT }) -- Improved Cone of Cold
+    A( 116, { SLOW, effect = E_SLOW }) -- Frostbolt
+    A( 33395, { FROZEN, effect = E_ROOT }) -- Water Elemental's Freeze
+    A({ 122, 865, 6131, 10230, 27088, 42917 }, { FROZEN, effect = E_ROOT }) -- Frost Nova
+    A( 12042 , DAMAGE_INCREASE2) -- Arcane Power
+    A( 45438 , IMMUNITY) -- Ice Block
+    A({ 11366, 12505, 12522, 12523, 12524, 12525, 12526, 18809, 27132, 33938, 42890, 42891 },  TRASH) -- Pyroblast dot
+    A( 2120, TRASH) -- Flamestrike dot
+    A( 12051 , ATTENTION) -- Evocation
+    A( 1463, DAMAGE_ABSORB) -- Mana Shield
+    A( 31661, { CROWD_CONTROL, effect = E_DISORIENT }) -- Dragon's Breath
+    A( 31643 , SPEED_BOOST) -- Blazing Speed
+    A( 12472 , DAMAGE_INCREASE2) -- Icy Veins
+    A( 44572, { STUN, effect = E_STUN }) -- Deep Freeze
+
+    -- SHAMAN
+    A( 8056, { SLOW, effect = E_SLOW }) -- Frost Shock
+    A( 3600 , { SLOW, effect = E_SLOW }) -- Earthbind
+    A( 8034, { SLOW, effect = E_SLOW }) -- Frostbrand Attack
+    A( 98007, DAMAGE_REDUCTION2) -- Spirit Link Totem
+    -- Lightning shield??
+    A( 8178 , SPELL_IMMUNITY) -- Grounding Totem Effect
+    -- A( 2645 , SPEED_BOOST) -- Ghost Wolf
+    A( 16166, DAMAGE_INCREASE2) -- Elemental Mastery
+    A( 64701, DAMAGE_INCREASE2) -- Elemental Mastery Buff
+    A( 30823, DAMAGE_REDUCTION2) -- Shamanistic Rage 30% DR
+    A( 16191, REGEN) -- Mana Tide
+    A( 64695 , { ROOT, effect = E_ROOT }) -- Earthgrab
+
+    -- PALADIN
+    A({ 1022, 5599, 10278 },  PHYSICAL_IMMUNITY) -- Blessing of Protection
+    A( 642, IMMUNITY) -- Divine Shield
+    A( 498, DAMAGE_REDUCTION) -- Divine Protection
+    A({ 853, 5588, 5589, 10308 }, { STUN, effect = E_STUN }) -- Hammer of Justice
+    A( 1044 , SPEED_BOOST) -- Hand of Freedom
+    A( 31842 , DAMAGE_INCREASE) -- Divine Illumination
+    A( 31884 , DAMAGE_INCREASE2) -- Avenging Wrath
+    A( 85696 , DAMAGE_INCREASE2) -- Zealotry
+    A( 20066 , { INCAP, effect = E_INCAP }) -- Repentance
+    A( 20170 , { STUN, effect = E_STUN }) -- Seal of Justice stun (from both ranks)
+    A( 10326 , { FEAR, effect = E_FEAR }) -- Turn Evil
+    A( 6940, DAMAGE_REDUCTION2) -- Hand of Sacrifice
+    A( 86659, DAMAGE_REDUCTION2) -- Guardian of Ancient Kings (Prot)
+    A( 31850, DAMAGE_REDUCTION) -- Ardent Defender
+
+
+    -- Racials
+    A( 20549 , { STUN, effect = E_STUN }) -- War Stomp
+    A( 28730 , SILENCE) -- Arcane Torrent
+end
 
 
 local math_max = math.max

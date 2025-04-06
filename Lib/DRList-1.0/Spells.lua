@@ -1,4 +1,4 @@
-local MAJOR, MINOR = "DRList-1.0", 66 -- Don't forget to change this in DRList-1.0.lua aswell!
+local MAJOR, MINOR = "DRList-1.0", 73 -- Don't forget to change this in DRList-1.0.lua aswell!
 local Lib = LibStub(MAJOR)
 if Lib.spellListVersion and Lib.spellListVersion >= MINOR then
     return
@@ -11,6 +11,7 @@ if Lib.gameExpansion == "retail" then
     ------------------------------------------------
     -- SpellID list for mainline aka retail WoW.
     -- Mostly contains spells that are usable in arena only.
+    -- Note: These are the debuff spellIds specifically.
     ------------------------------------------------
     Lib.spellList = {
         -- *** Disorient Effects ***
@@ -27,7 +28,6 @@ if Lib.gameExpansion == "retail" then
         [205364]  = "disorient", -- Dominate Mind
         [605]     = "disorient", -- Mind Control
         [8122]    = "disorient", -- Psychic Scream
-        [226943]  = "disorient", -- Mind Bomb
         [2094]    = "disorient", -- Blind
         [118699]  = "disorient", -- Fear
         [130616]  = "disorient", -- Fear (Horrify)
@@ -38,6 +38,7 @@ if Lib.gameExpansion == "retail" then
         [316593]  = "disorient", -- Intimidating Shout (Menace Main Target)
         [316595]  = "disorient", -- Intimidating Shout (Menace Other Targets)
         [331866]  = "disorient", -- Agent of Chaos (Venthyr Covenant)
+        [324263]  = "disorient", -- Sulfuric Emission (Soulbind Ability)
 
         -- *** Incapacitate Effects ***
         [217832]  = "incapacitate", -- Imprison
@@ -65,6 +66,8 @@ if Lib.gameExpansion == "retail" then
         [277792]  = "incapacitate", -- Polymorph (Bumblebee)
         [321395]  = "incapacitate", -- Polymorph (Mawrat)
         [391622]  = "incapacitate", -- Polymorph (Duck)
+        [460396]  = "incapacitate", -- Polymorph (Mosswool)
+        [461489]  = "incapacitate", -- Polymorph (Mosswool) 2
         [82691]   = "incapacitate", -- Ring of Frost
         [115078]  = "incapacitate", -- Paralysis
         [357768]  = "incapacitate", -- Paralysis 2 (Perpetual Paralysis?)
@@ -90,7 +93,7 @@ if Lib.gameExpansion == "retail" then
 
         -- *** Controlled Stun Effects ***
         [210141]  = "stun", -- Zombie Explosion
-        [334693]  = "stun", -- Absolute Zero (Breath of Sindragosa)
+        [377048]  = "stun", -- Absolute Zero (Breath of Sindragosa)
         [108194]  = "stun", -- Asphyxiate (Unholy)
         [221562]  = "stun", -- Asphyxiate (Blood)
         [91800]   = "stun", -- Gnaw (Ghoul)
@@ -107,13 +110,14 @@ if Lib.gameExpansion == "retail" then
         [202244]  = "stun", -- Overrun
         [325321]  = "stun", -- Wild Hunt's Charge
         [372245]  = "stun", -- Terror of the Skies
+        [408544]  = "stun", -- Seismic Slam
         [117526]  = "stun", -- Binding Shot
         [357021]  = "stun", -- Consecutive Concussion
         [24394]   = "stun", -- Intimidation
         [389831]  = "stun", -- Snowdrift
         [119381]  = "stun", -- Leg Sweep
+        [458605]  = "stun", -- Leg Sweep 2
         [202346]  = "stun", -- Double Barrel
-        [385149]  = "stun", -- Exorcism
         [853]     = "stun", -- Hammer of Justice
         [255941]  = "stun", -- Wake of Ashes
         [64044]   = "stun", -- Psychic Horror
@@ -139,26 +143,28 @@ if Lib.gameExpansion == "retail" then
         [332423]  = "stun", -- Sparkling Driftglobe Core (Kyrian Covenant)
 
         -- *** Controlled Root Effects ***
+        -- Note: roots with duration <= 2s has no DR and are commented out
         [204085]  = "root", -- Deathchill (Chains of Ice)
         [233395]  = "root", -- Deathchill (Remorseless Winter)
+        [454787]  = "root", -- Ice Prison
         [339]     = "root", -- Entangling Roots
         [235963]  = "root", -- Entangling Roots (Earthen Grasp)
         [170855]  = "root", -- Entangling Roots (Nature's Grasp)
+        --[16979]   = "root", -- Wild Charge (has no DR)
         [102359]  = "root", -- Mass Entanglement
         [355689]  = "root", -- Landslide
         [393456]  = "root", -- Entrapment (Tar Trap)
         [162480]  = "root", -- Steel Trap
-        [273909]  = "root", -- Steelclaw Trap
---      [190927]  = "root", -- Harpoon
+--      [190927]  = "root", -- Harpoon (has no DR)
         [212638]  = "root", -- Tracker's Net
         [201158]  = "root", -- Super Sticky Tar
         [122]     = "root", -- Frost Nova
         [33395]   = "root", -- Freeze
         [386770]  = "root", -- Freezing Cold
-        [198121]  = "root", -- Frostbite
+        [378760]  = "root", -- Frostbite
+        --[199786]  = "root", -- Glacial Spike (has no DR)
         [114404]  = "root", -- Void Tendril's Grasp
         [342375]  = "root", -- Tormenting Backlash (Torghast PvE)
-        [233582]  = "root", -- Entrenched in Flame
         [116706]  = "root", -- Disable
         [324382]  = "root", -- Clash
         [64695]   = "root", -- Earthgrab (Totem effect)
@@ -173,6 +179,7 @@ if Lib.gameExpansion == "retail" then
 
         -- *** Silence Effects ***
         [47476]   = "silence", -- Strangulate
+        [374776]  = "silence", -- Tightening Grasp
         [204490]  = "silence", -- Sigil of Silence
 --      [78675]   = "silence", -- Solar Beam (has no DR)
         [410065]  = "silence", -- Reactive Resin
@@ -206,19 +213,24 @@ if Lib.gameExpansion == "retail" then
         [204079]  = "taunt", -- Final Stand
         [62124]   = "taunt", -- Hand of Reckoning
         [17735]   = "taunt", -- Suffering (Voidwalker)
+        [1161]    = "taunt", -- Challenging Shout
         [355]     = "taunt", -- Taunt
 
         -- *** Controlled Knockback Effects ***
-        -- Experimental, see https://github.com/wardz/DRList-1.0/wiki/DR-Categories#knockback-notes-retail
+        -- Note: not every knockback has an aura.
         [108199]  = "knockback", -- Gorefiend's Grasp
         [202249]  = "knockback", -- Overrun
         [61391]   = "knockback", -- Typhoon
         [102793]  = "knockback", -- Ursol's Vortex
+        [431620]  = "knockback", -- Upheaval
         [186387]  = "knockback", -- Bursting Shot
-        [236777]  = "knockback", -- Hi-Explosive Trap
+        [236776]  = "knockback", -- Hi-Explosive Trap
+        [236777]  = "knockback", -- Hi-Explosive Trap 2
+        [462031]  = "knockback", -- Implosive Trap
         [157981]  = "knockback", -- Blast Wave
-        [204263]  = "knockback", -- Shining Force
         [51490]   = "knockback", -- Thunderstorm
+        [368970]  = "knockback", -- Tail Swipe (Racial, Dracthyr)
+        [357214]  = "knockback", -- Wing Buffet (Racial, Dracthyr)
     }
 
 elseif Lib.gameExpansion == "tbc" then
@@ -652,6 +664,14 @@ elseif Lib.gameExpansion == "wotlk" then
         [42949] = "scatter", -- Dragon's Breath (Rank 5)
         [42950] = "scatter", -- Dragon's Breath (Rank 6)
 
+        -- *** Force Taunt Effects ***
+        [56222]   = "taunt", -- Dark Command
+        [51399]   = "taunt", -- Death Grip (Taunt Effect)
+        [6795]    = "taunt", -- Growl (Druid)
+        [20736]   = "taunt", -- Distracting Shot
+        [62124]   = "taunt", -- Hand of Reckoning
+        [355]     = "taunt", -- Taunt
+
         -- *** Spells that DRs with itself only ***
         [33786] = "cyclone",        -- Cyclone
         [19306] = "counterattack",  -- Counterattack 1
@@ -822,13 +842,22 @@ elseif Lib.gameExpansion == "cata" then
         [13181] = "mind_control", -- Gnomish Mind Control Cap (Item)
         [67799] = "mind_control", -- Mind Amplification Dish (Item)
 
+        -- *** Force Taunt Effects ***
+        [56222]   = "taunt", -- Dark Command
+        [51399]   = "taunt", -- Death Grip (Taunt Effect)
+        [6795]    = "taunt", -- Growl (Druid)
+        [20736]   = "taunt", -- Distracting Shot
+        [62124]   = "taunt", -- Hand of Reckoning
+        [355]     = "taunt", -- Taunt
+
+        -- TODO: knockbacks?
+
         -- *** Spells that DRs with itself only ***
         [19503] = "scatter", -- Scatter Shot
         [31661] = "scatter", -- Dragon's Breath
         [33786] = "cyclone", -- Cyclone
         [19306] = "counterattack", -- Counterattack
         [76780] = "bind_elemental", -- Bind Elemental
-        -- TODO: taunts, knockbacks?
     }
 
 elseif Lib.gameExpansion == "classic" then
@@ -974,5 +1003,6 @@ elseif Lib.gameExpansion == "classic" then
         [10473]  = "frost_shock",  -- Frost Shock (Rank 4)
     }
 end
+
 -- Alias for DRData-1.0
 Lib.spells = Lib.spellList
