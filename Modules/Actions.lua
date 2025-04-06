@@ -108,7 +108,9 @@ local itemCategory 			= {
 	  	  	  
 local GetNetStats 			= _G.GetNetStats  	
 local GameLocale 			= _G.GetLocale()
-local GetCVar				= _G.GetCVar or _G.C_CVar.GetCVar
+local C_CVar				= _G.C_CVar
+local SetCVar				= C_CVar and C_CVar.SetCVar or _G.SetCVar
+local GetCVar				= C_CVar and C_CVar.GetCVar or _G.GetCVar
 
 -- Spell 
 local C_Spell				= _G.C_Spell
@@ -557,6 +559,9 @@ end
 local DataSpellRanks = {}
 local DataIsSpellUnknown = {}
 function A.UpdateSpellBook(isProfileLoad)
+	local ShowAllSpellRanks = GetCVar("ShowAllSpellRanks") or "1"
+	SetCVar("ShowAllSpellRanks", "1")
+	
 	A.WipeTableKeyIdentify()
 	wipe(DataSpellRanks)
 	wipe(DataIsSpellUnknown)
@@ -658,15 +663,17 @@ function A.UpdateSpellBook(isProfileLoad)
 					if not v.isRank then 
 						v.isRank = 0
 					end 
-				end 								 								
+				end 					
 			end 
 		end 
 	end 
-
+	
 	if isProfileLoad ~= true then 
 		TMW:Fire("TMW_ACTION_SPELL_BOOK_CHANGED")	  -- for [3] tab refresh 
 		--TMW:Fire("TMW_ACTION_RANK_DISPLAY_CHANGED") -- no need here since :Show method will be triggered 
 	end 
+	
+	SetCVar("ShowAllSpellRanks", ShowAllSpellRanks)
 end 
 
 -- "LEARNED_SPELL_IN_TAB" > "TRAINER_UPDATE" > "SKILL_LINES_CHANGED"
