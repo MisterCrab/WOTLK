@@ -11804,9 +11804,9 @@ function Action.ToggleMainUI()
 							if config.ONLYON then 
 								return (config.L.ANY or config.L[cL]) .. ": |cff00ff00" .. (value >= config.MAX and "|cff00ff00AUTO|r" or value)
 							elseif config.ONLYOFF then 
-								return (config.L.ANY or config.L[cL]) .. ": |cff00ff00" .. (value < 0 and "|cffff0000OFF|r" or value)
+								return (config.L.ANY or config.L[cL]) .. ": |cff00ff00" .. (value <= config.MIN and "|cffff0000OFF|r" or value)
 							elseif config.ONOFF then 
-								return (config.L.ANY or config.L[cL]) .. ": |cff00ff00" .. (value < 0 and "|cffff0000OFF|r" or value >= config.MAX and "|cff00ff00AUTO|r" or value)
+								return (config.L.ANY or config.L[cL]) .. ": |cff00ff00" .. (value <= config.MIN and "|cffff0000OFF|r" or value >= config.MAX and "|cff00ff00AUTO|r" or value)
 							else
 								return (config.L.ANY or config.L[cL]) .. ": |cff00ff00" .. value .. "|r"
 							end 
