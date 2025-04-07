@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "06.04.2025"
+local DateTime 														= "07.04.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -292,6 +292,9 @@ local Localization = {
 				AUTOATTACK = "Auto Attack",
 				AUTOSHOOT = "Auto Shoot",				
 				PAUSECHECKS = "Rotation doesn't work if:",
+				ANTIFAKEPAUSES = "AntiFake Pauses",
+				ANTIFAKEPAUSESSUBTITLE = "While the hotkey is held down",
+				ANTIFAKEPAUSESTT = "Depending on the hotkey you select,\nonly the code assigned to it will work when you hold it down",
 				DEADOFGHOSTPLAYER = "You're dead",
 				DEADOFGHOSTTARGET = "Target is dead",
 				DEADOFGHOSTTARGETTOOLTIP = "Exception enemy hunter if he selected as primary target",
@@ -849,6 +852,9 @@ local Localization = {
 				AUTOATTACK = "Авто Атака",
 				AUTOSHOOT = "Авто Выстрел",	
 				PAUSECHECKS = "Ротация не работает если:",
+				ANTIFAKEPAUSES = "Паузы AntiFake",
+				ANTIFAKEPAUSESSUBTITLE = "Пока горячая клавиша удерживается",
+				ANTIFAKEPAUSESTT = "В зависимости от выбора горячей клавиши,\nпри ее удержании будет работать только предназначенный для нее код",
 				DEADOFGHOSTPLAYER = "Вы мертвы",
 				DEADOFGHOSTTARGET = "Цель мертва",
 				DEADOFGHOSTTARGETTOOLTIP = "Исключение вражеский Охотник если выбран в качестве цели",
@@ -1407,6 +1413,9 @@ local Localization = {
 				AUTOATTACK = "Automatischer Angriff",
 				AUTOSHOOT = "Automatisches Schießen",	
 				PAUSECHECKS = "Rota funktioniert nicht wenn:",
+				ANTIFAKEPAUSES = "AntiFake-Pausen",
+				ANTIFAKEPAUSESSUBTITLE = "Während der Hotkey gedrückt gehalten wird",
+				ANTIFAKEPAUSESTT = "Je nachdem, welchen Hotkey Sie auswählen,\nfunktioniert nur der ihm zugewiesene Code, wenn Sie ihn gedrückt halten",
 				DEADOFGHOSTPLAYER = "Wenn du Tot bist",
 				DEADOFGHOSTTARGET = "Das Ziel Tot ist",
 				DEADOFGHOSTTARGETTOOLTIP = "Ausnahme feindlicher Jäger, wenn er als Hauptziel ausgewählt ist",
@@ -1965,6 +1974,9 @@ local Localization = {
 				BLOODYBLUE = "Sanglant Bleu",
 				ICE = "La glace",
 				PAUSECHECKS = "La rotation ne fonction pas, si:",
+				ANTIFAKEPAUSES = "AntiFake Pauses",
+				ANTIFAKEPAUSESSUBTITLE = "Pendant que la touche de raccourci est maintenue enfoncée",
+				ANTIFAKEPAUSESTT = "Selon le raccourci clavier que vous sélectionnez,\nseul le code qui lui est attribué fonctionnera lorsque vous le maintenez enfoncé",
 				AUTOATTACK = "Attaque automatique",
 				AUTOSHOOT = "Tir automatique",	
 				DEADOFGHOSTPLAYER = "Vous êtes mort!",
@@ -2523,6 +2535,9 @@ local Localization = {
 				AUTOATTACK = "Attacco automatico",
 				AUTOSHOOT = "Scatto automatico",	
 				PAUSECHECKS = "La rotazione non funziona, se:",
+				ANTIFAKEPAUSES = "AntiFake si ferma",
+				ANTIFAKEPAUSESSUBTITLE = "Mentre il tasto di scelta rapida è tenuto premuto",
+				ANTIFAKEPAUSESTT = "A seconda del tasto di scelta rapida selezionato,\nquando lo si tiene premuto funzionerà solo il codice ad esso assegnato",
 				DEADOFGHOSTPLAYER = "Sei Morto",
 				DEADOFGHOSTTARGET = "Il bersaglio é morto",
 				DEADOFGHOSTTARGETTOOLTIP = "Eccezione il cacciatore bersaglio se é selezionato come bersaglio primario",
@@ -3083,6 +3098,9 @@ local Localization = {
 				AUTOATTACK = "Auto ataque",
 				AUTOSHOOT = "Disparo automático",	
 				PAUSECHECKS = "La rotación no funciona si:",
+				ANTIFAKEPAUSES = "Pausas de AntiFake",
+				ANTIFAKEPAUSESSUBTITLE = "Mientras se mantiene presionada la tecla de acceso rápido",
+				ANTIFAKEPAUSESTT = "Dependiendo de la tecla de acceso rápido que selecciones,\nsolo el código asignado a ella funcionará cuando la mantengas presionada",
 				DEADOFGHOSTPLAYER = "Estás muerto",
 				DEADOFGHOSTTARGET = "El Target está muerto",
 				DEADOFGHOSTTARGETTOOLTIP = "Excepción a enemigo hunter if seleccionó como objetivo principal",
@@ -3640,6 +3658,9 @@ local Localization = {
 				AUTOATTACK = "Auto Attack",
 				AUTOSHOOT = "Auto Shoot",	
 				PAUSECHECKS = "Rotação não funciona se:",
+				ANTIFAKEPAUSES = "Pausas AntiFake",
+				ANTIFAKEPAUSESSUBTITLE = "Enquanto a tecla de atalho é mantida pressionada",
+				ANTIFAKEPAUSESTT = "Dependendo da tecla de atalho selecionada,\nsomente o código atribuído a ela funcionará quando você a mantiver pressionada",
 				DEADOFGHOSTPLAYER = "Você está morto",
 				DEADOFGHOSTTARGET = "Alvo está morto",
 				DEADOFGHOSTTARGETTOOLTIP = "Caçador inimigo como exceção se ele for selecionado como alvo principal",
@@ -4322,6 +4343,14 @@ local Factory = {
 	-- ISINTERRUPT will swap ID to locale Name as key and create formated table 
 	-- ISCURSOR will swap key localized Name from Localization table and create formated table 
 	[1] = {
+		AntiFakePauses = {
+			[1] = false,
+			[2] = false,
+			[3] = false,
+			[4] = false,
+			[5] = false,
+			[6] = false,
+		},
 		CheckDeadOrGhost = true, 
 		CheckDeadOrGhostTarget = true,
 		CheckMount = false, 
@@ -11172,9 +11201,40 @@ function Action.ToggleMainUI()
 			Color:SetupStates()
 			Color:SetupPicker()			
 			
-			local PauseChecksPanel = StdUi:PanelWithTitle(anchor, tab.frame:GetWidth() - 30, 450, L["TAB"][tabName]["PAUSECHECKS"])
+			local PauseChecksPanel = StdUi:PanelWithTitle(anchor, tab.frame:GetWidth() - 30, 530, L["TAB"][tabName]["PAUSECHECKS"])
 			PauseChecksPanel.titlePanel.label:SetFontSize(14)
-			StdUi:EasyLayout(PauseChecksPanel, { padding = { top = 10 } })		
+			StdUi:EasyLayout(PauseChecksPanel, { padding = { top = 10 } })	
+
+			local AntiFakeItems = {
+				{ text = "START AntiFake CC", value = 1 },
+				{ text = "START AntiFake Interrupt", value = 2 },
+			}
+			if Action.BuildToC >= 20000 then 
+				AntiFakeItems[#AntiFakeItems + 1] = { text = "START AntiFake CC Focus", value = 3 }
+				AntiFakeItems[#AntiFakeItems + 1] = { text = "START AntiFake Interrupt Focus", value = 4 }
+				AntiFakeItems[#AntiFakeItems + 1] = { text = "START AntiFake CC2", value = 5 }
+				AntiFakeItems[#AntiFakeItems + 1] = { text = "START AntiFake CC2 Focus", value = 6 }									
+			end 
+			local AntiFakePauses = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), themeHeight, AntiFakeItems, nil, true, true)
+			AntiFakePauses:SetPlaceholder(" -- " .. L["TAB"][tabName]["ANTIFAKEPAUSES"] .. " -- ") 	
+			for i, v in ipairs(AntiFakePauses.optsFrame.scrollChild.items) do 
+				v:SetChecked(tabDB.AntiFakePauses[i])
+			end			
+			AntiFakePauses.OnValueChanged = function(self, value)			
+				for i, v in ipairs(self.optsFrame.scrollChild.items) do 					
+					if tabDB.AntiFakePauses[i] ~= v:GetChecked() then
+						tabDB.AntiFakePauses[i] = v:GetChecked()
+						Action.Print(L["TAB"][tabName]["ANTIFAKEPAUSES"] .. " - " .. AntiFakeItems[i].text .. ": ", tabDB.AntiFakePauses[i])
+					end 				
+				end 				
+			end				
+			AntiFakePauses:RegisterForClicks("LeftButtonUp")
+			AntiFakePauses:SetScript("OnClick", AntiFakePauses.ToggleOptions) 
+			AntiFakePauses.Identify = { Type = "Dropdown", Toggle = "AntiFakePauses" }			
+			AntiFakePauses.FontStringTitle = StdUi:Subtitle(AntiFakePauses, L["TAB"][tabName]["ANTIFAKEPAUSESSUBTITLE"])
+			StdUi:FrameTooltip(AntiFakePauses, L["TAB"][tabName]["ANTIFAKEPAUSESTT"], nil, "TOP", true)
+			StdUi:GlueAbove(AntiFakePauses.FontStringTitle, AntiFakePauses)
+			AntiFakePauses.text:SetJustifyH("CENTER")		
 			
 			local CheckDeadOrGhost = StdUi:Checkbox(anchor, L["TAB"][tabName]["DEADOFGHOSTPLAYER"])	
 			CheckDeadOrGhost:SetChecked(tabDB.CheckDeadOrGhost)
@@ -11528,6 +11588,7 @@ function Action.ToggleMainUI()
 			ThemeRow:AddElement(Color.ThemeApplyButton, { column = 3 })
 			anchor:AddRow():AddElement(PauseChecksPanel)		
 			PauseChecksPanel:AddRow():AddElement(PauseChecksPanel.titlePanel.label, { column = 12 })
+			PauseChecksPanel:AddRow({ margin = { top = 10 } }):AddElement(AntiFakePauses, { column = 12 })
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckSpellIsTargeting, CheckLootFrame, { column = "even" })	
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckEatingOrDrinking, CheckDeadOrGhost, { column = "even" })	
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckMount, CheckDeadOrGhostTarget, { column = "even" })	

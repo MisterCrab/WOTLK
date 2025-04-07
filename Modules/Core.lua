@@ -180,6 +180,7 @@ local TempLivingActionPotionIsMissed = Temp.LivingActionPotionIsMissed
 -------------------------------------------------------------------------------
 -- API
 -------------------------------------------------------------------------------
+A.AntiFakeWhite					 	= Create({ Type = "SpellSingleColor", 	ID = 1,		Color = "WHITE",     															  Hidden = true         		   								})
 A.Trinket1 							= Create({ Type = "TrinketBySlot", 		ID = CONST.INVSLOT_TRINKET1,	 				BlockForbidden = true, Desc = "Upper Trinket (/use 13)"														})
 A.Trinket2 							= Create({ Type = "TrinketBySlot", 		ID = CONST.INVSLOT_TRINKET2, 					BlockForbidden = true, Desc = "Lower Trinket (/use 14)" 													})
 A.Shoot								= Create({ Type = "Spell", 				ID = 5019, 										QueueForbidden = true, BlockForbidden = true, Hidden = true,  Desc = "Wand" 								})
@@ -369,14 +370,18 @@ function A.Rotation(icon)
 	local metaobj  	= APL[meta]
 	local metatype 	= GetMetaType[metaobj or "nil"]
 	
-	-- [1] CC / [2] Kick 
+	-- [1] CC / [2] Interrupt 
 	if meta <= 2 then 
-		if metatype == "function" and metaobj(icon) then 
-			return true
-		end 
+		if metatype == "function" then 
+			if metaobj(icon) then 
+				return true
+			elseif GetToggle(1, "AntiFakePauses")[meta] then
+				return A.AntiFakeWhite:Show(icon)
+			end 
+		end 						
+		
 		return A_Hide(icon)
 	end 
-	
 	-- [5] Trinket 
 	if meta == 5 then 
 		local result, isApplied, RacialAction
@@ -507,7 +512,7 @@ function A.Rotation(icon)
 		end 
 	end 
 	
-	-- [3] Single / [4] AoE / [6-8] Passive: @player-party1-3, @raid1-3, @arena1-3
+	-- [3] Single / [4] AoE / [6-8] Passive: @player-party1-3, @raid1-3, @arena1-3 + Active: other AntiFakes
 	if metaobj(icon) then 
 		return true 
 	end 
@@ -521,6 +526,11 @@ function A.Rotation(icon)
 	if meta == 3 and not GetToggle(1, "DisableClassPortraits") then 
 		return A:Show(icon, ClassPortaits[playerClass])
 	end 
+	
+	-- [7] CC Focus / [8] Interrupt Focus / [9] CC2 / [10] CC2 Focus
+	if BuildToC >= 20000 and metaobj and meta >= 7 and GetToggle(1, "AntiFakePauses")[meta - 4] then 
+		return A.AntiFakeWhite:Show(icon)
+	end 	
 	
 	A_Hide(icon)			
 end 
