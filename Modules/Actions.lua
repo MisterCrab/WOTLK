@@ -363,7 +363,10 @@ A.GetSpellDescription = A.MakeFunctionCachedDynamic(A.GetSpellDescription)
 
 function A:GetSpellCastTime()
 	-- @return number 
-	local _,_,_, castTime = GetSpellInfo(self.ID)
+	local spellName, _, _, castTime = GetSpellInfo(self.ID)
+	if type(spellName) == "table" then 
+		castTime = spellName.castTime
+	end 
 	return (castTime or 0) / 1000 
 end 
 
