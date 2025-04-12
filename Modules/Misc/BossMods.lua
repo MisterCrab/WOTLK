@@ -1,10 +1,12 @@
-local _G, pairs, type, table, string, error, math =
-	  _G, pairs, type, table, string, error, math
+local _G, pairs, type, table, string, math, assert =
+	  _G, pairs, type, table, string, math, assert
 
 local format						= string.format
 local tremove						= table.remove
 local tinsert						= table.insert
 local huge 							= math.huge
+local max 							= math.max
+local min 							= math.min
 local hooksecurefunc				= _G.hooksecurefunc
 
 local TMW 							= _G.TMW
@@ -69,23 +71,20 @@ if DBM then
 	end)
 
 	DBM_GetTimeRemaining = function(text)
+		assert(text, "Bad argument 'text' (nil value) for function DBM_GetTimeRemaining")
+		local remaining, expirationTime = -1, -1
 		if text then
 			for id, t in pairs(Timers) do
 				if t.text:match(text) then
-					local expirationTime 	= t.start + t.duration
-					local remaining 		= expirationTime - TMW.time
-					if remaining < 0 then
-						remaining = 0
-					end
+					expirationTime 	= t.start + t.duration
+					remaining 		= max(0, expirationTime - TMW.time) -- if < 0 return 0
 
 					return remaining, expirationTime
 				end
 			end
-		else
-			error("Bad argument 'text' (nil value) for function DBM_GetTimeRemaining")
 		end
 
-		return huge, huge
+		return remaining, expirationTime
 	end
 
 	DBM_GetTimeRemainingBySpellID = function(spellID)
@@ -99,7 +98,7 @@ if DBM then
 			return remaining, expirationTime
 		end
 
-		return huge, huge
+		return -1, -1
 	end
 
 	hooksecurefunc(DBM, "StartCombat", function(DBM, mod, delay, event)
@@ -230,53 +229,38 @@ if BigWigsLoader then
 
 
 	BigWigs_GetTimeRemaining = function(text)
-		local t
+		assert(text, "Bad argument 'text' (nil value) for function BigWigs_GetTimeRemaining")
+		local remaining, expirationTime, t = -1, -1
 		if text then
 			for k = 1, #Timers do
 				t = Timers[k]
 				if t.text and t.text:match(text) then
-					local expirationTime 	= t.start + t.duration
-					local remaining 		= expirationTime - TMW.time
-					if remaining < 0 then
-						remaining = 0
-					end
-
+					expirationTime 	= t.start + t.duration
+					remaining 		= max(0, expirationTime - TMW.time) -- if < 0 return 0
 					return remaining, expirationTime
 				end
 			end
-		else
-			error("Bad argument 'text' (nil value) for function BigWigs_GetTimeRemaining")
 		end
 
-		return huge, huge
+		return remaining, expirationTime
 	end
 	BigWigs_GetNameplateTimeRemaining = function(key)
-		local t
+		assert(key, "Bad argument 'key' (nil value) for function BigWigs_GetTimeRemaining")		
+		local remaining, expirationTime, t = -1, -1		
 		if key then
-			local expirationTime = huge
-			local remaining = huge
+			local currExpirationTime
 			for k = 1, #Timers do --must check all timers, as multiple similar NPCs are possible
 				t = Timers[k]
 
 				if t.key == key then
-					local expirationTime2 	= t.start + t.duration
-					local remaining2 		= expirationTime2 - TMW.time
-
-					if remaining2 < remaining then --current timer is less then saved timer
-						expirationTime	= expirationTime2
-						remaining		= remaining2
-					end
-					if remaining < 0 then --spell is queued
-						remaining = 0
-					end
-
+					currExpirationTime = t.start + t.duration
+					remaining = max(0, currExpirationTime - TMW.time) -- if < 0 return 0
+					expirationTime = min(expirationTime, currExpirationTime) -- get lowest expiration from all checked timers, will be negative if expired as previous logic used
 				end
 			end
-			return remaining, expirationTime
-		else
-			error("Bad argument 'text' (nil value) for function BigWigs_GetTimeRemaining")
 		end
-		return huge, huge
+		
+		return remaining, expirationTime
 	end
 end
 
@@ -356,11 +340,14 @@ end
 
 function A.BossMods:GetNameplateTimer(spellID)
     -- @return @number, @number
-    -- only works for BigWigs, returns huge if not found, returns time until CD or 0 if spellqueued
+    -- only works for BigWigs, 
+	-- Returns:
+	-- [1] returns -1 if not found, returns time until CD or 0 if spellqueued
+	-- [2] returns -1 if not found, returns lowest expirationTime, can be negative if expired
     if spellID and GetToggle(1, "BossMods") and self.HasBigWigs then
         return BigWigs_GetNameplateTimeRemaining(spellID)
     end
-    return huge, huge
+    return -1, -1
 end
 
 function A.BossMods:IsEngage(name)
