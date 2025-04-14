@@ -2484,7 +2484,7 @@ A.Unit = PseudoClass({
 		-- Nill-able: isPlayer
 		local unitID 						= self.UnitID
 		return unitID and (UnitCanAttack("player", unitID) or UnitIsEnemy("player", unitID)) and (not isPlayer or UnitIsPlayer(unitID))
-	end, "UnitID"),	
+	end, "UnitGUID"),	
 	IsHealer 								= Cache:Wrap(function(self, class)  
 		-- @return boolean
 		-- Nill-able: class
@@ -3458,7 +3458,7 @@ A.Unit = PseudoClass({
 		-- @return boolean 
 		local unitID 						= self.UnitID
 	    return self(unitID):HasBuffs(AuraList.Flags) > 0 
-	end, "UnitID"),
+	end, "UnitGUID"),
 	Health									= Cache:Pass(function(self)
 		-- @return number 
 		local unitID 						= self.UnitID
