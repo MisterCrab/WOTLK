@@ -7,6 +7,7 @@ local math_floor							= math.floor
 local math_random							= math.random
 local wipe 									= _G.wipe 
 local strsplit								= _G.strsplit
+local strjoin								= _G.strjoin
 local debugstack							= _G.debugstack	  
 	  
 local TMW 									= _G.TMW
@@ -22,6 +23,7 @@ local LibRangeCheck  						= LibStub("LibRangeCheck-3.0")
 local LibBossIDs							= LibStub("LibBossIDs-1.0").BossIDs
 
 local A   									= _G.Action	
+local BuildToC								= A.BuildToC
 local CONST 								= A.Const
 local Listener								= A.Listener
 local insertMulti							= A.TableInsertMulti
@@ -1182,11 +1184,11 @@ local Info = {
 		["DRUID"] 				= true,	
 	},
 	ClassCanBeTank				= {
-        ["WARRIOR"] 			= true,
-        ["PALADIN"] 			= true,
-        ["DRUID"] 				= true,	
-		["SHAMAN"]				= true, -- T3 tank in Classic possible 
-		["DEATHKNIGHT"]			= true,
+        ["WARRIOR"] 			= 71,						-- Defensive Stance
+        ["PALADIN"] 			= 25781, 					-- Righteous Fury
+        ["DRUID"] 				= {5487, 9634},				-- Bear Form, Dire Bear Form
+		["SHAMAN"]				= BuildToC <= 20000, 		-- T3 tank in Classic/TBC possible 
+		["DEATHKNIGHT"]			= 48263,					-- Blood Presence
 	},
 	ClassCanBeMelee				= {
         ["WARRIOR"] 			= true,
@@ -2511,8 +2513,9 @@ A.Unit = PseudoClass({
 		-- Nill-able: class
 		local unitID 						= self.UnitID
 		local unitID_class 					= class or self(unitID):Class()
-		if InfoClassCanBeTank[unitID_class] then 
-			if unitID:match("raid%d+") and GetPartyAssignment("maintank", unitID) then 
+		local tankBuffsOrCanBeTank			= InfoClassCanBeTank[unitID_class]
+		if tankBuffsOrCanBeTank then 
+			if unitID:find("raid") and GetPartyAssignment("maintank", unitID) then 
 				return true 
 			end 
 			
@@ -2520,24 +2523,29 @@ A.Unit = PseudoClass({
 				return true
 			end 			
 			
-			if CombatTracker:CombatTime(unitID) == 0 then 
-				if unitID_class == "PALADIN" then 
+			local combatTime = CombatTracker:CombatTime(unitID)
+			if unitID_class == "PALADIN" then 
+				local _, offhand = UnitAttackSpeed(unitID)
+				return offhand == nil and self(unitID):HasBuffs(tankBuffsOrCanBeTank) > 0 and (combatTime > 0 or A_GetUnitItem(unitID, CONST.INVSLOT_OFFHAND, LE_ITEM_CLASS_ARMOR, LE_ITEM_ARMOR_SHIELD, nil, true)) -- byPassDistance
+			elseif unitID_class == "DRUID" then 
+				return UnitPowerType(unitID) == 1 and self(unitID):HasBuffs(tankBuffsOrCanBeTank) > 0
+			elseif unitID_class == "WARRIOR" then 								
+				if combatTime == 0 then 
+					-- 1h+shield
 					local _, offhand = UnitAttackSpeed(unitID)
-					-- Buff: Righteous Fury 
-					return offhand == nil and self(unitID):HasBuffs(25781) > 0 and A_GetUnitItem(unitID, CONST.INVSLOT_OFFHAND, LE_ITEM_CLASS_ARMOR, LE_ITEM_ARMOR_SHIELD, nil, true) -- byPassDistance
-				elseif unitID_class == "DRUID" then 
-					return UnitPowerType(unitID) == 1
-				elseif unitID_class == "WARRIOR" then 
-					local _, offhand = UnitAttackSpeed(unitID)
-					-- Buff: Defensive Stance
-					return offhand == nil and self(unitID):HasBuffs(71) > 0 and A_GetUnitItem(unitID, CONST.INVSLOT_OFFHAND, LE_ITEM_CLASS_ARMOR, LE_ITEM_ARMOR_SHIELD) -- don't byPassDistance
+					return offhand == nil and A_GetUnitItem(unitID, CONST.INVSLOT_OFFHAND, LE_ITEM_CLASS_ARMOR, LE_ITEM_ARMOR_SHIELD) -- don't byPassDistance
+				elseif self(unitID):HasBuffs(tankBuffsOrCanBeTank) == 0 and (A.IsInPvP or self:ThreatSituation() < 3) then
+					return false
+					-- ↓↓↓ if warrior in Defensive Stance or has threat he can be tank, then we will use generic approach below to recognize it ↓↓↓
 				end
-			elseif not A.IsInPvP then 
-				local unitIDtarget = unitID .. "target"
-				if UnitIsUnit(unitID, unitIDtarget .. "target") and self(unitIDtarget):IsBoss() then 
+			end
+			
+			if not A.IsInPvP then 
+				local unitIDtarget = strjoin("", unitID, "target")
+				if UnitIsUnit(unitID, strjoin("", unitIDtarget, "target")) and self(unitIDtarget):IsBoss() then 
 					return true 
-				end 
-			end 
+				end
+			end
 			
 			local taken_dmg 				= CombatTracker:GetDMG(unitID)
 			local done_dmg					= CombatTracker:GetDPS(unitID)
