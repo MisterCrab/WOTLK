@@ -998,6 +998,7 @@ function A.Hide(icon)
 		
 		if icon.attributes.state ~= CONST.TMW_DEFAULT_STATE_HIDE then 
 			icon:SetInfo("state; texture", CONST.TMW_DEFAULT_STATE_HIDE, "")
+			TMW:Fire("TMW_ACTION_METAENGINE_UPDATE", icon.ID, A)
 		end 
 	end 
 end 
@@ -1041,9 +1042,18 @@ function A:Show(icon, texture)
 			TMWAPI(icon, self:Texture())
 		end 		
 		
+		-- Only fire for pure action object		
+		TMW:Fire("TMW_ACTION_METAENGINE_UPDATE", icon.ID, self.Start and self:IsQueued() and getmetatable(self).__index or self, texture)
 		return true 
 	end 
 end 
+
+function A:ExecuteScript()
+	if not self:IsBlocked() and self.LastTimeExecuted ~= TMW.time then
+		self.LastTimeExecuted = TMW.time
+		TMW:Fire("TMW_ACTION_METAENGINE_UPDATE", "Script", self)
+	end
+end
 
 function A.FrameHasSpell(frame, spellID)
 	-- @return boolean 
