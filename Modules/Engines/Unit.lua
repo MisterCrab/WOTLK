@@ -776,7 +776,7 @@ local AssociativeTables = setmetatable({ NullTable = {} }, { -- Only for Auras!
 			if error_snippet then 
 				error("Unit.lua script tried to put in AssociativeTables 'nil' as index and it caused null table return. The script successfully found the first occurrence of the error stack in the TMW snippet: " .. error_snippet, 0)
 			else 
-				error("Unit.lua script tried to put in AssociativeTables 'nil' as index and it caused null table return. Failed to find TMW snippet stack error. Below must be shown level of stack 1.", 1)
+				error("Unit.lua script tried to put in AssociativeTables 'nil' as index and it caused null table return.\n" .. debugstack())
 			end 
 		end 
 		return t.NullTable
@@ -4135,7 +4135,7 @@ function A.Unit:New(UnitID, Refresh)
 		if error_snippet then 
 			error("Unit.lua Action.Unit():.. was used with 'nil' unitID. Found problem in TMW snippet here:" .. error_snippet, 0)
 		else 
-			error("Unit.lua Action.Unit():.. was used with 'nil' unitID. Failed to find TMW snippet stack error. Below must be shown level of stack 1.", 1)
+			error("Unit.lua Action.Unit():.. was used with 'nil' unitID.\n" .. debugstack())
 		end 		
 	end 
 	self.UnitID 	= UnitID
