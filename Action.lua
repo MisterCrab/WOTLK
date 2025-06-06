@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "05.06.2025"
+local DateTime 														= "06.06.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -251,8 +251,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Will stop harmful damage on enemies\nIf they have CC such as Polymorph\nIt doesn't cancel auto attack!\n\nRightClick: Create macro",
 				BOSSTIMERS = "Boss Timers",
 				BOSSTIMERSTOOLTIP = "Required DBM or BigWigs addons\n\nTracking pull timers and some specific events such as trash incoming.\nThis feature is not availble for all the profiles!\n\nRightClick: Create macro",
-				HEALINGENGINEANYROLE = "HealingEngine Any Role",
-				HEALINGENGINEANYROLETOOLTIP = "Enable to use member targeting on any your role\n\nRightClick: Create macro",
 				FPS = "FPS Optimization",
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Increases frames per second by increasing the dynamic dependency\nframes of the refresh cycle (call) of the rotation cycle\n\nYou can also manually set the interval following a simple rule:\nThe larger slider then more FPS, but worse rotation update\nToo high value can cause unpredictable behavior!\n\nRightClick: Create macro",					
@@ -563,6 +561,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Supported: 'Healing Engine'\n\nDelay (in seconds) before select next target after select an enemy or boss in @target\n\nOnly works if 'Target Stop Options' has '@target enemy' or '@target boss' turned off\n\nDelay is updated every time when conditions are successful or is reset otherwise\n\nRight click: Create macro",
 				AFTERMOUSEOVERENEMYDELAY = "Target Delay\nAfter @mouseover enemy",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Supported: 'Healing Engine'\n\nDelay (in seconds) before select next target after select an enemy in @mouseover\n\nOnly works if 'Target Stop Options' has '@mouseover enemy' turned off\n\nDelay is updated every time when conditions are successful or is reset otherwise\n\nRight click: Create macro",
+				HEALINGENGINEAPI = "Enable Healing Engine API",
+				HEALINGENGINEAPITOOLTIP = "When enabled, all supported 'Healing Engine' options and settings will work",
 				SELECTPETS = "Enable Pets",
 				SELECTPETSTOOLTIP = "Supported: 'Healing Engine'\n\nSwitches pets to handle them by all API in 'Healing Engine'\n\nRight click: Create macro",
 				SELECTRESURRECTS = "Enable Resurrects",
@@ -704,7 +704,7 @@ local Localization = {
 			},		
 			[9] = {
 				HEADBUTTON = "Hotkeys",
-				FRAMEWORK = "[Each spec] Framework",
+				FRAMEWORK = "Framework",
 				HOTKEYINSTRUCTION = "Press or click any hotkey or mouse button to assign",
 				META = "Meta",
 				METAENGINEROWTT = "Double Left Click assign hotkey\nDouble Right Click unassign hotkey",
@@ -834,8 +834,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Остановит вредоносный урон по врагам\nЕсли у них есть CC, например, Превращение\nЭто не отменяет автоатаку!\n\nПравая кнопка мышки: Создать макрос",
 				BOSSTIMERS = "Босс Таймеры",
 				BOSSTIMERSTOOLTIP = "Требует DBM или BigWigs аддоны\n\nОтслеживает пулл таймер и некоторые спец. события такие как 'след.треш'.\nЭта опция доступна не для всех профилей!\n\nПравая кнопка мышки: Создать макрос",
-				HEALINGENGINEANYROLE = "HealingEngine Любая Роль",
-				HEALINGENGINEANYROLETOOLTIP = "Позволяет использовать выбор цели на любую вашу роль\n\nПравая кнопка мышки: Создать макрос",
 				FPS = "FPS Оптимизация",
 				FPSSEC = " (сек)",
 				FPSTOOLTIP = "AUTO: Повышение кадров в секунду за счет увеличения в динамической зависимости\nкадров интервала обновления (вызова) цикла ротации\n\nВы также можете вручную задать интервал следуя простому правилу:\nЧем больше ползунок, тем больше кадров, но хуже обновление ротации\nСлишком высокое значение может вызвать непредсказуемое поведение!\n\nПравая кнопка мышки: Создать макрос",					
@@ -1146,6 +1144,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Поддерживает: 'Healing Engine'\n\nЗадержка (в секундах) прежде чем выбрать следующую цель после выбора противника или босса в @target\n\nРаботает только если 'Цель Стоп Опции' имеет '@target противник' или '@target босс' выключенным\n\nЗадержка обновляется каждый раз когда условия являются успешными или сбрасывается в ином случае\n\nПравая кнопка мышки: Создать макрос",
 				AFTERMOUSEOVERENEMYDELAY = "Задержка Цели\nПосле @mouseover противника",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Поддерживает: 'Healing Engine'\n\nЗадержка (в секундах) прежде чем выбрать следующую цель после выбора противника в @mouseover\n\nРаботает только если 'Цель Стоп Опции' имеет '@mouseover противник' выключен\n\nЗадержка обновляется каждый раз когда условия являются успешными или сбрасывается в ином случае\n\nПравая кнопка мышки: Создать макрос",
+				HEALINGENGINEAPI = "Включить API Healing Engine",
+				HEALINGENGINEAPITOOLTIP = "Когда включено, все поддерживаемые опции и настройки 'Healing Engine' будут работать",
 				SELECTPETS = "Включить Питомцев",
 				SELECTPETSTOOLTIP = "Поддерживает: 'Healing Engine'\n\nПереключает питомцев, чтобы обрабатывать их всему API в 'Healing Engine'\n\nПравая кнопка мышки: Создать макрос",
 				SELECTRESURRECTS = "Включить Воскрешения",
@@ -1289,7 +1289,7 @@ local Localization = {
 			},					
 			[9] = {
 				HEADBUTTON = "Клавиши",
-				FRAMEWORK = "[Каждый спек] Каркас",
+				FRAMEWORK = "Каркас",
 				HOTKEYINSTRUCTION = "Нажмите или кликните любую горячую клавишу или кнопку мышки для назначения",
 				META = "Мета",
 				METAENGINEROWTT = "Двойной левый клик назначает горячую клавишу\nДвойной правый клик снимает назначение",
@@ -1419,8 +1419,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Verhindert schädlichen Schaden bei Feinden\nWenn sie CC wie Polymorph haben\nDer automatische Angriff wird nicht abgebrochen!\n\nRechtsklick: Makro erstellen",
 				BOSSTIMERS = "Bosse Timers",
 				BOSSTIMERSTOOLTIP = "Erforderliche DBM oder BigWigs addons\n\nVerfolgen von Pull-Timern und bestimmten Ereignissen, z. B. eingehendem Thrash.\nDiese Funktion ist nicht für alle Profile verfügbar!\n\nKlicken mit der rechten Maustaste: Makro erstellen",
-				HEALINGENGINEANYROLE = "HealingEngine Irgendeine Rolle",
-				HEALINGENGINEANYROLETOOLTIP = "Aktivieren Sie diese Option, um das Mitglieder-Targeting für jede Ihrer Rollen zu verwenden\n\nRechtsklick: Makro erstellen",
 				FPS = "FPS Optimierungen",
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Erhöht die Frames pro Sekunde durch Erhöhen der dynamischen Abhängigkeit.\nFrames des Aktualisierungszyklus (Aufruf) des Rotationszyklus\n\nSie können das Intervall auch nach einer einfachen Regel manuell einstellen:\nDer größere Schieberegler als mehr FPS, aber schlechtere Rotation Update\nZu hoher Wert kann zu unvorhersehbarem Verhalten führen!\n\nRechtsklick: Makro erstellen",					
@@ -1730,6 +1728,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Unterstützt: 'Healing Engine'\n\nVerzögern (in Sekunden) bevor Auswahl nächstes Ziel nach Auswahl des Gegners oder Boss in @target\n\nNur funktioniert wenn 'Ziel Stop Options' hat '@target gegner' oder '@target boss' ausschalten\n\nVerzögerung wird jedes Mal aktualisiert, wenn die Bedingungen erfolgreich sind oder anderweitig zurückgesetzt werden\n\nRechts klick: Erstelle Makro",
 				AFTERMOUSEOVERENEMYDELAY = "Ziel Verzögerung\nNach @mouseover gegner",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Unterstützt: 'Healing Engine'\n\nVerzögerung (in Sekunden) vor der Auswahl des nächsten Ziels nach der Auswahl eines Feindes in @mouseover\n\nFunkioniert nur wenn 'Ziel Stop Options' hat '@mouseover gegner' ausschlaten\n\nDie Verzögerung wird jedes Mal aktualisiert, wenn die Bedingungen erfolgreich sind oder anderweitig zurückgesetzt werden\n\nRechts klick: Erstelle Makro",
+				HEALINGENGINEAPI = "Healing Engine API aktivieren",
+				HEALINGENGINEAPITOOLTIP = "Wenn aktiviert, funktionieren alle unterstützten 'Healing Engine'-Optionen und -Einstellungen",
 				SELECTPETS = "Aktiviere Begleiter",
 				SELECTPETSTOOLTIP = "Unterstützt: 'Healing Engine'\n\nWechselt Begleiter, um sie von allen API in 'Healing Engine'\n\nRechts klick: Erstelle Makro",
 				SELECTRESURRECTS = "Aktiviert Wiederbelebung",
@@ -1874,7 +1874,7 @@ local Localization = {
 			},		
 			[9] = {
 				HEADBUTTON = "Tastenkürzel",
-				FRAMEWORK = "[Jede Spezialisierung] Rahmenwerk",
+				FRAMEWORK = "Rahmenwerk",
 				HOTKEYINSTRUCTION = "Drücken oder klicken Sie eine beliebige Hotkey- oder Maustaste, um zuzuweisen",
 				META = "Meta",
 				METAENGINEROWTT = "Doppel-Linksklick weist Hotkey zu\nDoppel-Rechtsklick hebt Hotkey auf",
@@ -2004,8 +2004,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Arrêtera les dégâts sur les ennemis\nSi ils ont un CC tel que Polymorph\nIl n'annule pas l'attaque automatique!\n\nClique droit : Créer la macro",
 				BOSSTIMERS = "Boss Timeurs",
 				BOSSTIMERSTOOLTIP = "Addons DBM ou BigWigs requis\n\nSuit les timeur de pull and certain événement spécifique comme l'arrivé de trash.\nCette fonction n'est pas disponible pour tout les profiles!\n\nClique droit : Créer la macro",
-				HEALINGENGINEANYROLE = "HealingEngine n'importe quel rôle",
-				HEALINGENGINEANYROLETOOLTIP = "Activer l'utilisation du ciblage des membres sur n'importe quel rôle\n\nClique droit : Créer la macro",				
 				FPS = "FPS Optimisation",
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO:  Augmente les images par seconde en augmentant la dépendance dynamique\nimage du cycle de rafraichisement (call) du cycle de rotation\n\nVous pouvez régler manuellement l'intervalle en suivant cette règle simple:\nPlus le slider est grand plus vous avez de FPS, mais pire sera la mise à jour de la rotation\nUne valeur trop élevée peut entraîner un comportement imprévisible!\n\nClique droit : Créer la macro",
@@ -2316,6 +2314,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Supporté: 'Healing Engine'\n\nDélai (en secondes) avant de sélectionner la cible suivante après avoir ciblé un ennemi ou un boss @target\n\nFonctionne uniquement si 'Options de stopcast des cibles' a '@target ennemi' ou '@target boss' désactivé\n\nLe délai est mis à jour à chaque fois que les conditions sont réussies ou est réinitialisé autrement\n\nClic droit: Créer la macro",
 				AFTERMOUSEOVERENEMYDELAY = "Délai cible\nAprès un @mouseover ennemi",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Supporté: 'Healing Engine'\n\nDélai (en secondes) avant de sélectionner la cible suivante après avoir ciblé un ennemi avec @mouseover\n\nFonctionne uniquement si 'Options de stopcast des cibles' a '@mouseover ennemi' désactivé\n\nLe délai est mis à jour à chaque fois que les conditions sont réussies ou est réinitialisé autrement\n\nClic droit: Créer la macro",
+				HEALINGENGINEAPI = "Activer l'API Healing Engine",
+				HEALINGENGINEAPITOOLTIP = "Lorsque activé, toutes les options et paramètres 'Healing Engine' pris en charge fonctionneront",
 				SELECTPETS = "Activer les familiers",
 				SELECTPETSTOOLTIP = "Supported: 'Healing Engine'\n\nChange les animaux de compagnie pour les gérer par toutes les API 'Healing Engine'\n\nClic droit: Créer la macro", 
 				SELECTRESURRECTS = "Activer les résurrections",
@@ -2457,7 +2457,7 @@ local Localization = {
 			},		
 			[9] = {
 				HEADBUTTON = "Raccourcis",
-				FRAMEWORK = "[Chaque spé] Cadriciel",
+				FRAMEWORK = "Cadriciel",
 				HOTKEYINSTRUCTION = "Appuyez ou cliquez sur n’importe quelle touche de raccourci ou bouton de souris pour assigner",
 				META = "Meta",
 				METAENGINEROWTT = "Double clic gauche pour assigner le raccourci\nDouble clic droit pour désassigner le raccourci",
@@ -2587,8 +2587,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Fermerà i danni dannosi ai nemici\nSe hanno CC come Polymorph\nNon annulla l'attacco automatico!\n\nTastodestro: Crea macro",
 				BOSSTIMERS = "Boss Timers",
 				BOSSTIMERSTOOLTIP = "Addon DBM o BigWigs richiesti\n\nTiene traccia dei timer di avvio combattimento e alcuni eventi specific tipo patrol in arrivo.\nQuesta funzionalitá é disponibile per tutti i profili!\n\nTastodestro: Crea macro",
-				HEALINGENGINEANYROLE = "HealingEngine qualsiasi ruolo",
-				HEALINGENGINEANYROLETOOLTIP = "Abilita l'utilizzo del targeting per membro su qualsiasi tuo ruolo\n\nTastodestro: Crea macro",				
 				FPS = "Ottimizzazione FPS",
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Aumenta i frames per second incrementando la dipendenza dinamica\ndei frames del ciclo di refresh (call) della rotazione\n\nPuoi settare manualmente l'intervallo seguendo questa semplice regola:\nPiú é altop lo slider piú é l'FPS, ma peggiore sará l'update della rotazione\nValori troppo alti possono portare a risultati imprevedibili!\n\nTastodestro: Crea macro",					
@@ -2900,6 +2898,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Supportato: 'Healing Engine'\n\nRitarda (in secondi) prima di selezionare il bersaglio successivo dopo aver selezionato un nemico o un boss in @target\n\nFunziona solo se 'Opzioni lo stop target' ha '@target nemico' o '@target boss' disattivato\n\nIl ritardo viene aggiornato ogni volta che le condizioni hanno esito positivo o viene reimpostato in altro modo\n\nPulsanmte destro: Crea macro",
 				AFTERMOUSEOVERENEMYDELAY = "Ritardo target\nDopo il nemico @mouseover",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Supportato: 'Healing Engine'\n\nRitarda (in secondi) prima di selezionare il bersaglio successivo dopo aver selezionato un nemico in @mouseover\n\nFunziona solo se 'Opzioni lo stop target' ha disattivato '@mouseover nemico'\n\nIl ritardo viene aggiornato ogni volta che le condizioni hanno esito positivo o viene reimpostato in altro modo\n\nPulsanmte destro: Crea macro",
+				HEALINGENGINEAPI = "Abilita API del Healing Engine",
+				HEALINGENGINEAPITOOLTIP = "Quando abilitato, tutte le opzioni e impostazioni supportate di 'Healing Engine' funzioneranno",
 				SELECTPETS = "Abilita Famigli",
 				SELECTPETSTOOLTIP = "Supportato: 'Healing Engine'\n\nCambia animali domestici per gestirli da tutte le API in 'Healing Engine'\n\nPulsanmte destro: Crea macro",
 				SELECTRESURRECTS = "Abilita Resurrezioni",
@@ -3043,7 +3043,7 @@ local Localization = {
 			},					
 			[9] = {
 				HEADBUTTON = "Tasti di scelta rapida",
-				FRAMEWORK = "[Ogni spec] Struttura",
+				FRAMEWORK = "Struttura",
 				HOTKEYINSTRUCTION = "Premi o clicca qualsiasi tasto rapido o pulsante del mouse per assegnare",
 				META = "Meta",
 				METAENGINEROWTT = "Doppio clic sinistro per assegnare il tasto rapido\nDoppio clic destro per rimuovere l’assegnazione",
@@ -3173,8 +3173,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Detendrá el daño dañino en los enemigos\nSi tienen CC como Polymorph\nNo cancela el ataque automático!\n\nClickDerecho: Crear macro",
 				BOSSTIMERS = "Jefes Tiempos",
 				BOSSTIMERSTOOLTIP = "Complementos DBM o BigWigs requeridos\n\nRastrea tiempos de pull y algunos eventos específicos como la basura que pueda venir.\nEsta característica no está disponible para todos los perfiles!\n\nClickDerecho: Crear macro",
-				HEALINGENGINEANYROLE = "HealingEngine cualquier papel",
-				HEALINGENGINEANYROLETOOLTIP = "Habilite el uso de la orientación a miembros en cualquier role\n\nClickDerecho: Crear macro",				
 				FPS = "Optimización de FPS",
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Incrementa los frames por segundo aumentando la dependencia dinámica\nframes del ciclo de recarga (llamada) del ciclo de rotación\n\nTambién puedes establecer manualmente el intervalo siguiendo una regla simple:\nCuanto mayor sea el desplazamiento, mayor las FPS, pero peor actualización de rotación\nUn valor demasiado alto puede causar un comportamiento impredecible!\n\nClickDerecho: Crear macro",					
@@ -3485,6 +3483,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Soportado: 'Healing Engine'\n\nRetraso (en segundos) antes de seleccionar el siguiente target después de seleccionar un enemigo o boss en @target\n\nSolo funciona si la opción 'Opciones de para Target' tiene '@target enemigo' o '@target boss' deshabilitada\n\nEl retraso se actualiza cada vez cuando las condiciones se realizan satisfactoriamente o se reinician\n\nBotón derecho: Crear macro",
 				AFTERMOUSEOVERENEMYDELAY = "Target Retraso\nAdelanto @mouseover enemigo",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Soportado: 'Healing Engine'\n\nRetraso (en segundos) antes de seleccionar el siguiente target después de seleccionar un enemy en @mouseover\n\nSolo funciona si la opción 'Opciones de para Target' tiene '@mouseover enemigo' deshabilitada\n\nEl retraso se actualiza cada vez cuando las condiciones se realizan satisfactoriamente o se reinician\n\nBotón derecho: Crear macro",
+				HEALINGENGINEAPI = "Habilitar API de Healing Engine",
+				HEALINGENGINEAPITOOLTIP = "Al habilitarse, todas las opciones y configuraciones compatibles con 'Healing Engine' funcionarán",
 				SELECTPETS = "Habilitar Mascotas",
 				SELECTPETSTOOLTIP = "Soportado: 'Healing Engine'\n\nCambia mascotas para manejarlas por todas las API en 'Healing Engine'\n\nBotón derecho: Crear macro",
 				SELECTRESURRECTS = "Enable Resurrects",
@@ -3626,7 +3626,7 @@ local Localization = {
 			},					
 			[9] = {
 				HEADBUTTON = "Teclas rápidas",
-				FRAMEWORK = "[Cada especialización] Marco",
+				FRAMEWORK = "Marco",
 				HOTKEYINSTRUCTION = "Presione o haga clic en cualquier tecla rápida o botón del ratón para asignar",
 				META = "Meta",
 				METAENGINEROWTT = "Doble clic izquierdo para asignar la tecla rápida\nDoble clic derecho para desasignar la tecla rápida",
@@ -3756,8 +3756,6 @@ local Localization = {
 				STOPATBREAKABLETOOLTIP = "Irá para o dano em alvos\nSe eles estiverem em CC como Polymorph\nO auto-ataque não é cancelado!\n\nRightClick: Criar macro",
 				BOSSTIMERS = "Contadores do Chefes",
 				BOSSTIMERSTOOLTIP = "Suplementos DBM ou BigWigs necessários\n\nRastreando contadoes de pull e alguns eventos específicos como trash a caminho.\nEsta funcionalidade não está disponível para todos os profiles\n\nRightClick: Criar macro",
-				HEALINGENGINEANYROLE = "HealingEngine qualquer função",
-				HEALINGENGINEANYROLETOOLTIP = "Habilite o uso da segmentação por membros em qualquer função\n\nRightClick: Criar macro",
 				FPS = "Otimização de FPS",
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Aumenta os quadros por segundo por meio de aumento na depêndencia dinâmica \nquadros do ciclo de atualização (call) do ciclo de rotação\n\nVocê pode setar o intervalo manualmente seguindo uma simples regra:\nQuanto maior o slider maior o FPS, mas pior será a atualização da rotação\nValores muito altos podem causar comportamento imprevisível!\n\nRightClick: Criar macro",					
@@ -4068,6 +4066,8 @@ local Localization = {
 				AFTERTARGETENEMYORBOSSDELAYTOOLTIP = "Suportados: 'Healing Engine'\n\nAtraso (em segundos) antes de selecionar o próximo alvo após selecionar um inimigo ou boss ser selecionado @target\n\nFunciona apenas se 'Opções de parar o alvo' contém'@target inimigo' ou '@target boss' desligado\n\nAtraso é atualizado toda vez que as condições são bem-sucedidas, do contrário são resetadas\n\nClique direito: Criar macro",
 				AFTERMOUSEOVERENEMYDELAY = "Atraso do Alvo\nApós @mouseover inimigo",
 				AFTERMOUSEOVERENEMYDELAYTOOLTIP = "Suportados: 'Healing Engine'\n\nAtraso (em segundos) antes de selecionar o próximo alvo após selecionar um inimigo com @mouseover\n\nFunciona apenas se 'Opções de parar o alvo' contém '@mouseover inimigo' desligado\n\nAtraso é atualizado toda vez que as condições são bem-sucedidas, do contrário são resetadas\n\nClique direito: Criar macro",
+				HEALINGENGINEAPI = "Ativar API do Healing Engine",
+				HEALINGENGINEAPITOOLTIP = "Quando ativado, todas as opções e configurações suportadas do 'Healing Engine' funcionarão",
 				SELECTPETS = "Ativar Familiares",
 				SELECTPETSTOOLTIP = "Suportados: 'Healing Engine'\n\nTroca os pets para lidar com toda a API em 'Healing Engine'\n\nClique direito: Criar macro",  
 				SELECTRESURRECTS = "Ativar Resurrects",
@@ -4209,7 +4209,7 @@ local Localization = {
 			},			
 			[9] = {
 				HEADBUTTON = "Atalhos",
-				FRAMEWORK = "[Cada especialização] Estrutura",
+				FRAMEWORK = "Estrutura",
 				HOTKEYINSTRUCTION = "Pressione ou clique em qualquer tecla de atalho ou botão do mouse para atribuir",
 				META = "Meta",
 				METAENGINEROWTT = "Duplo clique esquerdo para atribuir o atalho\nDuplo clique direito para desatribuir o atalho",
@@ -4612,7 +4612,6 @@ local Factory = {
 		AutoAttack = true, 
 		BossMods = true,
 		LOSCheck = true, 
-		HE_AnyRole = false,
 		StopAtBreakAble = false,
 		FPS = -0.01, 			
 		Trinkets = {
@@ -4807,6 +4806,7 @@ local Factory = {
 		SelectSortMethod = "HP",	
 		AfterTargetEnemyOrBossDelay = 0,	-- SelectStopOptions must be off for: [3] @target enemy or [4] @target boss
 		AfterMouseoverEnemyDelay = 0,		-- SelectStopOptions must be off for: [2] @mouseover enemy 
+		HealingEngineAPI = true,
 		SelectPets = true,
 		SelectResurrects = true, 			-- Classic Druids haven't it.. 
 		UnitIDs = StdUi:tGenerateHealingEngineUnitIDs({ Enabled = true, Role = "AUTO", useDispel = true, useShields = true, useHoTs = true, useUtils = true, LUA = "" }), 
@@ -5618,6 +5618,14 @@ local Upgrade 					= {
 					[28270] = true,
 				},
 			}, "pActionDB[4].PvP")
+		end,
+		[3]						= function()
+			-- Defaults to /focus mode healing or /target if Classic is Vanilla
+			local SelectStopOptions = pActionDB[8].SelectStopOptions or pActionDB[8][Action.PlayerSpec].SelectStopOptions 
+			local value = Action.BuildToC < 20000
+			for i = 1, 5 do 
+				SelectStopOptions[i] = value
+			end
 		end,
 	},
 	gUpgrades					= {
@@ -10337,9 +10345,6 @@ local OnToggleHandler		= {
 		LOSCheck			= function() 
 			LineOfSight:Initialize() 
 		end,
-		HE_AnyRole			= function()
-			TMW:Fire("TMW_ACTION_HEALINGENGINE_ANY_ROLE")
-		end,
 	},
 	[2]						= {
 		-- Toggles 
@@ -10421,6 +10426,9 @@ local OnToggleHandler		= {
 		UnitIDs 			= function() 
 			TMW:Fire("TMW_ACTION_HEALING_ENGINE_UI_UPDATE") 
 			TMW:Fire("TMW_ACTION_HEALING_ENGINE_UI_PROFILE", "Changed", "") 
+		end,
+		HealingEngineAPI	= function()
+			TMW:Fire("TMW_ACTION_HEALINGENGINE_INITIALIZE") 
 		end,
 	},	
 	[9]						= {
@@ -11545,37 +11553,6 @@ function Action.ToggleMainUI()
 			BossMods:GetScript("OnShow")()
 			StdUi:FrameTooltip(BossMods, L["TAB"][tabName]["BOSSTIMERSTOOLTIP"], nil, "TOPLEFT", true)
 			
-			local HE_AnyRole = StdUi:Checkbox(anchor, L["TAB"][tabName]["HEALINGENGINEANYROLE"])		
-			HE_AnyRole:SetChecked(specDB.HE_AnyRole)
-			HE_AnyRole:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-			HE_AnyRole:SetScript("OnClick", function(self, button, down)	
-				if not self.isDisabled then 				
-					if button == "LeftButton" then 
-						specDB.HE_AnyRole = not specDB.HE_AnyRole
-						self:SetChecked(specDB.HE_AnyRole)							
-						Action.Print(L["TAB"][tabName]["HEALINGENGINEANYROLE"] .. ": ", specDB.HE_AnyRole)	
-						TMW:Fire("TMW_ACTION_HEALINGENGINE_ANY_ROLE")
-					elseif button == "RightButton" then 
-						Action.CraftMacro(L["TAB"][tabName]["HEALINGENGINEANYROLE"], [[/run Action.SetToggle({]] .. tabName .. [[, "HE_AnyRole", "]] .. L["TAB"][tabName]["HEALINGENGINEANYROLE"] .. [[: "})]])	
-					end 
-				end 
-			end)
-			HE_AnyRole.Identify = { Type = "Checkbox", Toggle = "HE_AnyRole" }
-			HE_AnyRole:SetScript("OnShow", function()
-				if Action.IsBasicProfile or not Action.Unit("player"):IsHealerClass() then 
-					if not HE_AnyRole.isDisabled then 
-						HE_AnyRole:Disable()
-						specDB.HE_AnyRole = false
-						HE_AnyRole:SetChecked(specDB.HE_AnyRole)
-					end 
-				elseif HE_AnyRole.isDisabled then  					
-					HE_AnyRole:SetChecked(specDB.HE_AnyRole)
-					HE_AnyRole:Enable()
-				end 			
-			end)
-			HE_AnyRole:GetScript("OnShow")()
-			StdUi:FrameTooltip(HE_AnyRole, L["TAB"][tabName]["HEALINGENGINEANYROLETOOLTIP"], nil, "TOPLEFT", true)
-			
 			local StopAtBreakAble = StdUi:Checkbox(anchor, L["TAB"][tabName]["STOPATBREAKABLE"], 50)			
 			StopAtBreakAble:SetChecked(specDB.StopAtBreakAble)
 			StopAtBreakAble:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -12440,11 +12417,11 @@ function Action.ToggleMainUI()
 			local SpecialRow = anchor:AddRow()
 			SpecialRow:AddElement(FPS, { column = 6 })
 			SpecialRow:AddElement(HealthStone, { column = 6 })
-			anchor:AddRow({ margin = { top = 10 } }):AddElements(AutoTarget, LosSystem, 		{ column = "even" })
-			anchor:AddRow({ margin = { top = -5 } }):AddElements(Potion, BossMods, 				{ column = "even" })			
-			anchor:AddRow({ margin = { top = -5 } }):AddElements(Racial, StopCast, 				{ column = "even" })
-			anchor:AddRow({ margin = { top = -5 } }):AddElements(AutoAttack, StopAtBreakAble, 	{ column = "even" })	
-			anchor:AddRow({ margin = { top = -5 } }):AddElements(AutoShoot, HE_AnyRole, 		{ column = "even" })	
+			anchor:AddRow({ margin = { top = 10 } }):AddElements(AutoTarget, LosSystem, 					{ column = "even" })
+			anchor:AddRow({ margin = { top = -5 } }):AddElements(Potion, BossMods, 							{ column = "even" })			
+			anchor:AddRow({ margin = { top = -5 } }):AddElements(Racial, StopCast, 							{ column = "even" })
+			anchor:AddRow({ margin = { top = -5 } }):AddElements(AutoAttack, StopAtBreakAble, 				{ column = "even" })	
+			anchor:AddRow({ margin = { top = -5 } }):AddElements(AutoShoot, StdUi:LayoutSpace(anchor), 		{ column = "even" })	
 			anchor:AddRow():AddElements(Color.Title, { column = "even" })	
 			anchor:AddRow({ margin = { top = -10 } }):AddElements(Color.UseColor, Color.Picker, { column = "even" })	
 			anchor:AddRow():AddElements(Color.Element, Color.Option, { column = "even" })	
@@ -15368,26 +15345,21 @@ function Action.ToggleMainUI()
 		end
 		
 		if tabName == 8 then 
-			local hasHealerSpells = Action.Unit("player"):IsHealerClass()
 			-- Fix StdUi 
 			-- Lib has missed scrollframe as widget (need to have function GetChildrenWidgets)
 			StdUi:InitWidget(anchor)		
-			if not hasHealerSpells then 
-				UI_Title:SetText(L["TAB"]["NOTHING"])
-				return 
-			end 
-			
+
 			UI_Title:Hide()					
 			StdUi:EasyLayout(anchor, { padding = { top = 2, left = 8, right = 8 + 20 } })
 			
-			local isHealer = (not StdUi.isClassic and Action.IamHealer) or (StdUi.isClassic and hasHealerSpells) -- By this depends which elements we need to use
+			local isHealer = true -- Since release of MetaEngine, all classes and specializations have HealingEngine API
 			local 	isDemo = false -- Hides player name for demonstration 
 			local 	PanelOptions,
 						ResetOptions, HelpOptions,	-- Other roles available
 						PredictOptions,				-- Other roles available
 						SelectStopOptions, SelectSortMethod,
 						AfterTargetEnemyOrBossDelay, AfterMouseoverEnemyDelay,
-						SelectPets, SelectResurrects,
+						HealingEngineAPI, SelectPets, SelectResurrects,
 					PanelUnitIDs,
 						UnitIDs, 
 						AutoHide,
@@ -15507,6 +15479,9 @@ function Action.ToggleMainUI()
 						if button == "LeftButton" then 
 							specDB[db] = not specDB[db]	
 							self:SetChecked(specDB[db])	
+							if OnToggleHandler[tabName][db] then 
+								OnToggleHandler[tabName][db](specDB)
+							end
 							Action.Print(titleText .. ": ", specDB[db])			
 						elseif button == "RightButton" and useMacro then 
 							Action.CraftMacro(titleText, [[/run Action.SetToggle({]] .. tabName .. [[, "]] .. db .. [[", "]] .. titleText .. [[: "})]], true)	
@@ -15673,6 +15648,14 @@ function Action.ToggleMainUI()
 						end 
 					end 
 					
+					if k == "HealingEngineAPI" and HealingEngineAPI then 
+						if HealingEngineAPI:GetChecked() ~= v then 
+							HealingEngineAPI:SetChecked(v)
+							specDB[k] = v 
+							Action.Print(L["TAB"][tabName][k:upper()] .. ": ", specDB[k])	
+						end 
+					end 
+					
 					if k == "SelectPets" and SelectPets then 
 						if SelectPets:GetChecked() ~= v then 
 							SelectPets:SetChecked(v)
@@ -15815,6 +15798,9 @@ function Action.ToggleMainUI()
 			
 			-- UI: PanelOptions - AfterMouseoverEnemyDelay
 			AfterMouseoverEnemyDelay = CreateSliderAfter("AfterMouseoverEnemyDelay")
+			
+			-- UI: PanelOptions - HealingEngineAPI
+			HealingEngineAPI = CreateCheckbox(PanelOptions, "HealingEngineAPI", true) -- yes macro, no callback
 			
 			-- UI: PanelOptions - SelectPets
 			SelectPets = CreateCheckbox(PanelOptions, "SelectPets", true, true) -- yes macro, yes callback
@@ -16836,7 +16822,7 @@ function Action.ToggleMainUI()
 		if isHealer then 
 			PanelOptions:AddRow({ margin = { top = 0  } }):AddElements(SelectStopOptions, 				SelectSortMethod, 												columnEven)
 			PanelOptions:AddRow({ margin = { top = 10 } }):AddElements(AfterTargetEnemyOrBossDelay, 	AfterMouseoverEnemyDelay, 										columnEven)
-			PanelOptions:AddRow({ margin = { top = -10, bottom = 5 } }):AddElements(SelectPets, 		SelectResurrects, 												columnEven)
+			PanelOptions:AddRow({ margin = { top = -10, bottom = 5 } }):AddElements(HealingEngineAPI, 	SelectPets, 				SelectResurrects, 					columnFour)
 		end 
 			PanelOptions:DoLayout()
 			anchor:AddRow({ margin = { left = -15, right = -15 } }):AddElement(PanelOptions)	

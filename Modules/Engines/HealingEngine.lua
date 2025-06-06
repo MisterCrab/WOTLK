@@ -949,7 +949,9 @@ local function Initialize()
 		dbUnitIDs			= db.UnitIDs				
 	end 
 
-	if A.IamHealer or (isClassic and GetToggle(1, "HE_AnyRole")) then 
+	-- Since release of MetaEngine, all classes and specializations have HealingEngine API
+	-- It can be disabled in case of performance issues or when doesn't need
+	if GetToggle(8, "HealingEngineAPI") then
 		if not Data.IsRunning then 
 			if BuildToC >= 20000 then 
 				Listener:Add("ACTION_EVENT_HEALINGENGINE", "PLAYER_FOCUS_CHANGED", 	SetColorTarget)
@@ -1012,9 +1014,7 @@ local function Initialize()
 	end 
 end 
 
-if isClassic then 
-	TMW:RegisterCallback("TMW_ACTION_HEALINGENGINE_ANY_ROLE", 					Initialize)
-end 
+TMW:RegisterCallback("TMW_ACTION_HEALINGENGINE_INITIALIZE", 					Initialize) 
 TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", 				Initialize) 
 TMW:RegisterCallback("TMW_ACTION_IS_INITIALIZED", 								Initialize) 
 TMW:RegisterCallback("TMW_ACTION_DB_UPDATED",									function(callbackEvent, pActionDB)
@@ -1081,7 +1081,6 @@ Listener:Add("ACTION_EVENT_HEALINGENGINE", "PLAYER_REGEN_DISABLED", 			function(
 end)
 
 -- ============================= API ==============================
--- API valid only for healer specializations  
 
 -- Globals
 A.HealingEngine = { Data = Data }
