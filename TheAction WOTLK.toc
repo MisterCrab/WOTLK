@@ -61,6 +61,7 @@ Modules\Engines\UnitInspect.lua
 Modules\Misc\BossMods.lua
 Modules\Misc\ElvUI.lua
 Modules\Misc\HeroLib.lua
+Modules\Misc\PMultiplier.lua
 Modules\Misc\PrevSpell.lua 
 Modules\Misc\DRList.lua
 Modules\Misc\LibHealComm.lua
