@@ -30,7 +30,7 @@ local A 								= _G.Action
 local CONST 							= A.Const
 local Listener							= A.Listener
 local Print								= A.Print
-local Lib 								= LibStub:NewLibrary("MacroLibrary", 5)
+local Lib 								= LibStub:NewLibrary("MacroLibrary", 6)
 	  
 local wipe 								= _G.wipe	  
 local MAX_ACCOUNT_MACROS				= _G.MAX_ACCOUNT_MACROS
@@ -413,8 +413,9 @@ end
 function Lib:GetInfo(ID, By)
 	-- @return macroName, macroIcon, macroBody, macroID or nil 
 	-- Note: Instead of official GetMacroInfo the last return will be macroID
-	if ID and self.Data[By or "AllMacros"][ID] then 
-		return self.Data[By or "AllMacros"][ID].Name, self.Data[By or "AllMacros"][ID].Icon, self.Data[By or "AllMacros"][ID].Body, self.Data[By or "AllMacros"][ID].ID
+	local base = self.Data[By or "AllMacros"][ID]
+	if base then 
+		return base.Name, base.Icon, base.Body, base.ID
 	end 
 end 
 

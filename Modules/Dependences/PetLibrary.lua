@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 27)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 28)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -631,7 +631,7 @@ local function UpdateActions(callbackEvent)
 		end
 		
 		local actionType, actionID, actionSubType, actionSpellName
-		local macroName, _, macroBody
+		local macroName, _, macroBody, macroID
 		for i = MAX_ACTION_SLOTS, 1, -1 do 
 			actionType, actionID, actionSubType = GetActionInfo(i)
 			if actionID ~= 0 then 
@@ -640,9 +640,17 @@ local function UpdateActions(callbackEvent)
 					actionSpellName = A_GetSpellInfo(actionID)
 				elseif actionType == "macro" then 
 					-- If it's macro we can check range only if spell learned 				
-					macroName, _, macroBody = MacroLibrary:GetInfo(actionID, "ByActionMacros")								
-					if macroBody and macroBody:find("#showtooltip\n/cast " .. macroName) then
-						actionSpellName = macroName
+					macroName, _, macroBody, macroID = MacroLibrary:GetInfo(actionID, "ByActionMacros")
+					if not macroName then
+						macroName, _, macroBody, macroID = MacroLibrary:GetInfo(actionID)
+					end
+					
+					if macroBody then
+						if macroBody:find("#showtooltip\n/cast " .. macroName) then
+							actionSpellName = macroName
+						elseif Pointer.Spells[macroName] then
+							MacroLibrary:DeleteMacro(macroID)
+						end
 					end 
 				end 
 			end 
