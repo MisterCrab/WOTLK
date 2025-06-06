@@ -85,7 +85,7 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 26)
+local Lib 								= LibStub:NewLibrary("PetLibrary", 27)
 	  	  
 local huge 								= math.huge	  
 local max 								= math.max
@@ -357,31 +357,31 @@ Lib.Data 								= {
 			},			
 			itIT				= {
 				-- Classic hasn't Italy language but dataBase refferenced their locales to koKR
-				["Carne"]				 = "Meat", 				-- [1]
-				["고기"]					 = "Meat", 				-- [1] Refference
-				["Pesce"]				 = "Fish", 				-- [2]
-				["생선"]				 	 = "Fish", 				-- [2] Refference
-				["Formaggio"]			 = "Cheese", 			-- [3]				
-				["치즈"]			 		 = "Cheese", 			-- [3] Refference			
-				["Pane"]				 = "Bread", 			-- [4]				
-				["빵"]					 = "Bread", 			-- [4] Refference				
-				["Funghi"]				 = "Fungus", 			-- [5]				
-				["버섯"]				 	 = "Fungus", 			-- [5] Refference			
-				["Frutta"]				 = "Fruit", 			-- [6]				
-				["과일"]				 	 = "Fruit", 			-- [6] Refference				
-				["Carne Cruda"]			 = "Raw Meat", 			-- [7]				
-				["날고기"]			 	 = "Raw Meat", 			-- [7] Refference				
-				["Pesce Crudo"]			 = "Raw Fish", 			-- [8]
-				["날생선"]			 	= "Raw Fish", 			-- [8] Refference
-				["Bocconcini Meccanici"] = "Mechanical Bits", 	-- [9] Retail 
+				["Carne"]				 	= "Meat", 				-- [1]
+				["고기"]						= "Meat", 				-- [1] Refference
+				["Pesce"]					= "Fish", 				-- [2]
+				["생선"]				 		= "Fish", 				-- [2] Refference
+				["Formaggio"]				= "Cheese", 			-- [3]				
+				["치즈"]			 			= "Cheese", 			-- [3] Refference			
+				["Pane"]					= "Bread", 			-- [4]				
+				["빵"]						= "Bread", 			-- [4] Refference				
+				["Funghi"]					= "Fungus", 			-- [5]				
+				["버섯"]				 		= "Fungus", 			-- [5] Refference			
+				["Frutta"]					= "Fruit", 			-- [6]				
+				["과일"]				 		= "Fruit", 			-- [6] Refference				
+				["Carne Cruda"]				= "Raw Meat", 			-- [7]				
+				["날고기"]			 	 		= "Raw Meat", 			-- [7] Refference				
+				["Pesce Crudo"]			 	= "Raw Fish", 			-- [8]
+				["날생선"]			 			= "Raw Fish", 			-- [8] Refference
+				["Bocconcini Meccanici"] 	= "Mechanical Bits", 	-- [9] Retail 
 			},
 			koKR				= {
-				["고기"]					= "Meat", 				-- [1] 
-				["생선"]					= "Fish", 				-- [2] 
-				["치즈"]					= "Cheese", 			-- [3]				
-				["빵"]					= "Bread", 				-- [4]	 			
-				["버섯"]					= "Fungus", 			-- [5] 				
-				["과일"]					= "Fruit", 				-- [6]	 			
+				["고기"]				= "Meat", 				-- [1] 
+				["생선"]				= "Fish", 				-- [2] 
+				["치즈"]				= "Cheese", 			-- [3]				
+				["빵"]				= "Bread", 				-- [4]	 			
+				["버섯"]				= "Fungus", 			-- [5] 				
+				["과일"]				= "Fruit", 				-- [6]	 			
 				["날고기"]				= "Raw Meat", 			-- [7]				
 				["날생선"]				= "Raw Fish", 			-- [8] 
 				["기계 부품"]			= "Mechanical Bits", 	-- [9] Retail 
@@ -389,23 +389,23 @@ Lib.Data 								= {
 			zhCN				= {
 				["肉"]				= "Meat", 				-- [1] 
 				["鱼"]				= "Fish", 				-- [2] 
-				["奶酪"]				= "Cheese", 			-- [3]	 			
-				["面包"]				= "Bread", 				-- [4]	 			
-				["蘑菇"]				= "Fungus", 			-- [5] 				
-				["水果"]				= "Fruit", 				-- [6]				
-				["生肉"]				= "Raw Meat", 			-- [7]	 			
-				["生鱼"]				= "Raw Fish", 			-- [8] 
+				["奶酪"]			= "Cheese", 			-- [3]	 			
+				["面包"]			= "Bread", 				-- [4]	 			
+				["蘑菇"]			= "Fungus", 			-- [5] 				
+				["水果"]			= "Fruit", 				-- [6]				
+				["生肉"]			= "Raw Meat", 			-- [7]	 			
+				["生鱼"]			= "Raw Fish", 			-- [8] 
 				["机械零件"]			= "Mechanical Bits", 	-- [9] Retail 
 			},
 			zhTW				= {
 				["肉"]				= "Meat", 				-- [1] 
 				["魚"]				= "Fish", 				-- [2] 
-				["乳酪"]				= "Cheese", 			-- [3] 				
-				["麵包"]				= "Bread", 				-- [4] 				
-				["蘑菇"]				= "Fungus", 			-- [5] 				
-				["水果"]				= "Fruit", 				-- [6] 				
-				["生肉"]				= "Raw Meat", 			-- [7] 				
-				["生魚"]				= "Raw Fish", 			-- [8] 
+				["乳酪"]			= "Cheese", 			-- [3] 				
+				["麵包"]			= "Bread", 				-- [4] 				
+				["蘑菇"]			= "Fungus", 			-- [5] 				
+				["水果"]			= "Fruit", 				-- [6] 				
+				["生肉"]			= "Raw Meat", 			-- [7] 				
+				["生魚"]			= "Raw Fish", 			-- [8] 
 				["機械零件"]			= "Mechanical Bits", 	-- [9] Retail 
 			},		
 		},
@@ -619,7 +619,7 @@ end
 
 local function UpdateActions(callbackEvent)
 	local Pointer = Lib.Data.Actions[A[owner]]
-	if Pointer then 
+	if Pointer and not Pointer.Config.Locked then 
 		Pointer.Config.Locked = true 
 		
 		for i = 0, #Pointer.Buttons do 
@@ -632,7 +632,7 @@ local function UpdateActions(callbackEvent)
 		
 		local actionType, actionID, actionSubType, actionSpellName
 		local macroName, _, macroBody
-		for i = MAX_ACTION_SLOTS, 0, -1 do 
+		for i = MAX_ACTION_SLOTS, 1, -1 do 
 			actionType, actionID, actionSubType = GetActionInfo(i)
 			if actionID ~= 0 then 
 				if actionType == "spell" and actionSubType == "pet" then 
@@ -640,8 +640,8 @@ local function UpdateActions(callbackEvent)
 					actionSpellName = A_GetSpellInfo(actionID)
 				elseif actionType == "macro" then 
 					-- If it's macro we can check range only if spell learned 				
-					macroName, _, macroBody = MacroLibrary:GetInfo(actionID)
-					if macroBody and macroBody:find("#showtooltip\n/cast " .. macroName) then 
+					macroName, _, macroBody = MacroLibrary:GetInfo(actionID, "ByActionMacros")								
+					if macroBody and macroBody:find("#showtooltip\n/cast " .. macroName) then
 						actionSpellName = macroName
 					end 
 				end 
@@ -700,7 +700,6 @@ local function UpdateActions(callbackEvent)
 						-- Put by macro 
 						errTemp			 			= MacroLibrary:CraftMacro(spellName, nil, "#showtooltip\n/cast " .. spellName, true, true)
 						button			 			= MacroLibrary:SetActionButton(spellName)
-						
 						if errTemp and not Pointer.Config.useSilence then 
 							errTemp = spellName .. L.MACRO .. errTemp
 						end 
@@ -776,7 +775,7 @@ local function UpdateAction(i)
 				actionSpellName = A_GetSpellInfo(actionID)
 			elseif actionType == "macro" then 
 				-- If it's macro we can check range only if spell learned 				
-				macroName, macroTexture, macroBody = MacroLibrary:GetInfo(actionID)
+				macroName, macroTexture, macroBody = MacroLibrary:GetInfo(actionID, "ByActionMacros")
 				if macroBody and macroBody:find("#showtooltip\n/cast " .. macroName) then 
 					actionSpellName = macroName
 					if macroName ~= Pointer.Buttons[i].spellName or (Lib:IsSpellKnown(macroName) and macroTexture == 134400) then 
