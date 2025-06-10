@@ -1,10 +1,11 @@
-local _G, error, type, pairs, next, select, math =
-	  _G, error, type, pairs, next, select, math
+local _G, error, type, pairs, table, next, select, math =
+	  _G, error, type, pairs, table, next, select, math
 	  
 local huge 						= math.huge 
 local math_max					= math.max 
 local math_min					= math.min	  
 local math_floor				= math.floor 	  
+local tsort						= table.sort	
 local wipe 						= _G.wipe 	 
 
 local SPELL_FAILED_NOT_BEHIND	= _G.SPELL_FAILED_NOT_BEHIND
@@ -90,6 +91,11 @@ Listener:Add("ACTION_EVENT_PLAYER", "ADDON_LOADED", function(addonName)
 		Listener:Remove("ACTION_EVENT_PLAYER", "ADDON_LOADED")	
 	end 
 end)
+
+local function sortByLowest(a, b) 
+	return a < b	  
+end
+
 -------------------------------------------------------------------------------	
 
 -------------------------------------------------------------------------------
