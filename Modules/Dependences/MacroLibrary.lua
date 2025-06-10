@@ -30,7 +30,7 @@ local A 								= _G.Action
 local CONST 							= A.Const
 local Listener							= A.Listener
 local Print								= A.Print
-local Lib 								= LibStub:NewLibrary("MacroLibrary", 6)
+local Lib 								= LibStub:NewLibrary("MacroLibrary", 7)
 	  
 local wipe 								= _G.wipe	  
 local MAX_ACCOUNT_MACROS				= _G.MAX_ACCOUNT_MACROS
@@ -206,7 +206,7 @@ function Lib.UpdateMacros()
 			Lib.Data.AccountMacros[i]		 		= Lib.Data.AllMacros[i]
 			Lib.Data.ByNameMacros[macroName] 		= Lib.Data.AllMacros[i]
 			if actionID then
-				if actionID > MAX_ACCOUNT_MACROS + MAX_CHARACTER_MACROS then
+				if (type(actionID) == "number" and actionID > MAX_ACCOUNT_MACROS + MAX_CHARACTER_MACROS) or (type(actionID) == "string" and not Lib.Data.AllMacros[actionID]) then
 					Lib.Data.AllMacros[actionID]	= Lib.Data.AllMacros[i]
 				end
 				Lib.Data.ByActionMacros[actionID] 	= Lib.Data.AllMacros[i]
@@ -230,7 +230,7 @@ function Lib.UpdateMacros()
 			Lib.Data.AccountMacros[i]		 		= Lib.Data.AllMacros[i]
 			Lib.Data.ByNameMacros[macroName] 		= Lib.Data.AllMacros[i]
 			if actionID then
-				if actionID > MAX_ACCOUNT_MACROS + MAX_CHARACTER_MACROS then
+				if (type(actionID) == "number" and actionID > MAX_ACCOUNT_MACROS + MAX_CHARACTER_MACROS) or (type(actionID) == "string" and not Lib.Data.AllMacros[actionID]) then
 					Lib.Data.AllMacros[actionID]	= Lib.Data.AllMacros[i]
 				end
 				Lib.Data.ByActionMacros[actionID] 	= Lib.Data.AllMacros[i]
