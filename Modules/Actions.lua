@@ -1003,7 +1003,7 @@ end
 function A:IsHarmful()
 	-- @return boolean 
 	if self.Type == "Spell" then 
-		return IsHarmfulSpell((self:Info())) or IsAttackSpell((self:Info()))
+		return IsHarmfulSpell(self.ID) or IsAttackSpell(self.ID)
 	end 
 	
 	return IsHarmfulItem((self:Info()))
@@ -1012,7 +1012,7 @@ end
 function A:IsHelpful()
 	-- @return boolean 
 	if self.Type == "Spell" then 
-		return IsHelpfulSpell((self:Info()))
+		return IsHelpfulSpell(self.ID)
 	end 
 	
 	return IsHelpfulItem((self:Info()))
