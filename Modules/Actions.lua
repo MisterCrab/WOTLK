@@ -277,10 +277,15 @@ local spellpowercache = setmetatable(
 	}, 
 	{ 
 		__index = function(t, v)
-			local pwr = GetSpellPowerCost(A.GetSpellInfo(v))
-			if pwr and pwr[1] then
-				t[v] = { pwr[1].cost, pwr[1].type }
-				return t[v]
+			local pwr = v and GetSpellPowerCost(v)
+			if pwr then 
+				if pwr[1] then
+					t[v] = { pwr[1].cost, pwr[1].type }
+					return t[v]
+				else
+					t[v] = { pwr.cost, pwr.type }
+					return t[v]
+				end 
 			end     
 			return t.null
 		end,
