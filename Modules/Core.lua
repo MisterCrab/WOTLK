@@ -46,7 +46,7 @@ local UnitBuff										= _G.UnitBuff
 local UnitIsUnit  									= _G.UnitIsUnit
 local UnitIsFriend									= _G.UnitIsFriend
 
-local GetSpellInfo									= _G.GetSpellInfo
+local GetSpellName 									= _G.C_Spell and _G.C_Spell.GetSpellName or _G.GetSpellInfo
 local GetCurrentKeyBoardFocus						= _G.GetCurrentKeyBoardFocus
 local SpellIsTargeting								= _G.SpellIsTargeting
 local IsMouseButtonDown								= _G.IsMouseButtonDown
@@ -91,27 +91,27 @@ local targettarget									= "targettarget"
 -- Conditions
 -------------------------------------------------------------------------------
 local FoodAndDrink 									= {	
-	[GetSpellInfo(587)] 							= true, -- Conjure Food 
-	[GetSpellInfo(18233)] 							= true,	-- Food
-	[GetSpellInfo(1131) or ""] 						= true,	-- Food
-	[GetSpellInfo(22734)] 							= true, -- Drink
-	[GetSpellInfo(34291) or ""]						= true, -- Drink
-	[GetSpellInfo(29029)] 							= true,	-- Fizzy Energy Drink
-	[GetSpellInfo(18140)] 							= true,	-- Blessed Sunfruit Juice
-	[GetSpellInfo(23698)] 							= true,	-- Alterac Spring Water
-	[GetSpellInfo(23692)] 							= true,	-- Alterac Manna Biscuit
-	[GetSpellInfo(24410)] 							= true,	-- Arathi Basin Iron Ration
-	[GetSpellInfo(24411)] 							= true,	-- Arathi Basin Enriched Ration 
-	[GetSpellInfo(25990)] 							= true, -- Graccu's Mince Meat Fruitcake	
-	[GetSpellInfo(18124)] 							= true, -- Blessed Sunfruit
-	[GetSpellInfo(24384)] 							= true,	-- Essence Mango
-	[GetSpellInfo(26263)] 							= true,	-- Dim Sum (doesn't triggers Food and Drink)
-	[GetSpellInfo(26030)] 							= true,	-- Windblossom Berries (doesn't triggers Food and Drink)
-	[GetSpellInfo(25691)] 							= true, -- Brain Food (unknown what does it exactly trigger)
-	[GetSpellInfo(746)] 							= true,	-- First Aid
+	[GetSpellName(587)] 							= true, -- Conjure Food 
+	[GetSpellName(18233)] 							= true,	-- Food
+	[GetSpellName(1131) or ""] 						= true,	-- Food
+	[GetSpellName(22734)] 							= true, -- Drink
+	[GetSpellName(34291) or ""]						= true, -- Drink
+	[GetSpellName(29029)] 							= true,	-- Fizzy Energy Drink
+	[GetSpellName(18140)] 							= true,	-- Blessed Sunfruit Juice
+	[GetSpellName(23698)] 							= true,	-- Alterac Spring Water
+	[GetSpellName(23692)] 							= true,	-- Alterac Manna Biscuit
+	[GetSpellName(24410)] 							= true,	-- Arathi Basin Iron Ration
+	[GetSpellName(24411)] 							= true,	-- Arathi Basin Enriched Ration 
+	[GetSpellName(25990)] 							= true, -- Graccu's Mince Meat Fruitcake	
+	[GetSpellName(18124)] 							= true, -- Blessed Sunfruit
+	[GetSpellName(24384)] 							= true,	-- Essence Mango
+	[GetSpellName(26263)] 							= true,	-- Dim Sum (doesn't triggers Food and Drink)
+	[GetSpellName(26030)] 							= true,	-- Windblossom Berries (doesn't triggers Food and Drink)
+	[GetSpellName(25691)] 							= true, -- Brain Food (unknown what does it exactly trigger)
+	[GetSpellName(746)] 							= true,	-- First Aid
 }
 local FoodAndDrinkBlacklist 						= {
-	[GetSpellInfo(396092) or ""]					= true, -- Well Fed
+	[GetSpellName(396092) or ""]					= true, -- Well Fed
 }
 local function IsDrinkingOrEating()
 	-- @return boolean 

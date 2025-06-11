@@ -116,24 +116,26 @@ local GetCVar				= C_CVar and C_CVar.GetCVar or _G.GetCVar
 local C_Spell				= _G.C_Spell
 local Spell					= _G.Spell
 
-local 	 IsPlayerSpell,    IsUsableSpell, 	 IsHelpfulSpell, 	IsHarmfulSpell,    IsAttackSpell, 	 IsCurrentSpell =
-	  _G.IsPlayerSpell, _G.IsUsableSpell, _G.IsHelpfulSpell, _G.IsHarmfulSpell, _G.IsAttackSpell, _G.IsCurrentSpell
+local 	 IsPlayerSpell,    										IsUsableSpell, 											IsHelpfulSpell, 										 IsHarmfulSpell,    										 IsAttackSpell, 	 									 IsCurrentSpell =
+	  _G.IsPlayerSpell, C_Spell and C_Spell.IsSpellUsable or _G.IsUsableSpell, C_Spell and C_Spell.IsSpellHelpful or _G.IsHelpfulSpell, C_Spell and C_Spell.IsSpellHarmful or _G.IsHarmfulSpell, C_Spell and C_Spell.IsAutoAttackSpell or _G.IsAttackSpell, C_Spell and C_Spell.IsCurrentSpell or _G.IsCurrentSpell
 
-local 	  GetSpellTexture, 	  GetSpellLink,    									   GetSpellInfo, 	GetSpellDescription, 	GetSpellCount,	   GetSpellPowerCost, 	  CooldownDuration,    GetSpellCharges,    GetHaste, 	GetShapeshiftFormCooldown, 	  GetSpellBaseCooldown,    GetSpellAutocast = 
-	  TMW.GetSpellTexture, _G.GetSpellLink, C_Spell and C_Spell.GetSpellInfo or _G.GetSpellInfo, _G.GetSpellDescription, _G.GetSpellCount, 	_G.GetSpellPowerCost, Env.CooldownDuration, _G.GetSpellCharges, _G.GetHaste, _G.GetShapeshiftFormCooldown, _G.GetSpellBaseCooldown, _G.GetSpellAutocast
+local 	  GetSpellTexture, 	  									  GetSpellLink,    									   GetSpellInfo, 											   GetSpellDescription, 											GetSpellCount,	   											GetSpellPowerCost, 	  CooldownDuration,    										   GetSpellCharges,    GetHaste, 	GetShapeshiftFormCooldown, 	  GetSpellBaseCooldown,    										   GetSpellAutocast = 
+	  TMW.GetSpellTexture, C_Spell and C_Spell.GetSpellLink or _G.GetSpellLink, C_Spell and C_Spell.GetSpellInfo or _G.GetSpellInfo, C_Spell and C_Spell.GetSpellDescription or _G.GetSpellDescription, C_Spell and C_Spell.GetSpellCastCount or _G.GetSpellCount, 	C_Spell and C_Spell.GetSpellPowerCost or _G.GetSpellPowerCost, Env.CooldownDuration, C_Spell and C_Spell.GetSpellCharges or _G.GetSpellCharges, _G.GetHaste, _G.GetShapeshiftFormCooldown, _G.GetSpellBaseCooldown, C_Spell and C_Spell.GetSpellAutoCast or _G.GetSpellAutocast
 
 -- Item 	  
-local 	 IsUsableItem, 	  IsHelpfulItem, 	IsHarmfulItem, 	  IsCurrentItem  =
-	  _G.IsUsableItem, _G.IsHelpfulItem, _G.IsHarmfulItem, _G.IsCurrentItem
+local C_Item 						= _G.C_Item
+local 	 								   IsUsableItem, 	 								   IsHelpfulItem, 					IsHarmfulItem, 	  														 IsCurrentItem =
+	  C_Item and C_Item.IsUsableItem or _G.IsUsableItem, C_Item and C_Item.IsHelpfulItem or _G.IsHelpfulItem, C_Item and C_Item.IsHarmfulItem or _G.IsHarmfulItem, C_Item and C_Item.IsCurrentItem or _G.IsCurrentItem
   
-local 	 GetItemInfo, 	 GetItemIcon, 	 GetItemInfoInstant, 	GetItemSpell = 
-	  _G.GetItemInfo, _G.GetItemIcon, _G.GetItemInfoInstant, _G.GetItemSpell	  
+local 	 								  GetItemInfo, 	 									   GetItemIcon, 	  									   GetItemInfoInstant, 	 								    GetItemSpell = 
+	  C_Item and C_Item.GetItemInfo or _G.GetItemInfo, C_Item and C_Item.GetItemIconByID or _G.GetItemIcon, C_Item and C_Item.GetItemInfoInstant or _G.GetItemInfoInstant, C_Item and C_Item.GetItemSpell or _G.GetItemSpell	 
 
 -- Talent	  
 local TalentMap 					= A.TalentMap 
 
 -- Rank 
-local GetSpellBookItemName			= _G.GetSpellBookItemName
+local C_SpellBook					= _G.C_SpellBook
+local GetSpellBookItemName			= _G.GetSpellBookItemName or C_SpellBook.GetSpellBookItemName
 local FindSpellBookSlotBySpellID 	= _G.FindSpellBookSlotBySpellID
 
 -- Unit 	  

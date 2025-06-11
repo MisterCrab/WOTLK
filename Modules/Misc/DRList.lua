@@ -11,7 +11,6 @@ local spellList											= Lib.spellList
 
 local _G, pairs											= _G, pairs
 local TMW 												= _G.TMW
-local GetSpellInfo										= _G.GetSpellInfo
 
 -------------------------------------------------------------------------------
 -- API extend  
@@ -72,21 +71,3 @@ elseif Lib.gameExpansion == "tbc" then
 	-- Stuns              													
 	spellList[19482]  	= "stun"			-- War Stomp (Doomguard pet)
 end 
-
--- Merge spellID to spellName otherwise library will not work correctly in many places where used name instead of id, affected non classic versions only
--- Non classic library has format key = "string", classic library has key = { category = "string", spellID = "number" }
--- TMW.BE processing equivs through TMW_EQUIVS_PROCESSING, we have to avoid conflict with it because strings aren't accept able for abs processing in TMW's BE.dr table..
--- As of 2024 Classic's CLEU now payouts spellID instead of spellName seems by lib
---TMW:RegisterSelfDestructingCallback("TMW_ACTION_IS_INITIALIZED_PRE", function()
---	if Lib.gameExpansion ~= "classic" then 
---		local spellName 
---		for k, v in pairs(spellList) do 
---			spellName = GetSpellInfo(k)
---			if spellName then 
---				spellList[spellName] = v 
---			end 
---		end 
---	end 
---	
---	return true -- Signal RegisterSelfDestructingCallback to unregister
---end)

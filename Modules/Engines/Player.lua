@@ -45,7 +45,7 @@ local FuryPowerType 			= PowerType.Fury
 local PainPowerType				= PowerType.Pain
 local EssencePowerType 			= PowerType.Essence
 
-local GetSpellInfo				= _G.GetSpellInfo
+local GetSpellName 				= _G.C_Spell and _G.C_Spell.GetSpellName or _G.GetSpellInfo
 local InCombatLockdown			= _G.InCombatLockdown  
 local issecure					= _G.issecure
 
@@ -137,8 +137,8 @@ local Data = {
 	AutoShootActive = false, 
 	AutoShootNextTick = 0,
 	IsShoot = { 
-		[GetSpellInfo(5019)] = true, 	-- Shoot 
-		[GetSpellInfo(75)] = true, 		-- Hunter's Auto Shot 
+		[GetSpellName(5019)] = true, 	-- Shoot 
+		[GetSpellName(75)] = true, 		-- Hunter's Auto Shot 
 	},
 	-- Attack
 	AttackActive = false,	
@@ -355,7 +355,7 @@ function Data.UpdateGlyphs()
 	for i = 1, GetNumGlyphSockets() do 
 		enabled, _, spellID = GetGlyphSocketInfo(i, talentGroup)
 		if enabled and spellID then 
-			spellName = GetSpellInfo(spellID)
+			spellName = GetSpellName(spellID)
 			if spellName then 
 				DataGlyphs[spellID] = true 
 				DataGlyphs[spellName] = true 

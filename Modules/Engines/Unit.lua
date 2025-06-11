@@ -56,7 +56,9 @@ local CACHE_DEFAULT_TIMER_UNIT				= CONST.CACHE_DEFAULT_TIMER_UNIT
 local GameLocale 							= A.FormatGameLocale(_G.GetLocale())	  
 local CombatLogGetCurrentEventInfo			= _G.CombatLogGetCurrentEventInfo	  
 local GetUnitSpeed							= _G.GetUnitSpeed
-local GetSpellInfo							= _G.GetSpellInfo
+local C_Spell								= _G.C_Spell
+local GetSpellName 							= C_Spell and C_Spell.GetSpellName or _G.GetSpellInfo
+local GetSpellInfo							= C_Spell and C_Spell.GetSpellInfo or _G.GetSpellInfo
 local GetPartyAssignment 					= _G.GetPartyAssignment	  
 local UnitIsUnit, UnitPlayerOrPetInRaid, UnitInAnyGroup, UnitPlayerOrPetInParty, UnitInRange, UnitLevel, UnitThreatSituation, UnitRace, UnitClass, UnitClassification, UnitExists, UnitIsConnected, UnitIsCharmed, UnitIsGhost, UnitIsDeadOrGhost, UnitIsFeignDeath, UnitIsPlayer, UnitPlayerControlled, UnitCanAttack, UnitIsEnemy, UnitAttackSpeed,
 	  UnitPowerType, UnitPowerMax, UnitPower, UnitName, UnitCanCooperate, UnitCreatureType, UnitCreatureFamily, UnitHealth, UnitHealthMax, UnitGetIncomingHeals, UnitGUID, UnitHasIncomingResurrection, UnitIsVisible, UnitDebuff, UnitCastingInfo, UnitChannelInfo =
@@ -801,7 +803,7 @@ local AssociativeTables = setmetatable({ NullTable = {} }, { -- Only for Auras!
 					end 
 				else -- Here is expected id of the spell always 
 					-- Put associatived spellName (@string)
-					local spellName = GetSpellInfo(val) 
+					local spellName = GetSpellName(val) 
 					if spellName then
 						t[v][spellName] = true 
 					end 
@@ -820,7 +822,7 @@ local AssociativeTables = setmetatable({ NullTable = {} }, { -- Only for Auras!
 		
 		local spellName
 		for _, spellID in ipairs(AuraList[v]) do 
-			spellName = GetSpellInfo(spellID) 
+			spellName = GetSpellName(spellID) 
 			if spellName then 
 				t[v][spellName] = true 
 			end 
@@ -832,7 +834,7 @@ local AssociativeTables = setmetatable({ NullTable = {} }, { -- Only for Auras!
 				
 		--local spellName = GetSpellInfo(v_type == "string" and not v:find("%D") and toNum[v] or v) -- TMW lua code passing through 'thisobj.Name' @string type 
 		-- Since Classic hasn't 'thisobj.Name' ways in profiles at all we will avoid use string functions 
-		local spellName = GetSpellInfo(v)
+		local spellName = GetSpellName(v)
 		if spellName then 
 			t[v][spellName] = true 
 		end 		 
@@ -2915,8 +2917,12 @@ A.Unit = PseudoClass({
 		local castName, castStartTime, castEndTime, notInterruptable, spellID, isChannel = self(unitID):IsCasting()
 
 		local TotalCastTime, CurrentCastTimeSeconds, CurrentCastTimeLeftPercent = 0, 0, 0
-		if unitID == "player" then 
-			TotalCastTime = (select(4, GetSpellInfo(argSpellID or spellID)) or 0) / 1000
+		if unitID == "player" and (argSpellID or spellID) then
+			local s, _, _, castTime = GetSpellInfo(argSpellID or spellID) -- Must be real-time data
+			if type(s) == "table" then
+				castTime = s.castTime
+			end
+			TotalCastTime = (castTime or 0) / 1000
 			CurrentCastTimeSeconds = TotalCastTime
 		end 
 		
