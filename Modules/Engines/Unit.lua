@@ -2525,7 +2525,7 @@ A.Unit = PseudoClass({
 				return true
 			end 			
 			
-			local combatTime = CombatTracker:CombatTime(unitID)
+			local combatTime = CombatTracker:CombatTime("player")
 			if unitID_class == "PALADIN" then 
 				local _, offhand = UnitAttackSpeed(unitID)
 				return offhand == nil and self(unitID):HasBuffs(tankBuffsOrCanBeTank) > 0 and (combatTime > 0 or A_GetUnitItem(unitID, CONST.INVSLOT_OFFHAND, LE_ITEM_CLASS_ARMOR, LE_ITEM_ARMOR_SHIELD, nil, true)) -- byPassDistance
