@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "12.06.2025"
+local DateTime 														= "15.06.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -7817,8 +7817,8 @@ function Action:SetDefaultAction()
 	-- Used on Create by default or profile	
 	if not self.Hidden and self.Macro == "" and (self.Type == "Spell" or self.Type == "Item" or self.Type == "Potion" or self.Type == "Trinket") then		
 		-- Macro
-		if self.SubType == "TrinketBySlot" or self.SubType == "ItemBySlot" then 
-			-- /use 13, /use 14 is shorter than click
+		if not self.Click and (self.SubType == "TrinketBySlot" or self.SubType == "ItemBySlot" or self.Type == "Item" or self.Type == "Trinket") then 
+			-- /use 13, /use 14 is shorter than click, since itemName is not available at login without cache and Click often doesn't work on itemID for Item and Trinket types, the best remaining solution is Macro unless profile sets Click
 			self:SetDefaultMacro()
 			return
 		end
@@ -7850,7 +7850,7 @@ function Action:SetDefaultAction()
 					local pattern = Action.strOnlyBuilder("spell:", self.ID, rangeRank or "")
 					Click.spell = MacroAPI.Format(self, pattern)
 				else
-					Click.spell = self.ID
+					Click.spell = self:Info()
 				end
 			end
 		elseif Click.type == "item" then
