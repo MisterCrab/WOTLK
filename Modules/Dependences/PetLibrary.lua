@@ -85,18 +85,22 @@ local Listener							= A.Listener
 local Print								= A.Print
 local GetCL								= A.GetCL
 local MacroLibrary						= LibStub("MacroLibrary")
-local Lib 								= LibStub:NewLibrary("PetLibrary", 28)
-	  	  
+local Lib 								= LibStub:NewLibrary("PetLibrary", 29)
+
 local huge 								= math.huge	  
 local max 								= math.max
 local wipe 								= _G.wipe	  
 local isClassic							= A.StdUi.isClassic
 local owner								= isClassic and "PlayerClass" or "PlayerSpec"
+
+local C_CVar 							= _G.C_CVar
+local GetCVar 							= C_CVar and C_CVar.GetCVar or _G.GetCVar
+local SetCVar 							= C_CVar and C_CVar.SetCVar or _G.SetCVar
 	  
 local C_SpellBook						= _G.C_SpellBook	  
 local C_Spell 							= _G.Spell
-local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 		 		 PickupSpellBookItem, 					  		  HasPetSpells,    PetHasSpellbook =
-	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_SpellBook and C_SpellBook.PickupSpellBookItem or _G.PickupSpellBookItem, C_SpellBook and C_SpellBook.HasPetSpells, _G.PetHasSpellbook
+local 	 IsActionInRange, 	 GetActionInfo,    PlaceAction,    ClearCursor,    GetCursorInfo, 	 GetPetFoodTypes, 	 													 GetSpellBookItemInfo, 	  									 		 		  GetSpellBookItemName,														  PickupSpellBookItem, 					  		  					  HasPetSpells,    PetHasSpellbook =
+	  _G.IsActionInRange, _G.GetActionInfo, _G.PlaceAction, _G.ClearCursor, _G.GetCursorInfo, _G.GetPetFoodTypes, C_SpellBook and C_SpellBook.GetSpellBookItemInfo or _G.GetSpellBookItemInfo, C_SpellBook and C_SpellBook.GetSpellBookItemName or _G.GetSpellBookItemName,	C_SpellBook and C_SpellBook.PickupSpellBookItem or _G.PickupSpellBookItem, C_SpellBook and C_SpellBook.HasPetSpells or _G.HasPetSpells, _G.PetHasSpellbook
 
 local GameLocale 						= _G.GetLocale()
 local GetUnitSpeed						= _G.GetUnitSpeed
@@ -107,10 +111,10 @@ local UnitGUID							= _G.UnitGUID
 local UnitName							= _G.UnitName	
 local UnitIsUnit						= _G.UnitIsUnit	
 local GARRISON_SWITCH_SPECIALIZATIONS	= _G.GARRISON_SWITCH_SPECIALIZATIONS or ""
-local MAX_ACTION_SLOTS					= isClassic and 60 or 120
+local MAX_ACTION_SLOTS					= 120 -- Classic+ have 120 slots now
 
 local Enum								= _G.Enum
-local PET_BOOK							= Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Pet or 1
+local PET_BOOK							= Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Pet or (isClassic and BOOKTYPE_PET) or 1
 
 Lib.IsCallAble 							= true -- Default true for attemp to call pet as Hunter, after that we will know if its call able or not through error message 
 Lib.Food								= {
@@ -136,7 +140,7 @@ Lib.Data 								= {
 			},
 			Spells						= {
 				["spellName"]			= {
-					button 				= 0-MAX_ACTION_SLOTS,
+					button 				= 1-MAX_ACTION_SLOTS,
 					type				= "spell", "macro", nil,
 					id 					= actionID, nil,
 					subtype				= "petaction", nil,
@@ -145,7 +149,7 @@ Lib.Data 								= {
 			},
 			Buttons 					= {
 				[actionSlot]			= { -- Pointer to Spells["spellName"]					
-					button 				= 0-MAX_ACTION_SLOTS,
+					button 				= 1-MAX_ACTION_SLOTS,
 					type				= "spell", "macro", nil,
 					id 					= actionID, nil,
 					subtype				= "petaction", nil,
@@ -601,7 +605,7 @@ local function SetActionButton(spellName, actionSlot)
 			slot = actionSlot
 		else
 			local used 
-			for i = MAX_ACTION_SLOTS, 0, -1 do 
+			for i = MAX_ACTION_SLOTS, 1, -1 do 
 				used = GetActionInfo(i)
 				if not used then 
 					PlaceAction(i)
@@ -622,7 +626,7 @@ local function UpdateActions(callbackEvent)
 	if Pointer and not Pointer.Config.Locked then 
 		Pointer.Config.Locked = true 
 		
-		for i = 0, #Pointer.Buttons do 
+		for i = 1, #Pointer.Buttons do 
 			wipe(Pointer.Buttons[i])
 		end
 		
@@ -693,7 +697,7 @@ local function UpdateActions(callbackEvent)
 		for spellName in pairs(Pointer.Spells) do 
 			if not Pointer.Spells[spellName].button and Lib:IsSpellKnown(spellName) then 				
 				if Pointer.Config.useManagement then 
-					if not isClassic then 
+					if not isClassic then
 						-- Put by spell book 
 						errTemp, button 			= SetActionButton(spellName)
 
@@ -713,7 +717,7 @@ local function UpdateActions(callbackEvent)
 						end 
 					end 
 					
-					if button then 
+					if button then
 						Pointer.Buttons[button].button = button
 						Pointer.Buttons[button].type, Pointer.Buttons[button].id, Pointer.Buttons[button].subtype = GetActionInfo(button)	
 						-- Debug 
@@ -772,7 +776,7 @@ local function UpdateActions(callbackEvent)
 end 
 
 local function UpdateAction(i)
-	if i > MAX_ACTION_SLOTS or (not isClassic and (not A.IsOLDprofile or A_Unit("player"):GetSpellLastCast(GARRISON_SWITCH_SPECIALIZATIONS) > 0) and A_Unit("player"):GetSpellLastCast(GARRISON_SWITCH_SPECIALIZATIONS) < 0.5) then return end -- We don't need react on Target Possessed Action Bar or if we casted 'Change specialization'
+	if i == 0 or i > MAX_ACTION_SLOTS or (not isClassic and (not A.IsOLDprofile or A_Unit("player"):GetSpellLastCast(GARRISON_SWITCH_SPECIALIZATIONS) > 0) and A_Unit("player"):GetSpellLastCast(GARRISON_SWITCH_SPECIALIZATIONS) < 0.5) then return end -- We don't need react on Target Possessed Action Bar or if we casted 'Change specialization'
 	local Pointer = Lib.Data.Actions[A[owner]]
 	if Pointer and not Pointer.Config.Locked then 	
 		local actionSpellName, macroName, macroTexture, macroBody, macroBodyIsChanged
@@ -985,27 +989,46 @@ local function UpdateFoodType(...)
 end 
 
 local function UpdateKnownSpells()
-	if C_SpellBook and C_SpellBook.GetSpellBookItemInfo and C_SpellBook.HasPetSpells then 
-		local KnownSpells = Lib.Data.KnownSpells
-		wipe(KnownSpells)
+	local KnownSpells = Lib.Data.KnownSpells
+	wipe(KnownSpells)
+	
+	local spellObj, spellName, spellID
+	for i = 1, (HasPetSpells() or 0) do -- HasPetSpells() is nil if pet does not have spellbook	
+		spellObj = GetSpellBookItemInfo(i, PET_BOOK) 
+		if type(spellObj) == "table" then
+			-- Retail
+			spellName = spellObj.name
+			spellID = spellObj.spellID
+		else
+			-- Classic+
+			spellName, _, spellID = GetSpellBookItemName(i, PET_BOOK)
+		end
 		
-		local spellObj
-		for i = 1, (HasPetSpells() or 0) do -- HasPetSpells() is nil if pet does not have spellbook
-			spellObj = GetSpellBookItemInfo(i, PET_BOOK) 
-			if spellObj.name then 
-				KnownSpells[spellObj.name] = i 
-			end 
-			
-			if spellObj.spellID then 
-				KnownSpells[spellObj.spellID] = i 
-			end 
-		end		
-	end 
+		if spellName then 
+			KnownSpells[spellName] = i 
+		end 
+		
+		if spellID then 
+			KnownSpells[spellID] = i 
+		end 
+	end
 end 
 
-local function UpdateMainPet()
-	UpdateFoodType(GetPetFoodTypes())	
+local function SPELLS_CHANGED()	
+	local cvar = GetCVar("spellBookHidePassives")
+	SetCVar("spellBookHidePassives", "0")
+	
 	UpdateKnownSpells()
+	if PetHasSpellbook() then
+		UpdateActions()
+	end
+
+	SetCVar("spellBookHidePassives", cvar)
+end
+Listener:Add("ACTION_EVENT_PET_LIBRARY_ACTIONS", "SPELLS_CHANGED", SPELLS_CHANGED)
+
+local function UpdateMainPet()
+	UpdateFoodType(GetPetFoodTypes())		
 	
 	Lib.GUID  			= UnitGUID("pet")
 	Lib.Name 			= UnitName("pet")	
@@ -1070,22 +1093,22 @@ local function UpdateMainPet()
 	end 
 end 
 
-local eventFiredCount, eventFiredLastTime = 0, 0
-local function UNIT_PET(unitID)
-	if unitID == "player" then 
-		-- Game fires event twice in same second, this code should prevent it and work as the clocks
-		if TMW.time - eventFiredLastTime > 1 then 
-			eventFiredCount = 0
-		elseif eventFiredCount == 0 then -- Super rare situation when event fires 3 times instead of 4 at same second 
-			eventFiredCount = 1
-		end 
+local eventFiredCount = 0
+local function UNIT_PET(unitID)	
+	if unitID == "player" then
 		eventFiredCount = eventFiredCount + 1
-		eventFiredLastTime = TMW.time 
-		if eventFiredCount >= 2 then 
+		
+		-- On PLAYER_LOGIN
+		if eventFiredCount == 1 then
 			UpdateMainPet()
-			UpdateActions()
-			eventFiredCount = 0
-		end 
+		end
+		
+		-- On RELOAD or UPDATE
+		-- Event fired twice in a row, this code should prevent it and work as the clocks
+		if eventFiredCount % 2 == 0 then
+			-- On even tick when pet info is available
+			UpdateMainPet()
+		end
 	end 
 end 
 Listener:Add("ACTION_EVENT_PET_LIBRARY_UNIT_PET", "UNIT_PET", UNIT_PET)
@@ -1257,7 +1280,7 @@ function Lib:AddActionsSpells(owner, spells, useManagement, useSilence, delMacro
 			Buttons  			 		= {},
 		}
 		
-		for i = 0, MAX_ACTION_SLOTS do 
+		for i = 1, MAX_ACTION_SLOTS do 
 			self.Data.Actions[owner].Buttons[i] = {}
 		end 
 	else 
@@ -1268,18 +1291,8 @@ function Lib:AddActionsSpells(owner, spells, useManagement, useSilence, delMacro
 		self.Data.Actions[owner].Spells[GetSpellName(spells[i])] = tSpellsEmpty
 	end 		
 	
-	-- Refresh manual PLAYER_LOGIN event since UNIT_PET event triggers only one time at start up
-	if not self.isInitializedActions then 
-		eventFiredLastTime = TMW.time 
-		eventFiredCount = max(eventFiredCount, 1) + 1
-		A.GetLocalization() 			-- Forced to get actual CL 
-		if eventFiredCount >= 2 then 	-- Bug fix on event PLAYER_LOGIN due of how UNIT_PET implemented..
-			UpdateMainPet()
-			UpdateActions()
-			eventFiredCount = 0
-		end 		
-		self.isInitializedActions = true 
-	end 
+	-- Forced to get actual CL for notifications
+	A.GetLocalization()
 	
 	-- Register events
 	Listener:Add("ACTION_EVENT_PET_LIBRARY_ACTIONS", "ACTIONBAR_SLOT_CHANGED",  		UpdateAction													)
@@ -1470,7 +1483,7 @@ function Lib:IsSpellKnown(spell)
 	if C_SpellBook and C_SpellBook.GetSpellBookItemInfo then 
 		return self.Data.KnownSpells[GetSpellName(spell)] and true 
 	else 
-		return GetSpellBookItemInfo(GetSpellName(spell)) and true
+		return GetSpellBookItemInfo(GetSpellName(spell)) and true -- DON'T TOUCH THIS AS WHILE ITS STILL AVAILABLE ON CLASSIC+ IT CAN CHECK IN REAL-TIME IF NOT SPECIFIED SECOND ARGUMENT
 	end 
 	-- Only this function is best way to check if spell known so far 
 end 
