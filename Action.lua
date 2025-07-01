@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "29.06.2025"
+local DateTime 														= "01.07.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -7640,7 +7640,7 @@ function Action:SetDefaultMacro()
 		pattern = "/cast spell:"
 		
 		if self:HasRange() then
-			local hasfocus = BuildToC >= 20000 
+			local hasfocus = Action.BuildToC >= 20000 
 			local togglemouseover = A_GetToggle(2, "mouseover")
 			local togglefocus = A_GetToggle(2, "focus")
 			local togglefocustarget = A_GetToggle(2, "focustarget")
@@ -7696,7 +7696,7 @@ function Action:SetDefaultMacro()
 		pattern = "/use item:"
 		
 		if self:HasRange() then
-			local hasfocus = BuildToC >= 20000 
+			local hasfocus = Action.BuildToC >= 20000 
 			local togglemouseover = A_GetToggle(2, "mouseover")
 			local togglefocus = A_GetToggle(2, "focus")
 			local togglefocustarget = A_GetToggle(2, "focustarget")
