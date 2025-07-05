@@ -1,5 +1,5 @@
 --- 
-local DateTime 														= "01.07.2025"
+local DateTime 														= "05.07.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
@@ -7762,8 +7762,8 @@ function Action:SetDefaultMacro()
 			patternRank = Action.strOnlyBuilder("(Rank ", self.isRank, ")")	
 		elseif self.useMinRank then		
 			local rangeRank
-			if type(self.useMaxRank) == "table" then
-				rangeRank = math_min(unpack(self.useMaxRank))
+			if type(self.useMinRank) == "table" then
+				rangeRank = math_min(unpack(self.useMinRank))
 			end
 			patternRank = Action.strOnlyBuilder("(Rank ", rangeRank or 1, ")")
 		elseif self.useMaxRank then
@@ -7837,8 +7837,8 @@ function Action:SetDefaultAction()
 					Click.spell = MacroAPI.Format(self, pattern)
 				elseif self.useMinRank then		
 					local rangeRank
-					if type(self.useMaxRank) == "table" then
-						rangeRank = math_min(unpack(self.useMaxRank))
+					if type(self.useMinRank) == "table" then
+						rangeRank = math_min(unpack(self.useMinRank))
 					end
 					local pattern = Action.strOnlyBuilder("spell:", self.ID, "(Rank ", rangeRank or 1, ")")
 					Click.spell = MacroAPI.Format(self, pattern)
@@ -7869,8 +7869,8 @@ function Action:SetDefaultAction()
 						Click.rank = self.isRank
 					elseif self.useMinRank then		
 						local rangeRank = 1
-						if type(self.useMaxRank) == "table" then
-							rangeRank = math_min(unpack(self.useMaxRank))
+						if type(self.useMinRank) == "table" then
+							rangeRank = math_min(unpack(self.useMinRank))
 						end
 						Click.rank = rangeRank
 					elseif self.useMaxRank then
