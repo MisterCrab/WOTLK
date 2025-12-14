@@ -11,7 +11,7 @@ local math_floor				= math.floor
 local math_max					= math.max
 local strbyte					= _G.strbyte
 local strchar					= _G.strchar
-local message					= _G.message
+local message					= _G.message or _G.SetBasicMessageDialogText
 local wipe						= _G.wipe
 local hooksecurefunc			= _G.hooksecurefunc
 
@@ -21,8 +21,9 @@ local CONST 					= A.Const
 local ActionTimers 				= A.Data.T
 local GetToggle					= A.GetToggle
 local GetMouseFocus				= A.GetMouseFocus
+local BuildToC 					= A.BuildToC
 	  
-local Timer						= _G.C_Timer 
+local Timer						= _G.C_Timer
 local C_AddOns					= _G.C_AddOns
 local GetNumAddOns	 			= C_AddOns and C_AddOns.GetNumAddOns or _G.GetNumAddOns
 local IsAddOnLoaded 			= C_AddOns and C_AddOns.IsAddOnLoaded or _G.IsAddOnLoaded
@@ -30,16 +31,8 @@ local GetAddOnInfo 				= C_AddOns and C_AddOns.GetAddOnInfo or _G.GetAddOnInfo
 
 local CreateFrame 				= _G.CreateFrame
 local UnitGUID 					= _G.UnitGUID
-
-local 	 GetNumTalentTabs, 	  GetNumTalents, 	GetTalentInfo =
-	  _G.GetNumTalentTabs, _G.GetNumTalents, _G.GetTalentInfo
 	  
 local CACHE_DEFAULT_TIMER		= CONST.CACHE_DEFAULT_TIMER	  
-
-if type(message) ~= "function" then 
-	_G.message 	= print 
-	message		= print 
-end 
 
 -------------------------------------------------------------------------------
 -- Listener
@@ -392,29 +385,6 @@ hooksecurefunc(A, "GetLocalization", function()
 	-- Reviews and disables parts caused error C stack overflow 
 	Cache.data()
 end)
-
--------------------------------------------------------------------------------
--- TalentMap  
--------------------------------------------------------------------------------
-A.TalentMap = {}
-local function TalentMap()
-	wipe(A.TalentMap)
-	for tab = 1, GetNumTalentTabs() do
-		for talent = 1, GetNumTalents(tab) do
-			local name, _, _, _, rank = GetTalentInfo(tab, talent)
-			if name then
-				A.TalentMap[name] = rank or 0
-			end
-		end
-	end
-	TMW:Fire("TMW_ACTION_TALENT_MAP_UPDATED")
-end
-
-A.Listener:Add("ACTION_EVENT_TOOLS", "PLAYER_ENTERING_WORLD", 		TalentMap)
-A.Listener:Add("ACTION_EVENT_TOOLS", "ACTIVE_TALENT_GROUP_CHANGED", TalentMap)
---A.Listener:Add("ACTION_EVENT_TOOLS", "LEARNED_SPELL_IN_TAB", 		TalentMap)
-A.Listener:Add("ACTION_EVENT_TOOLS", "CONFIRM_TALENT_WIPE", 		TalentMap)
-A.Listener:Add("ACTION_EVENT_TOOLS", "CHARACTER_POINTS_CHANGED", 	TalentMap)
 
 -------------------------------------------------------------------------------
 -- Timers 

@@ -1,10 +1,10 @@
 --- 
-local DateTime 														= "05.07.2025"
+local DateTime 														= "14.12.2025"
 ---
 local pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string = 
 	  pcall, ipairs, pairs, type, assert, error, setfenv, getmetatable, setmetatable, loadstring, next, unpack, select, _G, coroutine, table, math, string
  
-local debugprofilestop												= _G.debugprofilestop_SAFE
+local debugprofilestop												= _G.debugprofilestop
 local hooksecurefunc												= _G.hooksecurefunc
 local wipe															= _G.wipe	 
 local tinsert 														= table.insert 	 
@@ -34,26 +34,35 @@ local StdUi 														= LibStub("StdUi"):NewInstance()
 local LibDBIcon	 													= LibStub("LibDBIcon-1.0")
 local LSM 															= LibStub("LibSharedMedia-3.0")
 	  LSM:Register(LSM.MediaType.STATUSBAR, "Flat", [[Interface\Addons\]] .. _G.ACTION_CONST_ADDON_NAME .. [[\Media\Flat]])
-local isClassic														= _G.WOW_PROJECT_ID == _G.WOW_PROJECT_WRATH_CLASSIC	 
+local isClassic														= _G.WOW_PROJECT_ID ~= _G.WOW_PROJECT_MAINLINE
 StdUi.isClassic 													= isClassic	  
 local owner															= isClassic and "PlayerClass" or "PlayerSpec" 
 
 local C_Spell														= _G.C_Spell
 local C_CVar														= _G.C_CVar
-local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate,    GetCVar,	 				   SetCVar,	 					 GetBindingFromClick,	 GetBindingText,    GetSpellInfo = 
-	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetCVar or C_CVar.GetCVar, _G.SetCVar or C_CVar.SetCVar, _G.GetBindingFromClick, _G.GetBindingText, _G.GetSpellInfo or C_Spell.GetSpellInfo
+local 	 GetRealmName, 	  GetExpansionLevel, 	GetFramerate,  	 GetCVar,	 				   SetCVar,	 					 GetBindingFromClick,	  GetBindingText,    GetSpellInfo = 
+	  _G.GetRealmName, _G.GetExpansionLevel, _G.GetFramerate, _G.GetCVar or C_CVar.GetCVar, _G.SetCVar or C_CVar.SetCVar, _G.GetBindingFromClick,  _G.GetBindingText, _G.GetSpellInfo or C_Spell.GetSpellInfo
 	  
 local 	 UnitName, 	  UnitClass,    UnitExists,    UnitIsUnit,    UnitGUID, 	UnitAura, 	 									  UnitPower,    UnitIsOwnerOrControllerOfUnit = 
 	  _G.UnitName, _G.UnitClass, _G.UnitExists, _G.UnitIsUnit, _G.UnitGUID,  _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex, _G.UnitPower, _G.UnitIsOwnerOrControllerOfUnit	  
-	  
+
 -- AutoShoot 
 local  HasWandEquipped 												= 
 	_G.HasWandEquipped	  
 	  
 -- LetMeCast 	  
-local 	 DoEmote, 	 Dismount, 	  CancelShapeshiftForm 				=
-	  _G.DoEmote, _G.Dismount, _G.CancelShapeshiftForm
+local 	 Dismount, 	  CancelShapeshiftForm 							=
+	  _G.Dismount, _G.CancelShapeshiftForm
 	  
+local DoEmote = _G.DoEmote or function(emoteName, targetName, suppressMoveError)
+	if emoteName ~= nil then
+		return _G.C_ChatInfo.PerformEmote(emoteName, targetName, suppressMoveError)
+	else
+		_G.C_ChatInfo.CancelEmote()
+		return false
+	end
+end
+
 -- LetMeDrag
 local 	 EnumerateFrames, 	 GetCursorInfo							= 
 	  _G.EnumerateFrames, _G.GetCursorInfo
@@ -73,14 +82,14 @@ local BindPadFrame 													= _G.BindPadFrame
 local GameTooltip													= _G.GameTooltip
 local UIParent														= _G.UIParent
 local C_UI															= _G.C_UI
-local CombatLogGetCurrentEventInfo									= _G.CombatLogGetCurrentEventInfo
+local CombatLogGetCurrentEventInfo									= _G.CombatLogGetCurrentEventInfo or _G.C_CombatLog.GetCurrentEventInfo
 local CreateFrame 													= _G.CreateFrame	
 local PlaySound														= _G.PlaySound	  
 local InCombatLockdown												= _G.InCombatLockdown
 local IsAltKeyDown													= _G.IsAltKeyDown
 local IsControlKeyDown												= _G.IsControlKeyDown
 local IsShiftKeyDown												= _G.IsShiftKeyDown
-local ChatEdit_InsertLink											= _G.ChatEdit_InsertLink
+local ChatEdit_InsertLink											= _G.ChatFrameUtil and _G.ChatFrameUtil.InsertLink or _G.ChatEdit_InsertLink
 local CopyTable														= _G.CopyTable
 local TOOLTIP_UPDATE_TIME											= _G.TOOLTIP_UPDATE_TIME
 
@@ -104,6 +113,33 @@ function Action.GetMouseFocus()
         return GetMouseFocus()
     end
 end 
+
+-- Classic: UnitAura override through LibClassicDurations. Only for buffs on other units because debuffs are available since 1.15.
+local LibClassicDurations											= LibStub("LibClassicDurations", true)
+if LibClassicDurations then	
+	local f = CreateFrame("Frame", nil, UIParent)
+	f:SetScript("OnEvent", function(self, event, ...)
+		return self[event](self, event, ...)
+	end)
+
+	LibClassicDurations = LibStub("LibClassicDurations")
+	LibClassicDurations.enableEnemyBuffTracking = true
+	LibClassicDurations:Register(_G.ACTION_CONST_ADDON_NAME)
+	UnitAura = LibClassicDurations.UnitAuraWithBuffs
+	LibClassicDurations.RegisterCallback(_G.ACTION_CONST_ADDON_NAME, "UNIT_BUFF", function(event, unit)
+		f:UNIT_AURA(event, unit)
+	end)
+
+	function f:UNIT_AURA(event, unit)
+		for i=1,100 do
+			local name, _, _, _, duration, expirationTime, _, _, _, spellId = UnitAura(unit, i, "HELPFUL")
+			if not name then break end
+		end
+	end
+	
+	Action.UnitAura	= UnitAura
+	TMW.UnitAura = UnitAura or TMW.UnitAura or _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex -- Fix for legacy profiles 
+end
 
 -- Remap
 local 	MacroLibrary, 
@@ -131,6 +167,7 @@ do
 	end 
 	
 	GameLocale = Action.FormatGameLocale(GameLocale)
+	Action.FormatedGameLocale = GameLocale
 end 
 
 -------------------------------------------------------------------------------
@@ -185,7 +222,7 @@ local Localization = {
 			SECUREWORDTT = "Your secured word as master password to project name",
 			KEYTT = "'dev_key' used in ProfileSession:Setup('dev_key', {...})",
 			KEYTTUSER = "Send this key to profile author!",
-		},		
+		},
 		SLASH = {
 			LIST = "List of slash commands:",
 			OPENCONFIGMENU = "shows config menu",
@@ -257,7 +294,8 @@ local Localization = {
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Increases frames per second by increasing the dynamic dependency\nframes of the refresh cycle (call) of the rotation cycle\n\nYou can also manually set the interval following a simple rule:\nThe larger slider then more FPS, but worse rotation update\nToo high value can cause unpredictable behavior!\n\nRightClick: Create macro",					
 				PVPSECTION = "PvP Section",
-				RETARGET = "Return previous saved @target\n(arena1-3 units only)\nIt recommended against hunters with 'Feign Death' and any unforeseen target drops\n\nRightClick: Create macro",
+				REFOCUS = "Return previous saved @focus\n(arena1-5 units only)\nIt recommended against invisibility classes\n\nRightClick: Create macro",
+				RETARGET = "Return previous saved @target\n(arena1-5 units only)\nIt recommended against hunters with 'Feign Death' and any unforeseen target drops\n\nRightClick: Create macro",
 				TRINKETS = "Trinkets",
 				TRINKET = "Trinket",
 				BURST = "Burst Mode",
@@ -299,6 +337,8 @@ local Localization = {
 				ANTIFAKEPAUSES = "AntiFake Pauses",
 				ANTIFAKEPAUSESSUBTITLE = "While the hotkey is held down",
 				ANTIFAKEPAUSESTT = "Depending on the hotkey you select,\nonly the code assigned to it will work when you hold it down",
+				VEHICLE = "InVehicle",
+				VEHICLETOOLTIP = "Example: Catapult, Firing gun",
 				DEADOFGHOSTPLAYER = "You're dead",
 				DEADOFGHOSTTARGET = "Target is dead",
 				DEADOFGHOSTTARGETTOOLTIP = "Exception enemy hunter if he selected as primary target",
@@ -310,6 +350,8 @@ local Localization = {
 				LOOTFRAME = "LootFrame",
 				EATORDRINK = "Is Eating or Drinking",
 				MISC = "Misc:",		
+				DISABLEREGULARFRAMES = "Hide regular frames",
+				DISABLEREGULARFRAMESTOOLTIP = "Works only on Meta Engine\nHides group of frames at the left upper corner",
 				DISABLEROTATIONDISPLAY = "Hide display rotation",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Hides the group, which is usually at the\ncenter bottom of the screen",
 				DISABLEBLACKBACKGROUND = "Hide black background", 
@@ -505,7 +547,7 @@ local Localization = {
 				DISABLERETOGGLE = "Block queue remove",
 				DISABLERETOGGLETOOLTIP = "Preventing by repeated message deletion from queue system\nE.g. possible spam macro without being removed\n\nRightClick: Create macro",
 				MACRO = "Macro for your group:",
-				MACROTOOLTIP = "This is what should be sent to the group chat to trigger the assigned action on the specified key\nTo address the action to a specific unit, add them to the macro or leave it as it is for the appointment in Single/AoE rotation\nSupported: raid1-40, party1-2, player, arena1-3\nONLY ONE UNIT FOR ONE MESSAGE!\n\nYour companions can use macros as well, but be careful, they must be loyal to this!\nDON'T LET THE MACRO TO UNIMINANCES AND PEOPLE NOT IN THE THEME!",
+				MACROTOOLTIP = "This is what should be sent to the group chat to trigger the assigned action on the specified key\nTo address the action to a specific unit, add them to the macro or leave it as it is for the appointment in Single/AoE rotation\nSupported: raid1-40, party1-4, player, arena1-5\nONLY ONE UNIT FOR ONE MESSAGE!\n\nYour companions can use macros as well, but be careful, they must be loyal to this!\nDON'T LET THE MACRO TO UNIMINANCES AND PEOPLE NOT IN THE THEME!",
 				KEY = "Key",
 				KEYERROR = "You did not specify a key!",
 				KEYERRORNOEXIST = "key does not exist!",
@@ -745,7 +787,7 @@ local Localization = {
 		CLOSE = "Закрыть",
 		APPLY = "Применить",
 		UPGRADEDFROM = "обновлен с ",
-		UPGRADEDTO = " до ",	
+		UPGRADEDTO = " до ",
 		PROFILESESSION = {
 			BUTTON = "Сессия профиля\nЛевый щелчок открывает панель пользователя\nПравый щелчок открывает панель разработки",
 			BNETSAVED = "Ваш пользовательский ключ успешно сохранен в кеше для офлайн сессии профиля!",
@@ -840,7 +882,8 @@ local Localization = {
 				FPSSEC = " (сек)",
 				FPSTOOLTIP = "AUTO: Повышение кадров в секунду за счет увеличения в динамической зависимости\nкадров интервала обновления (вызова) цикла ротации\n\nВы также можете вручную задать интервал следуя простому правилу:\nЧем больше ползунок, тем больше кадров, но хуже обновление ротации\nСлишком высокое значение может вызвать непредсказуемое поведение!\n\nПравая кнопка мышки: Создать макрос",					
 				PVPSECTION = "Секция PvP",
-				RETARGET = "Возвращать предыдущий сохраненный @target (arena1-3 юниты только)\nРекомендуется против Охотников с 'Притвориться мертвым'\nи(или) при любых непредвиденных сбросов цели\n\nПравая кнопка мышки: Создать макрос",
+				REFOCUS = "Возвращать предыдущий сохраненный @focus (arena1-5 юниты только)\nРекомендуется против классов с невидимостью\n\nПравая кнопка мышки: Создать макрос",
+				RETARGET = "Возвращать предыдущий сохраненный @target (arena1-5 юниты только)\nРекомендуется против Охотников с 'Притвориться мертвым'\nи(или) при любых непредвиденных сбросов цели\n\nПравая кнопка мышки: Создать макрос",
 				TRINKETS = "Аксессуары",
 				TRINKET = "Аксессуар",
 				BURST = "Режим Бурстов",
@@ -882,6 +925,8 @@ local Localization = {
 				ANTIFAKEPAUSES = "Паузы AntiFake",
 				ANTIFAKEPAUSESSUBTITLE = "Пока горячая клавиша удерживается",
 				ANTIFAKEPAUSESTT = "В зависимости от выбора горячей клавиши,\nпри ее удержании будет работать только предназначенный для нее код",
+				VEHICLE = "В спец.транспорте",
+				VEHICLETOOLTIP = "Например: Катапульта, Обстреливающая пушка",
 				DEADOFGHOSTPLAYER = "Вы мертвы",
 				DEADOFGHOSTTARGET = "Цель мертва",
 				DEADOFGHOSTTARGETTOOLTIP = "Исключение вражеский Охотник если выбран в качестве цели",
@@ -893,6 +938,8 @@ local Localization = {
 				LOOTFRAME = "Открыто окно добычи\n(лута)",		
 				EATORDRINK = "Вы Пьете или Едите",
 				MISC = "Разное:",
+				DISABLEREGULARFRAMES = "Скрыть стандартные рамки",
+				DISABLEREGULARFRAMESTOOLTIP = "Работает только с Meta Engine\nСкрывает группу рамок в левом верхнем углу",				
 				DISABLEROTATIONDISPLAY = "Скрыть отображение\nротации",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Скрывает группу, которая обычно в\nцентральной нижней части экрана",
 				DISABLEBLACKBACKGROUND = "Скрыть черный фон", 
@@ -1080,7 +1127,7 @@ local Localization = {
 			[7] = {
 				HEADBUTTON = "Сообщения",
 				HEADTITLE = "Система Сообщений",
-				USETITLE = "[Каждый спек]",
+				USETITLE = "",
 				MSG = "MSG Система",				
 				MSGTOOLTIP = "Включено: работает\nНЕ включено: не работает\n\nПравая кнопка мыши: Создать макрос",
 				CHANNELS = "Каналы",
@@ -1088,7 +1135,7 @@ local Localization = {
 				DISABLERETOGGLE = "Блокировать снятие очереди",
 				DISABLERETOGGLETOOLTIP = "Предотвращает повторным сообщением удаление из системы очереди\nИными словами позволяет спамить макрос без риска быть снятым\n\nПравая кнопка мыши: Создать макрос",
 				MACRO = "Макрос для вашей группы:",
-				MACROTOOLTIP = "Это то, что должно посылаться в чат группы для срабатывания назначенного действия по заданному ключу\nЧтобы адресовать действие к конкретному юниту допишите их в макрос или оставьте как есть для назначения в Single/AoE ротацию\nПоддерживаются: raid1-40, party1-2, player, arena1-3\nТОЛЬКО ОДИН ЮНИТ ЗА ОДНО СООБЩЕНИЕ!\n\nВаши напарники могут использовать макрос также, но осторожно, они должны быть лояльны к этому!\nНЕ ДАВАЙТЕ МАКРОС НЕЗНАКОМЦАМ И ЛЮДЯМ НЕ В ТЕМЕ!",
+				MACROTOOLTIP = "Это то, что должно посылаться в чат группы для срабатывания назначенного действия по заданному ключу\nЧтобы адресовать действие к конкретному юниту допишите их в макрос или оставьте как есть для назначения в Single/AoE ротацию\nПоддерживаются: raid1-40, party1-4, player, arena1-5\nТОЛЬКО ОДИН ЮНИТ ЗА ОДНО СООБЩЕНИЕ!\n\nВаши напарники могут использовать макрос также, но осторожно, они должны быть лояльны к этому!\nНЕ ДАВАЙТЕ МАКРОС НЕЗНАКОМЦАМ И ЛЮДЯМ НЕ В ТЕМЕ!",
 				KEY = "Ключ",
 				KEYERROR = "Вы не указали ключ!",
 				KEYERRORNOEXIST = "ключ не существует!",
@@ -1425,7 +1472,8 @@ local Localization = {
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Erhöht die Frames pro Sekunde durch Erhöhen der dynamischen Abhängigkeit.\nFrames des Aktualisierungszyklus (Aufruf) des Rotationszyklus\n\nSie können das Intervall auch nach einer einfachen Regel manuell einstellen:\nDer größere Schieberegler als mehr FPS, aber schlechtere Rotation Update\nZu hoher Wert kann zu unvorhersehbarem Verhalten führen!\n\nRechtsklick: Makro erstellen",					
 				PVPSECTION = "PvP Einstellungen",
-				RETARGET = "Vorheriges gespeichertes @Ziel zurückgeben\n(nur Arena1-3-Einheiten)\nEs wird gegen Jäger mit 'Totstellen' und unvorhergesehenen Zielabwürfen empfohlen\n\nRechtsklick: Makro erstellen",
+				REFOCUS = "Vorheriges gespeichertes @focus zurückgeben\n(nur Arena1-5-Einheiten)\nEs wird für Unsichtbarkeitsklassen empfohlen\n\nRechtsklick: Makro erstellen",
+				RETARGET = "Vorheriges gespeichertes @Ziel zurückgeben\n(nur Arena1-5-Einheiten)\nEs wird gegen Jäger mit 'Totstellen' und unvorhergesehenen Zielabwürfen empfohlen\n\nRechtsklick: Makro erstellen",
 				TRINKETS = "Schmuckstücke",
 				TRINKET = "Schmuck",
 				BURSTEVERYTHING = "Alles",
@@ -1466,6 +1514,8 @@ local Localization = {
 				ANTIFAKEPAUSES = "AntiFake-Pausen",
 				ANTIFAKEPAUSESSUBTITLE = "Während der Hotkey gedrückt gehalten wird",
 				ANTIFAKEPAUSESTT = "Je nachdem, welchen Hotkey Sie auswählen,\nfunktioniert nur der ihm zugewiesene Code, wenn Sie ihn gedrückt halten",
+				VEHICLE = "Im Fahrzeug",
+				VEHICLETOOLTIP = "Beispiel: Katapult, Pistole abfeuern",
 				DEADOFGHOSTPLAYER = "Wenn du Tot bist",
 				DEADOFGHOSTTARGET = "Das Ziel Tot ist",
 				DEADOFGHOSTTARGETTOOLTIP = "Ausnahme feindlicher Jäger, wenn er als Hauptziel ausgewählt ist",
@@ -1477,6 +1527,8 @@ local Localization = {
 				LOOTFRAME = "Beutefenster",
 				EATORDRINK = "Isst oder trinkt",
 				MISC = "Verschiedenes:",		
+				DISABLEREGULARFRAMES = "Standard-Frames ausblenden",
+				DISABLEREGULARFRAMESTOOLTIP = "Funktioniert nur mit Meta Engine\nBlendet eine Gruppe von Frames oben links aus",				
 				DISABLEROTATIONDISPLAY = "Verstecke Rotationsanzeige",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Blendet die Gruppe aus, die sich normalerweise im unteren Bereich des Bildschirms befindet",
 				DISABLEBLACKBACKGROUND = "Verstecke den schwarzen Hintergrund", 
@@ -1527,7 +1579,7 @@ local Localization = {
 				UNBLOCKED = "|cff00ff00Freigestellt: |r",
 				KEY = "[Schlüssel: ",
 				KEYTOTAL = "[Warteschlangensumme: ",
-				KEYTOOLTIP = "Benutze den Schlüssel im 'Mitteilungen' Fenster",  
+				KEYTOOLTIP = "Benutze den Schlüssel im 'Mitteilungen' Fenster", 
 				MACRO = "Makro",
 				MACROTOOLTIP = "Soll so kurz wie möglich sein, Makro ist auf 255 Bytes begrenzt\netwa 45 Bytes sollten für Mehrfachkette reserviert werden, Mehrzeilen werden unterstützt\n\nWenn das Makro weggelassen wird, wird die Standard-Autounit-Erstellung verwendet:\n\"/cast [@unitID]spellName\" oder \"/cast [@unitID]spellName(Rank %d)\" oder \"/use item:itemID\"\n\nMakro muss immer Aktionen hinzugefügt werden, die so etwas wie\n/cast [@player]spell:thisID\n/castsequence reset=1 spell:thisID, nil\nenthalten\n\nAkzeptiert Muster:\n\"spell:12345\" wird durch spellName ersetzt, abgeleitet von den Zahlen\n\"thisID\" wird durch self.SlotID oder self.ID ersetzt\n\"(Rank %d+)\" ersetzt Rank durch das lokalisierte Wort\nJedes Muster kann kombiniert werden, zum Beispiel \"spell:thisID(Rank 1)\"",
 				ISFORBIDDENFORMACRO = "ist verboten, Makros zu ändern!",
@@ -1672,7 +1724,7 @@ local Localization = {
 				DISABLERETOGGLE = "Warteschlange entfernen",
 				DISABLERETOGGLETOOLTIP = "Verhindert durch wiederholtes Löschen von Nachrichten aus dem Warteschlangensystem\nE.g. Mögliches Spam-Makro, ohne entfernt zu werden\n\nRechtsklick: Makro erstellen",
 				MACRO = "Macro für deine Gruppe:",
-				MACROTOOLTIP = "Dies sollte an den Gruppenchat gesendet werden, um die zugewiesene Aktion auf der angegebenen Taste auszulösen.\nUm die Aktion an eine bestimmte Einheit zu richten, fügen Sie sie dem Makro hinzu oder lassen Sie sie unverändert, wie sie für den Termin in der Einzel- / AoE-Rotation vorgesehen ist.\nUnterstützt : raid1-40, party1-2, player, arena1-3\nNUR EINE EINHEIT FÜR EINE NACHRICHT!\n\nIhre Gefährten können auch Makros verwenden, aber seien Sie vorsichtig, sie müssen dem treu bleiben!\nLASSEN SIE DAS NICHT MAKRO ZU UNIMINANZEN UND MENSCHEN NICHT IM THEMA!",
+				MACROTOOLTIP = "Dies sollte an den Gruppenchat gesendet werden, um die zugewiesene Aktion auf der angegebenen Taste auszulösen.\nUm die Aktion an eine bestimmte Einheit zu richten, fügen Sie sie dem Makro hinzu oder lassen Sie sie unverändert, wie sie für den Termin in der Einzel- / AoE-Rotation vorgesehen ist.\nUnterstützt : raid1-40, party1-4, player, arena1-5\nNUR EINE EINHEIT FÜR EINE NACHRICHT!\n\nIhre Gefährten können auch Makros verwenden, aber seien Sie vorsichtig, sie müssen dem treu bleiben!\nLASSEN SIE DAS NICHT MAKRO ZU UNIMINANZEN UND MENSCHEN NICHT IM THEMA!",
 				KEY = "Taste",
 				KEYERROR = "Du hast keine Taste ausgewählt!",
 				KEYERRORNOEXIST = "Taste existiert nicht!",
@@ -2010,7 +2062,8 @@ local Localization = {
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO:  Augmente les images par seconde en augmentant la dépendance dynamique\nimage du cycle de rafraichisement (call) du cycle de rotation\n\nVous pouvez régler manuellement l'intervalle en suivant cette règle simple:\nPlus le slider est grand plus vous avez de FPS, mais pire sera la mise à jour de la rotation\nUne valeur trop élevée peut entraîner un comportement imprévisible!\n\nClique droit : Créer la macro",
 				PVPSECTION = "Section PvP",
-				RETARGET = "Remet le @target sauvé précédemment\n(Uniquement pour les cibles arena1-3)\nCela est recommander contre les chasseurs avec 'Feindre la mort' et les perte de cible imprévu\n\nClique droit : Créer la macro",
+				REFOCUS = "Remet le @focus sauvé précédemment\n(Uniquement pour les cibles arena1-5)\nCela est recommandé pour les cible qui ont un sort d'invicibilité\n\nClique droit : Créer la macro",
+				RETARGET = "Remet le @target sauvé précédemment\n(Uniquement pour les cibles arena1-5)\nCela est recommander contre les chasseurs avec 'Feindre la mort' et les perte de cible imprévu\n\nClique droit : Créer la macro",
 				TRINKETS = "Bijoux",
 				TRINKET = "Bijou",
 				BURST = "Mode Burst",
@@ -2052,6 +2105,8 @@ local Localization = {
 				ANTIFAKEPAUSESTT = "Selon le raccourci clavier que vous sélectionnez,\nseul le code qui lui est attribué fonctionnera lorsque vous le maintenez enfoncé",
 				AUTOATTACK = "Attaque automatique",
 				AUTOSHOOT = "Tir automatique",	
+				VEHICLE = "EnVéhicule",
+				VEHICLETOOLTIP = "Exemple: Catapulte, ...",
 				DEADOFGHOSTPLAYER = "Vous êtes mort!",
 				DEADOFGHOSTTARGET = "Votre cible est morte",
 				DEADOFGHOSTTARGETTOOLTIP = "Exception des chasseurs ennemi si il est en cible principale",
@@ -2062,7 +2117,9 @@ local Localization = {
 				SPELLISTARGETINGTOOLTIP = "Exemple: Blizzard, Bond héroïque, Piège givrant",
 				LOOTFRAME = "Fenêtre du butin",
 				EATORDRINK = "Est-ce que manger ou boire",
-				MISC = "Autre:",		
+				MISC = "Autre:",	
+				DISABLEREGULARFRAMES = "Masquer les cadres standards",
+				DISABLEREGULARFRAMESTOOLTIP = "Fonctionne uniquement avec Meta Engine\nMasque le groupe de cadres en haut à gauche",				
 				DISABLEROTATIONDISPLAY = "Cacher l'affichage de la\nrotation",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Cacher le groupe, qui se trouve par défaut\n en bas au centre de l'écran",
 				DISABLEBLACKBACKGROUND = "Cacher le fond noir", 
@@ -2258,7 +2315,7 @@ local Localization = {
 				DISABLERETOGGLE = "Block queue remove",
 				DISABLERETOGGLETOOLTIP = "Préviens la répétition de retrait de message de la file d'attente\nE.g. Possible de spam la macro sans que le message soit retirer\n\nClique droit : Créer la macro",
 				MACRO = "Macro pour votre groupe:",
-				MACROTOOLTIP = "C’est ce qui doit être envoyé au groupe de discussion pour déclencher l’action assignée sur le mot clé spécifié\nPour adresser l'action à une unité spécifique, ajoutez-les à la macro ou laissez-la telle quelle pour l'affecter à la rotation Single/AoE.\nPris en charge: raid1-40, party1-2, player, arena1-3\nUNE SEULE UNITÉ POUR UN MESSAGE!\n\nVos compagnons peuvent aussi utiliser des macros, mais attention, ils doivent être fidèles à cela!\nNE PAS LAISSER LA MACRO AUX GENS N'UTILISANT PAS CE GENRE DE PROGRAMME (RISQUE DE REPORT)!",
+				MACROTOOLTIP = "C’est ce qui doit être envoyé au groupe de discussion pour déclencher l’action assignée sur le mot clé spécifié\nPour adresser l'action à une unité spécifique, ajoutez-les à la macro ou laissez-la telle quelle pour l'affecter à la rotation Single/AoE.\nPris en charge: raid1-40, party1-4, player, arena1-5\nUNE SEULE UNITÉ POUR UN MESSAGE!\n\nVos compagnons peuvent aussi utiliser des macros, mais attention, ils doivent être fidèles à cela!\nNE PAS LAISSER LA MACRO AUX GENS N'UTILISANT PAS CE GENRE DE PROGRAMME (RISQUE DE REPORT)!",
 				KEY = "Mot clef",
 				KEYERROR = "Vous n'avez pas spécifié de mot clef!",
 				KEYERRORNOEXIST = "Le mot clef n'existe pas!",
@@ -2593,7 +2650,8 @@ local Localization = {
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Aumenta i frames per second incrementando la dipendenza dinamica\ndei frames del ciclo di refresh (call) della rotazione\n\nPuoi settare manualmente l'intervallo seguendo questa semplice regola:\nPiú é altop lo slider piú é l'FPS, ma peggiore sará l'update della rotazione\nValori troppo alti possono portare a risultati imprevedibili!\n\nTastodestro: Crea macro",					
 				PVPSECTION = "Sezione PvP",
-				RETARGET = "Identifica il bersaglio precedente @target\n(solo arena unitá 1-3)\nraccomandato contro cacciatori con capacitá 'Morte Fasulla' e altre abilitá che deselezionano il bersaglio\n\nTastodestro: Crea macro",
+				REFOCUS = "Identifica il focus precedente @focus\n(solo arena unitá 1-5)\nraccomandato contro le classi con capacitá di invisibilitá\n\nTastodestro: Crea macro",
+				RETARGET = "Identifica il bersaglio precedente @target\n(solo arena unitá 1-5)\nraccomandato contro cacciatori con capacitá 'Morte Fasulla' e altre abilitá che deselezionano il bersaglio\n\nTastodestro: Crea macro",
 				TRINKETS = "Ninnolo",
 				TRINKET = "Ninnoli",
 				BURST = "Modalitá raffica",
@@ -2635,6 +2693,8 @@ local Localization = {
 				ANTIFAKEPAUSES = "AntiFake si ferma",
 				ANTIFAKEPAUSESSUBTITLE = "Mentre il tasto di scelta rapida è tenuto premuto",
 				ANTIFAKEPAUSESTT = "A seconda del tasto di scelta rapida selezionato,\nquando lo si tiene premuto funzionerà solo il codice ad esso assegnato",
+				VEHICLE = "NelVeicolo",
+				VEHICLETOOLTIP = "Esempio: Catapulta, Cannone",
 				DEADOFGHOSTPLAYER = "Sei Morto",
 				DEADOFGHOSTTARGET = "Il bersaglio é morto",
 				DEADOFGHOSTTARGETTOOLTIP = "Eccezione il cacciatore bersaglio se é selezionato come bersaglio primario",
@@ -2646,6 +2706,8 @@ local Localization = {
 				LOOTFRAME = "Bottino",
 				EATORDRINK = "Sta mangiando o bevendo",
 				MISC = "Varie:",		
+				DISABLEREGULARFRAMES = "Nascondi i frame standard",
+				DISABLEREGULARFRAMESTOOLTIP = "Funziona solo con Meta Engine\nNasconde il gruppo di frame nell'angolo in alto a sinistra",				
 				DISABLEROTATIONDISPLAY = "Nascondi|Mostra la rotazione",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Nasconde il gruppo, che generalmente siu trova al\ncentro in basso dello schermo",
 				DISABLEBLACKBACKGROUND = "Nascondi lo sfondo nero", 
@@ -2842,7 +2904,7 @@ local Localization = {
 				DISABLERETOGGLE = "Blocca Coda Rimuovi",
 				DISABLERETOGGLETOOLTIP = "Previeni l'eliminazione di un incantesimo dalla coda con un messaggio ripetuto\nEsempio, consente di inviare una macro spam senza rischiare eliminazioni non volute\n\nTastodestro: Crea macro",
 				MACRO = "Macro per il tuo gruppo:",
-				MACROTOOLTIP = "Questo è ciò che dovrebbe alla chat di gruppo per attivare l'azione assegnata ad una chiave specifica\nPer indirizzare un'azione a una unitá specifica, aggiungerlo alla macro o lasciala così com'è per l'utilizzo in rotazione singola/AoE\nSupportati: raid1-40, party1-2, giocatore, arena1-3\nSOLO UN'UNITÀ PER MESSAGGIO!\n\nI tuoi compagni possono usare anche loro macro, ma fai attenzione, devono essere macro allineate!",
+				MACROTOOLTIP = "Questo è ciò che dovrebbe alla chat di gruppo per attivare l'azione assegnata ad una chiave specifica\nPer indirizzare un'azione a una unitá specifica, aggiungerlo alla macro o lasciala così com'è per l'utilizzo in rotazione singola/AoE\nSupportati: raid1-40, party1-4, giocatore, arena1-5\nSOLO UN'UNITÀ PER MESSAGGIO!\n\nI tuoi compagni possono usare anche loro macro, ma fai attenzione, devono essere macro allineate!",
 				KEY = "Chiave",
 				KEYERROR = "Non hai specificato una chiave!",
 				KEYERRORNOEXIST = "la chiave non esite!",
@@ -2856,7 +2918,7 @@ local Localization = {
 				INPUT = "Inserire una frase da usare come messaggio di sistema",
 				INPUTTITLE = "Frase",
 				INPUTERROR = "Non hai inserito una frase!",
-				INPUTTOOLTIP = "La frase verrà attivata in corrispondenza ai riscontri nella chat di gruppo(/party)\nNon é sensibile alle maiuscole\nIdentifica pattern, ciò significa che una frase scritta in chat con la combinazione delle parole raid, party, arena, party o giocatore\nattiva l'azione nel meta slot desiderato\nNon hai bisogno di impostare i pattern elencati, sono usati on top alla macro\nIf non trova nessun pattern, allora verra usato lo slot per rotazione Singola e ad area",				
+				INPUTTOOLTIP = "La frase verrà attivata in corrispondenza ai riscontri nella chat di gruppo(/party)\nNon é sensibile alle maiuscole\nIdentifica pattern, ciò significa che una frase scritta in chat con la combinazione delle parole raid, party, arena, party, player\nattiva l'azione nel meta slot desiderato\nNon hai bisogno di impostare i pattern elencati, sono usati on top alla macro\nIf non trova nessun pattern, allora verra usato lo slot per rotazione Singola e ad area",				
 			},
 			[8] = { -- this tab was translated by using google translate, if some one will wish to fix something let me know 
 				HEADBUTTON = "Sistema di guarigione",
@@ -3179,7 +3241,8 @@ local Localization = {
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Incrementa los frames por segundo aumentando la dependencia dinámica\nframes del ciclo de recarga (llamada) del ciclo de rotación\n\nTambién puedes establecer manualmente el intervalo siguiendo una regla simple:\nCuanto mayor sea el desplazamiento, mayor las FPS, pero peor actualización de rotación\nUn valor demasiado alto puede causar un comportamiento impredecible!\n\nClickDerecho: Crear macro",					
 				PVPSECTION = "Sección PvP",
-				RETARGET = "Devuelve el guardado anterior @target\n(arena1-3 unidades solamente)\nEs recomendable contra cazadores con 'Feign Death' and cualquier objetivo imprevisto cae\n\nClickDerecho: Crear macro",
+				REFOCUS = "Devuelve el guardado anterior @focus\n(arena1-5 unidades solamente)\nEs recomendable contra clases con invisibilidad\n\nClickDerecho: Crear macro",
+				RETARGET = "Devuelve el guardado anterior @target\n(arena1-5 unidades solamente)\nEs recomendable contra cazadores con 'Feign Death' and cualquier objetivo imprevisto cae\n\nClickDerecho: Crear macro",
 				TRINKETS = "Trinkets",
 				TRINKET = "Trinket",
 				BURST = "Modo Bursteo",
@@ -3221,6 +3284,8 @@ local Localization = {
 				ANTIFAKEPAUSES = "Pausas de AntiFake",
 				ANTIFAKEPAUSESSUBTITLE = "Mientras se mantiene presionada la tecla de acceso rápido",
 				ANTIFAKEPAUSESTT = "Dependiendo de la tecla de acceso rápido que selecciones,\nsolo el código asignado a ella funcionará cuando la mantengas presionada",
+				VEHICLE = "En Vehículo",
+				VEHICLETOOLTIP = "Ejemplo: Catapulta, arma de fuego",
 				DEADOFGHOSTPLAYER = "Estás muerto",
 				DEADOFGHOSTTARGET = "El Target está muerto",
 				DEADOFGHOSTTARGETTOOLTIP = "Excepción a enemigo hunter if seleccionó como objetivo principal",
@@ -3232,6 +3297,8 @@ local Localization = {
 				LOOTFRAME = "Frame de botín",
 				EATORDRINK = "Está comiendo o bebiendo",
 				MISC = "Misc:",		
+				DISABLEREGULARFRAMES = "Ocultar marcos estándar",
+				DISABLEREGULARFRAMESTOOLTIP = "Solo funciona con Meta Engine\nOculta el grupo de marcos en la esquina superior izquierda",				
 				DISABLEROTATIONDISPLAY = "Esconder mostrar rotación",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Esconder el grupo, que está ubicado normalmente en la\nparte inferior central de la pantalla",
 				DISABLEBLACKBACKGROUND = "Esconder fondo negro", 
@@ -3427,7 +3494,7 @@ local Localization = {
 				DISABLERETOGGLE = "Bloquear borrar cola",
 				DISABLERETOGGLETOOLTIP = "Prevenir la repetición de mensajes borrados de la cola del sistema\nE.j. Posible spam de macro sin ser removida\n\nClickDerecho: Crear macro",
 				MACRO = "Macro para tu grupo:",
-				MACROTOOLTIP = "Esto es lo que debe ser enviado al chat de grupo para desencadenar la acción asignada en la tecla específica\nPara direccionar la acción específica de la unidad, añádelos al macro o déjalo tal como está en la rotación Single/AoE\nSoportado: raid1-40, party1-2, player, arena1-3\nSOLO UNA UNIDAD POR MENSAJE!\n\nTus compañeros pueden usar macros también, pero ten cuidado, deben ser leales a esto!\n NO DES ESTA MACRO A LA GENTE QUE NO LE PUEDA GUSTAR QUE USES BOT!",
+				MACROTOOLTIP = "Esto es lo que debe ser enviado al chat de grupo para desencadenar la acción asignada en la tecla específica\nPara direccionar la acción específica de la unidad, añádelos al macro o déjalo tal como está en la rotación Single/AoE\nSoportado: raid1-40, party1-4, player, arena1-5\nSOLO UNA UNIDAD POR MENSAJE!\n\nTus compañeros pueden usar macros también, pero ten cuidado, deben ser leales a esto!\n NO DES ESTA MACRO A LA GENTE QUE NO LE PUEDA GUSTAR QUE USES BOT!",
 				KEY = "Tecla",
 				KEYERROR = "No has especificado una tecla!",
 				KEYERRORNOEXIST = "La tecla no existe!",
@@ -3441,7 +3508,7 @@ local Localization = {
 				INPUT = "Escribe una frase para el sistema de mensajes",
 				INPUTTITLE = "Frase",
 				INPUTERROR = "No has escrito una frase!",
-				INPUTTOOLTIP = "La frase aparecerá en cualquier coincidencia del chat de grupo (/party)\nNo se distingue entre mayúsculas y minúsculas\nContiene patrones, significa que la frase escrita por alguien con la combinación de palabras de raid, party, arena, party o player\nse adapta la acción a la meta slot deseada\nNo necesitas establecer los patrones listados aquí, se utilizan como un añadido a la macro\nSi el patrón no es encontrado, los espacios para las rotaciones Single y AoE serán usadas",				
+				INPUTTOOLTIP = "La frase aparecerá en cualquier coincidencia del chat de grupo (/party)\nNo se distingue entre mayúsculas y minúsculas\nContiene patrones, significa que la frase escrita por alguien con la combinación de palabras de raid, party, arena, party, player\nse adapta la acción a la meta slot deseada\nNo necesitas establecer los patrones listados aquí, se utilizan como un añadido a la macro\nSi el patrón no es encontrado, los espacios para las rotaciones Single y AoE serán usadas",				
 			},
 			[8] = {
 				HEADBUTTON = "Sistema de Cura",
@@ -3762,7 +3829,8 @@ local Localization = {
 				FPSSEC = " (sec)",
 				FPSTOOLTIP = "AUTO: Aumenta os quadros por segundo por meio de aumento na depêndencia dinâmica \nquadros do ciclo de atualização (call) do ciclo de rotação\n\nVocê pode setar o intervalo manualmente seguindo uma simples regra:\nQuanto maior o slider maior o FPS, mas pior será a atualização da rotação\nValores muito altos podem causar comportamento imprevisível!\n\nRightClick: Criar macro",					
 				PVPSECTION = "Seção PVP",
-				RETARGET = "Retorna @target anterior\n(arena1-3 units only)\nRecomendado contra caçadores usando 'Fingir de Morto' e outras perdas de alvo não previstas\n\nRightClick: Criar macro",
+				REFOCUS = "Retorna @focus anterior\n(arena1-5 units only)\nRecomendado contra classes com invisibilidade\n\nRightClick: Criar macro",
+				RETARGET = "Retorna @target anterior\n(arena1-5 units only)\nRecomendado contra caçadores usando 'Fingir de Morto' e outras perdas de alvo não previstas\n\nRightClick: Criar macro",
 				TRINKETS = "Berloques",
 				TRINKET = "Berloque",
 				BURST = "Modo Explosão",
@@ -3804,6 +3872,8 @@ local Localization = {
 				ANTIFAKEPAUSES = "Pausas AntiFake",
 				ANTIFAKEPAUSESSUBTITLE = "Enquanto a tecla de atalho é mantida pressionada",
 				ANTIFAKEPAUSESTT = "Dependendo da tecla de atalho selecionada,\nsomente o código atribuído a ela funcionará quando você a mantiver pressionada",
+				VEHICLE = "InVehicle",
+				VEHICLETOOLTIP = "Example: Catapulta, Atirando",
 				DEADOFGHOSTPLAYER = "Você está morto",
 				DEADOFGHOSTTARGET = "Alvo está morto",
 				DEADOFGHOSTTARGETTOOLTIP = "Caçador inimigo como exceção se ele for selecionado como alvo principal",
@@ -3815,6 +3885,8 @@ local Localization = {
 				LOOTFRAME = "LootFrame",
 				EATORDRINK = "Está comendo ou bebendo",
 				MISC = "Misc:",		
+				DISABLEREGULARFRAMES = "Ocultar molduras padrão",
+				DISABLEREGULARFRAMESTOOLTIP = "Funciona apenas com o Meta Engine\nOculta o grupo de molduras no canto superior esquerdo",				
 				DISABLEROTATIONDISPLAY = "Esconder display da rotação",
 				DISABLEROTATIONDISPLAYTOOLTIP = "Esconde o grupo, que está normalmente no\ncentro abaixo da sua tela",
 				DISABLEBLACKBACKGROUND = "Esconder o fundo preto", 
@@ -4010,7 +4082,7 @@ local Localization = {
 				DISABLERETOGGLE = "Bloquear remover fila",
 				DISABLERETOGGLETOOLTIP = "Prevenido devido remoções repetidas de mensagens do sistema de filas\nEx.: Possível macro de spam não sendo removido\n\nRightClick: Criar macro",
 				MACRO = "Macro para seu grupo:",
-				MACROTOOLTIP = "Isso é o que deve ser enviado para o chat de grupo para ativar a ação atribuida na tecla especificada\nPara atribuir a ação a uma unidade especifica, adicione as unidades para o macro ou deixe como está para a rotação de Alvo único/AoE\nSuportados: raid1-40, party1-2, player, arena1-3\nAPENAS UMA UNIDADE POR MENSAGEM!\n\nSeus companheiros também podem usar macros, mas tome cuidado, eles devem ser leais a isto!\nNÃO LIBERE A MACRO PARA PESSOAS QUE NÃO ESTÃO NO TEMA!",
+				MACROTOOLTIP = "Isso é o que deve ser enviado para o chat de grupo para ativar a ação atribuida na tecla especificada\nPara atribuir a ação a uma unidade especifica, adicione as unidades para o macro ou deixe como está para a rotação de Alvo único/AoE\nSuportados: raid1-40, party1-4, player, arena1-5\nAPENAS UMA UNIDADE POR MENSAGEM!\n\nSeus companheiros também podem usar macros, mas tome cuidado, eles devem ser leais a isto!\nNÃO LIBERE A MACRO PARA PESSOAS QUE NÃO ESTÃO NO TEMA!",
 				KEY = "Chave",
 				KEYERROR = "Você não especificou uma chave!",
 				KEYERRORNOEXIST = "Chave não existe!",
@@ -4024,7 +4096,7 @@ local Localization = {
 				INPUT = "Digite uma frase para mensagem do sistema",
 				INPUTTITLE = "Frase",
 				INPUTERROR = "Você não forneceu uma frase!",
-				INPUTTOOLTIP = "A frase será ativada em qualquer palavra no chat de grupo (/party) que está de acordo com a condição\nNão é case-sensitive\nContém padrões, isso significa que a frase escrita por alguém com a combinação das palavras raid, party, arena, ou player\nadapta a action para o dado slot\nVocê não precisa setar os padrões aqui, elas são usadas como adição ao macro\nSe o padrão não for encontrado, então os slots para rotações single e AoE serão utilizados",				
+				INPUTTOOLTIP = "A frase será ativada em qualquer palavra no chat de grupo (/party) que está de acordo com a condição\nNão é case-sensitive\nContém padrões, isso significa que a frase escrita por alguém com a combinação das palavras raid, party, arena, player\nadapta a action para o dado slot\nVocê não precisa setar os padrões aqui, elas são usadas como adição ao macro\nSe o padrão não for encontrado, então os slots para rotações single e AoE serão utilizados",				
 			},
 			[8] = { 
 				HEADBUTTON = "Sistema de Cura",
@@ -4523,6 +4595,7 @@ local Factory = {
 		CheckSpellIsTargeting = true, 
 		CheckLootFrame = true, 	
 		CheckEatingOrDrinking = true,
+		DisableRegularFrames = false,
 		DisableRotationDisplay = false,
 		DisableBlackBackground = false,
 		DisablePrint = false,
@@ -4532,6 +4605,22 @@ local Factory = {
 		DisableSounds = true,
 		DisableAddonsCheck = false,
 		HideOnScreenshot = true,
+		CVars = {
+			[1] = true, 	-- "Contrast"
+			[2] = true, 	-- "Brightness"
+			[3] = true, 	-- "Gamma"
+			[4] = true, 	-- "colorblindsimulator"
+			[5] = true, 	-- "colorblindWeaknessFactor"
+			[6] = true, 	-- "SpellQueueWindow"
+			[7] = true, 	-- "doNotFlashLowHealthWarning"
+			[8] = true, 	-- "nameplateMaxDistance"
+			[9] = true, 	-- "nameplateNotSelectedAlpha"
+			[10] = true, 	-- "nameplateOccludedAlphaMult"
+			[11] = true, 	-- "breakUpLargeNumbers"
+			[12] = true, 	-- "screenshotQuality"
+			[13] = true, 	-- "nameplateShowEnemies"
+			[14] = true, 	-- "autoSelfCast"
+		},
 		ColorPickerUse = false,
 		ColorPickerElement = "backdrop",
 		ColorPickerOption = "panel",
@@ -4564,11 +4653,11 @@ local Factory = {
 			},
 		},	
 		cameraDistanceMaxZoomFactor = true,
-		LetMeCast = true,
+		LetMeCast = Action.BuildToC < 50500,
 		LetMeDrag = true,
-		TargetCastBar = true,
-		TargetRealHealth = true,
-		TargetPercentHealth = true,		
+		TargetCastBar = Action.BuildToC < 50500,
+		TargetRealHealth = Action.BuildToC < 50500,
+		TargetPercentHealth = Action.BuildToC < 50500,		
 		AuraDuration = true,
 		AuraCCPortrait = true,
 		LossOfControlPlayerFrame = true,
@@ -4624,6 +4713,7 @@ local Factory = {
 		Role = "AUTO",
 		HealthStone = 20,  
 		ReTarget = true, 			
+		ReFocus = Action.BuildToC >= 20000 and true or false, 			
 	}, 
 	[3] = {			
 		AutoHidden = true,	
@@ -4659,55 +4749,6 @@ local Factory = {
 				ISINTERRUPT = true,
 			},	
 		}, 17, 37, 55),
-		Heal = StdUi:tGenerateMinMax({
-			[GameLocale] = {	
-				ISINTERRUPT = true,
-				-- Priest
-				[2050] = "Lesser Heal",
-				[2060] = "Greater Heal",
-				[596] = "Prayer of Healing",
-				-- Druid
-				[740] = "Tranquility",
-				[8936] = "Regrowth",
-				-- Shaman
-				[1064] = "Chain Heal",
-				[331] = "Healing Wave",
-				[8004] = "Lesser Healing Wave",
-				-- Paladin
-				[19750] = "Flash of Light",
-				[635] = "Holy Light",
-			},			
-		}, 43, 70, math_random(87, 95), true),
-		PvP = StdUi:tGenerateMinMax({
-			[GameLocale] = {
-				ISINTERRUPT = true,
-				-- Shaman 
-				[2645] = "Ghost Wolf",
-				-- Mage 
-				[118] = "Pollymorph",
-				-- Priest 
-				[605] = "Mind Control",
-				[9484] = "Shackle Undead",
-				[8129] = "Mana Burn",
-				-- Hunter 
-				[982] = "Revive pet",
-				[1513] = "Scare Beast",
-				-- Warlock 				
-				[1122] = "Inferno",
-				[5782] = "Fear",
-				[5484] = "Howl of Terror",
-				[710] = "Banish",
-				-- Druid 
-				[20484] = "Rebirth",
-				[339] = "Entangling Roots",
-				[2637] = "Hibernate",
-				-- Rogue 
-				[2823] = "Deadly Poison",
-				-- Paladin 	
-				-- Hunter 
-				[19386] = "Wyvern Sting",
-			}, 
-		}, 34, 58, 37),
 		-- Checkbox 
 		UseMain 		= true,
 		UseMouse 		= true, 			
@@ -4859,26 +4900,24 @@ local Factory = {
 		ManaManagementPredictVariation = 4,
 	},
 	[9] = {
-		PLAYERSPEC = {
-			Framework = "MetaEngine",
-			MetaEngine = {
-				Hotkeys = {
-					[1] 							= { meta = 1,  action = "AntiFake CC", 					hotkey = "" },
-					[2] 							= { meta = 2,  action = "AntiFake Interrupt", 			hotkey = "" },
-					[3] 							= { meta = 3,  action = "Rotation", 					hotkey = "" },
-					[4]								= { meta = 4,  action = "Secondary Rotation", 			hotkey = "" },
-					[5] 							= { meta = 5,  action = "Trinket Rotation", 			hotkey = "" },
-					[7] 							= { meta = 7,  action = "AntiFake CC Focus", 			hotkey = "" },
-					[8] 							= { meta = 8,  action = "AntiFake Interrupt Focus", 	hotkey = "" },
-					[9] 							= { meta = 9,  action = "AntiFake CC2", 				hotkey = "" },
-					[10] 							= { meta = 10, action = "AntiFake CC2 Focus", 			hotkey = "" },
-				},
-				PrioritizePassive = true,
-				checkselfcast = false,
-				raid = true,
-				party = true,
-				arena = true,
+		Framework = "MetaEngine",
+		MetaEngine = {
+			Hotkeys = {
+				[1] 							= { meta = 1,  action = "AntiFake CC", 					hotkey = "" },
+				[2] 							= { meta = 2,  action = "AntiFake Interrupt", 			hotkey = "" },
+				[3] 							= { meta = 3,  action = "Rotation", 					hotkey = "" },
+				[4]								= { meta = 4,  action = "Secondary Rotation", 			hotkey = "" },
+				[5] 							= { meta = 5,  action = "Trinket Rotation", 			hotkey = "" },
+				[7] 							= { meta = 7,  action = "AntiFake CC Focus", 			hotkey = "" },
+				[8] 							= { meta = 8,  action = "AntiFake Interrupt Focus", 	hotkey = "" },
+				[9] 							= { meta = 9,  action = "AntiFake CC2", 				hotkey = "" },
+				[10] 							= { meta = 10, action = "AntiFake CC2 Focus", 			hotkey = "" },
 			},
+			PrioritizePassive = true,
+			checkselfcast = false,
+			raid = true,
+			party = true,
+			arena = true,
 		},
 	},
 }; StdUi.Factory = Factory
@@ -4887,522 +4926,2894 @@ local Factory = {
 local GlobalFactory = {	
 	InterfaceLanguage = "Auto",	
 	minimap = {},
-	[5] = {		
-		PvE = {
-			BlackList = {},			
-			PurgeFriendly = {
-				-- Mind Control (it's buff)
-				[605] = { canStealOrPurge = true },
-				-- Seduction
-				--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
-				--return PlayerClass ~= "MAGE" ]] },
-				-- Dominate Mind
-				[15859] = {},		-- FIX ME: Is a buff?
-				-- Cause Insanity
-				[12888] = {},		-- FIX ME: Is a buff?
-			},
-			PurgeHigh = {		
-				-- Molten Core: Deaden Magic
-				[19714] = {},
-			},
-			PurgeLow = {
-			},
-			Poison = {    
-				-- Onyxia: Brood Affliction: Green
-				[23169] = {},
-				-- Aspect of Venoxis
-				[24688] = { dur = 1.5 },
-				-- Atal'ai Poison
-				[18949] = { dur = 1.5 },
-				-- Baneful Poison
-				[15475] = {},
-				-- Barbed Sting
-				[14534] = {},
-				-- Bloodpetal Poison
-				[14110] = {},
-				-- Bottle of Poison
-				[22335] = {},
-				-- Brood Affliction: Green
-				[23169] = {},
-				-- Corrosive Poison 
-				[13526] = {},
-				-- Corrosive Venom Spit
-				[20629] = { dur = 1.5 },
-				-- Creeper Venom
-				[14532] = {},
-				-- Deadly Leech Poison
-				[3388] = {},
-				-- Deadly Poison
-				[13582] = {},
-				-- Enervate
-				[22661] = {},
-				-- Entropic Sting
-				[23260] = {},
-				-- Festering Bites
-				[16460] = {},
-				-- Larva Goo
-				[21069] = {},
-				-- Lethal Toxin
-				[8256] = {},
-				-- Maggot Goo
-				[17197] = {},
-				-- Abomination Spit
-				[25262] = {},
-				-- Minor Scorpion Venom Effect
-				[5105] = {},
-				-- Poisonous Spit
-				[4286] = {},
-				-- Slow Poison
-				[3332] = {},
-				-- Slime Bolt
-				[28311] = {},
-				-- Seeping Willow
-				[17196] = {},
-				-- Paralyzing Poison
-				[3609] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
-			},
-			Disease = {
-				-- Rabies
-				[3150] = {},
-				-- Fevered Fatigue
-				[8139] = {},
-				-- Silithid Pox
-				[8137] = {},
-				-- Wandering Plague
-				[3439] = {},
-				-- Spirit Decay
-				[8016] = {},
-				-- Tetanus
-				[8014] = {},
-				-- Contagion of Rot
-				[7102] = {},
-				-- Volatile Infection
-				[3584] = {},
-				-- Mirkfallon Fungus
-				[8138] = {},
-				-- Infected Wound
-				[3427] = {},
-				-- Noxious Catalyst
-				[5413] = {},
-				-- Corrupted Agility
-				[6817] = {},
-				-- Irradiated
-				[9775] = {},
-				-- Infected Spine
-				[12245] = {},
-				-- Corrupted Stamina
-				[6819] = {},
-				-- Decayed Strength
-				[6951] = {},
-				-- Decayed Agility
-				[7901] = {},
-				-- Infected Bite
-				[16128] = {},
-				-- Plague Cloud
-				[3256] = {},
-				-- Plague Mind
-				[3429] = {},
-				-- Magenta Cap Sickness
-				[10136] = {},
-				-- Gift of Arthas
-				[11374] = {},
-				-- Festering Rash
-				[15848] = {},
-				-- Dark Plague
-				[18270] = {},
-				-- Fevered Plague
-				[8600] = {},
-				-- Rabid Maw
-				[4316] = {},
-				-- Brood Affliction: Red
-				[23155] = {},
-				-- Blight
-				[9796] = {},
-				-- Slime Dysentery
-				[16461] = {},
-				-- Creeping Mold
-				[18289] = {},
-				-- Weakening Disease
-				[18633] = {},
-				-- Putrid Breath
-				[21062] = {},
-				-- Dredge Sickness
-				[14535] = {},
-				-- Putrid Bite
-				[30113] = {},
-				-- Putrid Enzyme
-				[14539] = {},			
-				-- Black Rot
-				[16448] = {},
-				-- Cadaver Worms
-				[16143] = {},
-				-- Ghoul Plague
-				[16458] = {},
-				-- Putrid Stench
-				[12946] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
-			}, 
-			Curse = {	
-				-- Molten Core: Lucifron's Curse
-				[19703] = {},
-				-- Molten Core: Gehennas' Curse 
-				-- Note: Tank should be prioritized 
-				[19716] = {},
-				-- Shazzrah's Curse
-				-- Note: Tank should be prioritized 
-				[19713] = {},
-				-- Shadowfang Keep: Veil of Shadow
-				[7068] = { dur = 1.5 },
-				-- Curse of Thorns
-				[6909] = {},
-				-- Wracking Pains
-				[13619] = {},
-				-- Curse of Stalvan
-				[13524] = {},
-				-- Curse of Blood
-				[16098] = {},
-				-- Curse of the Plague Rat
-				[17738] = {},
-				-- Discombobulate
-				[4060] = {},
-				-- Hex of Jammal'an
-				[12480] = {},
-				-- Shrink
-				[24054] = {},
-				-- Curse of the Firebrand
-				[16071] = {},
-				-- Enfeeble
-				[11963] = {},
-				-- Piercing Shadow
-				[16429] = {},
-				-- Rage of Thule
-				[3387] = {},
-				-- Mark of Kazzak
-				[21056] = {},
-				-- Curse of the Dreadmaul
-				[11960] = {},
-				-- Banshee Curse
-				[17105] = {},
-				-- Corrupted Fear
-				[21330] = {},
-				-- Curse of Impotence
-				[22371] = {},
-				-- Delusions of Jin'do
-				[24306] = {},
-				-- Haunting Phantoms				-- FIX ME: Does it need here ? (Naxxramas)
-				[16336] = {},
-				-- Tainted Mind
-				[16567] = {},
-				-- Ancient Hysteria
-				[19372] = {},
-				-- Breath of Sargeras
-				[28342] = {},
-				-- Curse of the Elemental Lord
-				[26977] = {},
-				-- Curse of Mending
-				[15730] = {},
-				-- Curse of the Darkmaster
-				[18702] = {},
-				-- Arugal's Curse
-				[7621] = {},
-			},
-			Magic = {	
-				-- Molten Core: Ignite Mana
-				[19659] = {},
-				-- Molten Core: Impending Doom
-				[19702] = { dur = 1.5 },
-				-- Molten Core: Panic
-				[19408] = {},			
-				-- Molten Core: Magma Splash
-				[13880] = { dur = 1.5 },
-				-- Molten Core: Ancient Despair
-				[19369] = { dur = 1.5 },
-				-- Molten Core: Soul Burn
-				[19393] = { dur = 1.5 },
-				-- Onyxia: Greater Polymorph
-				[22274] = {},
-				-- Onyxia: Wild Polymorph
-				[23603] = {},
-				-- Scarlet Monastery Dungeon: Terrify
-				[7399] = {},
-				-- Dominate Mind
-				[20740] = {},
-				-- Immolate
-				[12742] = { dur = 2 },
-				-- Shadow Word: Pain 				-- FIX ME: Does it needs in PvE (?)
-				[23952] = { dur = 2 },
-				-- Misc: Reckless Charge
-				[13327] = { dur = 1 },
-				-- Misc: Hex 
-				[17172] = {},
-				-- Polymorph Backfire (Azshara)
-				[28406] = {},	
-				-- Polymorph: Chicken
-				[228] = {},
-				-- Chains of Ice
-				[113] = { dur = 12 },
-				-- Grasping Vines
-				[8142] = { dur = 4 },
-				-- Naralex's Nightmare
-				[7967] = {},
-				-- Thundercrack
-				[8150] = { dur = 1 },
-				-- Screams of the Past
-				[7074] = { dur = 1 },
-				-- Smoke Bomb
-				[7964] = { dur = 1 },
-				-- Ice Blast
-				[11264] = { dur = 6 },
-				-- Pacify
-				[10730] = {},
-				-- Sonic Burst
-				[8281] = { dur = 0.5 },
-				-- Enveloping Winds
-				[6728] = { dur = 1 },
-				-- Petrify
-				[11020] = { dur = 1 },
-				-- Freeze Solid
-				[11836] = { dur = 1 },
-				-- Deep Slumber
-				[12890] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
-				-- Crystallize
-				[16104] = { dur = 1, LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
-				-- Enchanting Lullaby
-				[16798] = { dur = 1 },
-				-- Burning Winds
-				[17293] = { dur = 1 },
-				-- Banshee Shriek
-				[16838] = { dur = 1 },
-			}, 
-			Enrage = {
-			},
-			Frenzy = {
-				-- Frenzy 
-				[19451] = { dur = 1.5 },
-			},
-			BlessingofProtection = {
-				[18431] = { dur = 2.6 }, -- Bellowing Roar (Onyxia fear)
-				[21869] = { dur = 6 },   -- Repulsive Gaze
-				[5134] = { dur = 8 },	 -- Flash Bomb
-			},
-			BlessingofFreedom = {
-				[8312] = { dur = 2 },
-				[8346] = { dur = 2 },
-				[13099] = { dur = 2 },
-				[19636] = { dur = 2 },
-				[23414] = { dur = 2 },
-				[6533] = { dur = 2 },
-				[11820] = { dur = 2 },
-				[8377] = { dur = 2 },
-				[113] = { dur = 2 },
-				[8142] = { dur = 2 },
-				[7295] = { dur = 2 },
-				[11264] = { dur = 2 },
-				[12252] = { dur = 2 },
-				[745] = { dur = 2 },
-				[15474] = { dur = 2 },
-				[14030] = { dur = 2 },
-				[19306] = { dur = 2 },
-				[4962] = { dur = 2 },
-			},
-			BlessingofSacrifice = {
-			},
-			Vanish = {
-			},
-		},
-		PvP = {
-			BlackList = {},
-			PurgeFriendly = {
-				-- Mind Control (it's buff)
-				[605] = { canStealOrPurge = true },
-				-- Seduction
-				--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
-				--return PlayerClass ~= "MAGE" ]] },
-			},
-			PurgeHigh = {
-				-- Paladin: Blessing of Protection
-				[1022] = { dur = 1 },
-				-- Paladin: Divine Favor 
-				[20216] = { dur = 0 },
-				-- Priest: Power Infusion
-				[10060] = { dur = 4 },
-				-- Mage: Combustion
-				[11129] = { dur = 4 },
-				-- Mage: Arcane Power
-				[12042] = { dur = 4 },
-				-- Druid | Shaman: Nature's Swiftness
-				[16188] = { dur = 1.5 },
-				-- Shaman: Elemental Mastery
-				[16166] = { dur = 1.5 },
-				-- Warlock: Fel Domination
-				[18708] = { dur = 0 },
-				-- Warlock: Amplify Curse
-				[18288] = { dur = 10 },
-			},
-			PurgeLow = {
-				-- Paladin: Blessing of Freedom  
-				[1044] = { dur = 1.5 },
-				-- Druid: Rejuvenation
-				[774] = { dur = 0, onlyBear = true },
-				-- Druid: Regrow
-				[8936] = { dur = 0, onlyBear = true },
-				-- Druid: Mark of the Wild
-				[1126] = { dur = 0, onlyBear = true },
-			},
-			Poison = {
-				-- Hunter: Wyvern Sting
-				[19386] = { dur = 0 },
-				-- Hunter: Serpent Sting
-				[1978] = { dur = 3 },
-				-- Hunter: Viper Sting
-				[3034] = { dur = 2 },
-				-- Hunter: Scorpid Sting
-				[3043] = { dur = 1.5 },
-				-- Rogue: Slow Poison
-				[3332] = {},
-				-- Rogue: Blind
-				[2094] = { dur = 2.5 },
-			},
-			Disease = {
-			},
-			Curse = {
-				-- Voodoo Hex   			(Shaman) 				-- I AM NOT SURE
-				[8277] = {}, 			
-				-- Warlock: Curse of Tongues
-				[1714] = { dur = 3 },
-				-- Warlock: Curse of Weakness
-				[702] = { dur = 3 },
-				-- Warlock: Curse of Doom
-				[603] = {},
-				-- Warlock: Curse of the Elements
-				[1490] = {},
-				-- Corrupted Fear (set bonus)
-				[21330] = {},
-			},
-			Magic = {			
-				-- Paladin: Repentance
-				[20066] = { dur = 1.5 },
-				-- Paladin: Hammer of Justice
-				[853] = { dur = 0 },
-				-- Hunter: Freezing Trap
-				[1499] = { dur = 1 },
-				-- Hunter: Entrapment
-				[19185] = { dur = 1.5 },
-				-- Hunter: Hunter's Mark
-				[14325] = {},
-				-- Hunter: Trap 
-				[8312] = { dur = 1 },
-				-- Rogue: Kick - Silenced
-				[18425] = { dur = 1 },
-				-- Priest: Mind Control 
-				[605] = { dur = 0 },
-				-- Priest: Psychic Scream
-				[8122] = { dur = 1.5 },
-				-- Priest: Shackle Undead 
-				[9484] = { dur = 1 },
-				-- Priest: Silence
-				[15487] = { dur = 1 },
-				-- Mage: Polymorph 
-				[118] = { dur = 1.5 },
-				-- Mage: Polymorph: Sheep 
-				[851] = { dur = 1.5 },
-				-- Mage: Polymorph: Turtle 
-				[28271] = { dur = 1.5 },
-				-- Mage: Polymorph: Pig 
-				[28272] = { dur = 1.5 },
-				-- Mage: Frost Nova  
-				[122] = { dur = 1 },
-				-- Warlock: Banish 
-				[710] = {},				
-				-- Warlock: Fear 
-				[5782] = { dur = 1.5 },
-				-- Warlock: Seduction
-				[6358] = { dur = 1.5 },	
-				-- Warlock: Howl of Terror
-				[5484] = { dur = 1.5 },
-				-- Warlock: Death Coil
-				[6789] = { dur = 1 },
-				-- Warlock: Spell Lock (Felhunter)
-				[24259] = { dur = 1 },
-				-- Druid: Hibernate 
-				[2637] = { dur = 1.5 },				
-				-- Mage: Ice Nova 
-				[22519] = { dur = 1 },
-				-- Druid: Entangling Roots
-				[339] = { dur = 1 },					
-				-- Trinket: Tidal Charm
-				[835] = { dur = 1 },
-				-- Iron Grenade
-				[4068] = {},
-				-- Sleep (Green Whelp Armor chest)
-				[9159] = {},
-				-- Arcane Bomb
-				[19821] = {},
-				-- Silence (Silent Fang sword)
-				[18278] = {},
-				-- Highlord's Justice (Alliance Stormwind Boss - Highlord Bolvar Fordragon)
-				[20683] = {},
-				-- Crusader's Hammer (Horde Stratholme - Boss Grand Crusader Dathrohan)
-				[17286] = {},
-				-- Veil of Shadow (Horde Orgrimmar - Boss Vol'jin)
-				[17820] = {},
-				-- Glimpse of Madness (Dark Edge of Insanity axe)
-				[26108] = { dur = 1 },
-			},
-			Enrage = {
-				-- Berserker Rage
-				[18499] = { dur = 1 },
-				-- Enrage
-				[12880] = { dur = 1 },
-			},
-			Frenzy = {
-			},
-			BlessingofProtection = {
-				-- Disarm 
-				[676] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] }, 				-- Disarm 					(Warrior)
-				[14251] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Riposte					(Rogue)
-				[23365] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Dropped Weapon			(Unknown)
-				-- Stunned 
-				--[7922] = { dur = 1.5 }, 				-- Charge Stun				(Warrior)
-				[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
-				[20253] = { dur = 2.6 },			-- Intercept Stun 			(Warrior)
-				[5530] = { dur = 2.6 },				-- Mace Stun Effect			(Warrior)
-				[12798] = { dur = 2.6 },			-- Revenge Stun				(Warrior)
-				[5211] = { dur = 1.6 },				-- Bash						(Druid)
-				[9005] = { dur = 1.6 },				-- Pounce					(Druid)		
-				[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
-				[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)		
-				--[20549] = { dur = 1.5 }, 				-- War Stomp 				(Tauren)	
-				[20685] = { dur = 3 },				-- Storm Bolt	 			(Unknown)				-- FIX ME: Is it useable?		
-				[16922] = { dur = 3 },				-- Starfire Stun			(Unknown)		
-				[56] = { dur = 3 },					-- Stun 					(Weapon proc)	
-				-- Disoriented
-				[19503] = { dur = 3 }, 				-- Scatter Shot 			(Hunter)		 				
-				-- Feared 
-				[5246] = { dur = 4.5 }, 			-- Intimidating Shout		(Warrior)
-			},
-			BlessingofFreedom = {
-				[23694] = { dur = 2 },				-- Improved Hamstring		(Warrior)
-				[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
-				[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
-				[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
-				[19675] = { dur = 2 },				-- Feral Charge Effect		(Druid)
-				[19185] = { dur = 2 },				-- Entrapment				(Hunter)
-				[13809] = { dur = 0 },				-- Frost Trap				(Hunter)
-				[25999] = { dur = 2 },				-- Boar Charge				(Hunter's pet)	
-			},
-			BlessingofSacrifice = {
-				[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
-				[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)	
-				[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
-			},
-			Vanish = {
-				[22519] = {}, 						-- Ice Nova 				(Mage)
-				[122] = {}, 						-- Frost Nova 				(Mage)
-				[339] = {}, 						-- Entangling Roots 		(Druid)
-			},
-		},
-	},
 }; StdUi.GlobalFactory = GlobalFactory
+
+-- pActionDB & gActionDB ExpansionBase
+-- TODO: this is ugly but will allow to skip maintance of different spellIDs
+do
+	if Action.BuildToC >= 50000 then
+		-- MOP
+		Factory[4].Heal = StdUi:tGenerateMinMax({
+			[GameLocale] = {	
+				ISINTERRUPT = true,
+				-- Priest
+				[2050] = "Lesser Heal",
+				[2060] = "Greater Heal",
+				[596] = "Prayer of Healing",
+				-- Druid
+				[740] = "Tranquility",
+				[8936] = "Regrowth",
+				-- Shaman
+				[1064] = "Chain Heal",
+				[331] = "Healing Wave",
+				[8004] = "Lesser Healing Wave",
+				-- Paladin
+				[19750] = "Flash of Light",
+				[635] = "Holy Light",
+			},			
+		}, 43, 70, math_random(87, 95), true)
+		
+		Factory[4].PvP = StdUi:tGenerateMinMax({
+			[GameLocale] = {
+				ISINTERRUPT = true,
+				-- Shaman 
+				[2645] = "Ghost Wolf",
+				-- Mage 
+				[118] = "Pollymorph",
+				-- Priest 
+				[605] = "Mind Control",
+				[9484] = "Shackle Undead",
+				[8129] = "Mana Burn",
+				-- Hunter 
+				[982] = "Revive pet",
+				[1513] = "Scare Beast",
+				-- Warlock 				
+				[1122] = "Inferno",
+				[5782] = "Fear",
+				[5484] = "Howl of Terror",
+				[710] = "Banish",
+				-- Druid 
+				[20484] = "Rebirth",
+				[339] = "Entangling Roots",
+				[2637] = "Hibernate",
+				-- Rogue 
+				[2823] = "Deadly Poison",
+				-- Paladin 	
+				-- Hunter 
+				[19386] = "Wyvern Sting",
+			}, 
+		}, 34, 58, 37)		
+	
+		GlobalFactory[5] = {
+			PvE = {
+				BlackList = {},			
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+					-- Dominate Mind
+					[15859] = {},		-- FIX ME: Is a buff?
+					-- Cause Insanity
+					[12888] = {},		-- FIX ME: Is a buff?
+				},
+				PurgeHigh = {		
+					-- Molten Core: Deaden Magic
+					[19714] = {},
+				},
+				PurgeLow = {
+				},
+				Poison = {    
+					-- Onyxia: Brood Affliction: Green
+					[23169] = {},
+					-- Aspect of Venoxis
+					[24688] = { dur = 1.5 },
+					-- Atal'ai Poison
+					[18949] = { dur = 1.5 },
+					-- Baneful Poison
+					[15475] = {},
+					-- Barbed Sting
+					[14534] = {},
+					-- Bloodpetal Poison
+					[14110] = {},
+					-- Bottle of Poison
+					[22335] = {},
+					-- Brood Affliction: Green
+					[23169] = {},
+					-- Corrosive Poison 
+					[13526] = {},
+					-- Corrosive Venom Spit
+					[20629] = { dur = 1.5 },
+					-- Creeper Venom
+					[14532] = {},
+					-- Deadly Leech Poison
+					[3388] = {},
+					-- Deadly Poison
+					[13582] = {},
+					-- Enervate
+					[22661] = {},
+					-- Entropic Sting
+					[23260] = {},
+					-- Festering Bites
+					[16460] = {},
+					-- Larva Goo
+					[21069] = {},
+					-- Lethal Toxin
+					[8256] = {},
+					-- Maggot Goo
+					[17197] = {},
+					-- Abomination Spit
+					[25262] = {},
+					-- Minor Scorpion Venom Effect
+					[5105] = {},
+					-- Poisonous Spit
+					[4286] = {},
+					-- Slow Poison
+					[3332] = {},
+					-- Slime Bolt
+					[28311] = {},
+					-- Seeping Willow
+					[17196] = {},
+					-- Paralyzing Poison
+					[3609] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				},
+				Disease = {
+					-- Rabies
+					[3150] = {},
+					-- Fevered Fatigue
+					[8139] = {},
+					-- Silithid Pox
+					[8137] = {},
+					-- Wandering Plague
+					[3439] = {},
+					-- Spirit Decay
+					[8016] = {},
+					-- Tetanus
+					[8014] = {},
+					-- Contagion of Rot
+					[7102] = {},
+					-- Volatile Infection
+					[3584] = {},
+					-- Mirkfallon Fungus
+					[8138] = {},
+					-- Infected Wound
+					[3427] = {},
+					-- Noxious Catalyst
+					[5413] = {},
+					-- Corrupted Agility
+					[6817] = {},
+					-- Irradiated
+					[9775] = {},
+					-- Infected Spine
+					[12245] = {},
+					-- Corrupted Stamina
+					[6819] = {},
+					-- Decayed Strength
+					[6951] = {},
+					-- Decayed Agility
+					[7901] = {},
+					-- Infected Bite
+					[16128] = {},
+					-- Plague Cloud
+					[3256] = {},
+					-- Plague Mind
+					[3429] = {},
+					-- Magenta Cap Sickness
+					[10136] = {},
+					-- Gift of Arthas
+					[11374] = {},
+					-- Festering Rash
+					[15848] = {},
+					-- Dark Plague
+					[18270] = {},
+					-- Fevered Plague
+					[8600] = {},
+					-- Rabid Maw
+					[4316] = {},
+					-- Brood Affliction: Red
+					[23155] = {},
+					-- Blight
+					[9796] = {},
+					-- Slime Dysentery
+					[16461] = {},
+					-- Creeping Mold
+					[18289] = {},
+					-- Weakening Disease
+					[18633] = {},
+					-- Putrid Breath
+					[21062] = {},
+					-- Dredge Sickness
+					[14535] = {},
+					-- Putrid Bite
+					[30113] = {},
+					-- Putrid Enzyme
+					[14539] = {},			
+					-- Black Rot
+					[16448] = {},
+					-- Cadaver Worms
+					[16143] = {},
+					-- Ghoul Plague
+					[16458] = {},
+					-- Putrid Stench
+					[12946] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				}, 
+				Curse = {	
+					-- Molten Core: Lucifron's Curse
+					[19703] = {},
+					-- Molten Core: Gehennas' Curse 
+					-- Note: Tank should be prioritized 
+					[19716] = {},
+					-- Shazzrah's Curse
+					-- Note: Tank should be prioritized 
+					[19713] = {},
+					-- Shadowfang Keep: Veil of Shadow
+					[7068] = { dur = 1.5 },
+					-- Curse of Thorns
+					[6909] = {},
+					-- Wracking Pains
+					[13619] = {},
+					-- Curse of Stalvan
+					[13524] = {},
+					-- Curse of Blood
+					[16098] = {},
+					-- Curse of the Plague Rat
+					[17738] = {},
+					-- Discombobulate
+					[4060] = {},
+					-- Hex of Jammal'an
+					[12480] = {},
+					-- Shrink
+					[24054] = {},
+					-- Curse of the Firebrand
+					[16071] = {},
+					-- Enfeeble
+					[11963] = {},
+					-- Piercing Shadow
+					[16429] = {},
+					-- Rage of Thule
+					[3387] = {},
+					-- Mark of Kazzak
+					[21056] = {},
+					-- Curse of the Dreadmaul
+					[11960] = {},
+					-- Banshee Curse
+					[17105] = {},
+					-- Corrupted Fear
+					[21330] = {},
+					-- Curse of Impotence
+					[22371] = {},
+					-- Delusions of Jin'do
+					[24306] = {},
+					-- Haunting Phantoms				-- FIX ME: Does it need here ? (Naxxramas)
+					[16336] = {},
+					-- Tainted Mind
+					[16567] = {},
+					-- Ancient Hysteria
+					[19372] = {},
+					-- Breath of Sargeras
+					[28342] = {},
+					-- Curse of the Elemental Lord
+					[26977] = {},
+					-- Curse of Mending
+					[15730] = {},
+					-- Curse of the Darkmaster
+					[18702] = {},
+					-- Arugal's Curse
+					[7621] = {},
+				},
+				Magic = {	
+					-- Molten Core: Ignite Mana
+					[19659] = {},
+					-- Molten Core: Impending Doom
+					[19702] = { dur = 1.5 },
+					-- Molten Core: Panic
+					[19408] = {},			
+					-- Molten Core: Magma Splash
+					[13880] = { dur = 1.5 },
+					-- Molten Core: Ancient Despair
+					[19369] = { dur = 1.5 },
+					-- Molten Core: Soul Burn
+					[19393] = { dur = 1.5 },
+					-- Onyxia: Greater Polymorph
+					[22274] = {},
+					-- Onyxia: Wild Polymorph
+					[23603] = {},
+					-- Scarlet Monastery Dungeon: Terrify
+					[7399] = {},
+					-- Dominate Mind
+					[20740] = {},
+					-- Immolate
+					[12742] = { dur = 2 },
+					-- Shadow Word: Pain 				-- FIX ME: Does it needs in PvE (?)
+					[23952] = { dur = 2 },
+					-- Misc: Reckless Charge
+					[13327] = { dur = 1 },
+					-- Misc: Hex 
+					[17172] = {},
+					-- Polymorph Backfire (Azshara)
+					[28406] = {},	
+					-- Polymorph: Chicken
+					[228] = {},
+					-- Chains of Ice
+					[113] = { dur = 12 },
+					-- Grasping Vines
+					[8142] = { dur = 4 },
+					-- Naralex's Nightmare
+					[7967] = {},
+					-- Thundercrack
+					[8150] = { dur = 1 },
+					-- Screams of the Past
+					[7074] = { dur = 1 },
+					-- Smoke Bomb
+					[7964] = { dur = 1 },
+					-- Ice Blast
+					[11264] = { dur = 6 },
+					-- Pacify
+					[10730] = {},
+					-- Sonic Burst
+					[8281] = { dur = 0.5 },
+					-- Enveloping Winds
+					[6728] = { dur = 1 },
+					-- Petrify
+					[11020] = { dur = 1 },
+					-- Freeze Solid
+					[11836] = { dur = 1 },
+					-- Deep Slumber
+					[12890] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Crystallize
+					[16104] = { dur = 1, LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Enchanting Lullaby
+					[16798] = { dur = 1 },
+					-- Burning Winds
+					[17293] = { dur = 1 },
+					-- Banshee Shriek
+					[16838] = { dur = 1 },
+				}, 
+				Enrage = {
+				},
+				Frenzy = {
+					-- Frenzy 
+					[19451] = { dur = 1.5 },
+				},
+				BlessingofProtection = {
+					[18431] = { dur = 2.6 }, -- Bellowing Roar (Onyxia fear)
+					[21869] = { dur = 6 },   -- Repulsive Gaze
+					[5134] = { dur = 8 },	 -- Flash Bomb
+				},
+				BlessingofFreedom = {
+					[8312] = { dur = 2 },
+					[8346] = { dur = 2 },
+					[13099] = { dur = 2 },
+					[19636] = { dur = 2 },
+					[23414] = { dur = 2 },
+					[6533] = { dur = 2 },
+					[11820] = { dur = 2 },
+					[8377] = { dur = 2 },
+					[113] = { dur = 2 },
+					[8142] = { dur = 2 },
+					[7295] = { dur = 2 },
+					[11264] = { dur = 2 },
+					[12252] = { dur = 2 },
+					[745] = { dur = 2 },
+					[15474] = { dur = 2 },
+					[14030] = { dur = 2 },
+					[4962] = { dur = 2 },
+				},
+				BlessingofSacrifice = {
+				},
+				Vanish = {
+				},
+			},
+			PvP = {
+				BlackList = {},
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+				},
+				PurgeHigh = {
+					-- Paladin: Blessing of Protection
+					[1022] = { dur = 1 },
+					-- Paladin: Divine Favor 
+					[31842] = { dur = 0 }, -- New Cata ID, KROKS
+					-- Priest: Power Infusion
+					[10060] = { dur = 4 },
+					-- Mage: Combustion
+					[11129] = { dur = 4 },
+					-- Mage: Arcane Power
+					[12042] = { dur = 4 },
+					-- Druid | Shaman: Nature's Swiftness
+					[16188] = { dur = 1.5 },
+					-- Shaman: Elemental Mastery
+					[16166] = { dur = 1.5 },
+				},
+				PurgeLow = {
+					-- Paladin: Blessing of Freedom  
+					[1044] = { dur = 1.5 },
+					-- Druid: Rejuvenation
+					[774] = { dur = 0, onlyBear = true },
+					-- Druid: Regrow
+					[8936] = { dur = 0, onlyBear = true },
+					-- Druid: Mark of the Wild
+					[1126] = { dur = 0, onlyBear = true },
+				},
+				Poison = {
+					-- Hunter: Wyvern Sting
+					[19386] = { dur = 0 },
+					-- Hunter: Serpent Sting
+					[1978] = { dur = 3 },
+					-- Rogue: Slow Poison
+					[3332] = {},
+					-- Rogue: Blind
+					[2094] = { dur = 2.5 },
+				},
+				Disease = {
+				},
+				Curse = {
+					-- Voodoo Hex   			(Shaman) 				-- I AM NOT SURE
+					[8277] = {},
+					-- Warlock: Curse of Doom
+					[603] = {},
+					-- Warlock: Curse of the Elements
+					[1490] = {},
+					-- Corrupted Fear (set bonus)
+					[21330] = {},
+				},
+				Magic = {			
+					-- Paladin: Repentance
+					[20066] = { dur = 1.5 },
+					-- Paladin: Hammer of Justice
+					[853] = { dur = 0 },
+					-- Hunter: Freezing Trap
+					[1499] = { dur = 1 },
+					-- Hunter: Entrapment
+					[19185] = { dur = 1.5 },
+					-- Hunter: Trap 
+					[8312] = { dur = 1 },
+					-- Hunter: Hunter's Mark
+					[1130] = {}, -- New Cata spell ID, KROKS
+					-- Priest: Mind Control 
+					[605] = { dur = 0 },
+					-- Priest: Psychic Scream
+					[8122] = { dur = 1.5 },
+					-- Priest: Shackle Undead 
+					[9484] = { dur = 1 },
+					-- Priest: Silence
+					[15487] = { dur = 1 },
+					-- Mage: Polymorph 
+					[118] = { dur = 1.5 },
+					-- Mage: Polymorph: Sheep 
+					[851] = { dur = 1.5 },
+					-- Mage: Polymorph: Turtle 
+					[28271] = { dur = 1.5 },
+					-- Mage: Polymorph: Pig 
+					[28272] = { dur = 1.5 },
+					-- Mage: Frost Nova  
+					[122] = { dur = 1 },
+					-- Warlock: Banish 
+					[710] = {},				
+					-- Warlock: Fear 
+					[5782] = { dur = 1.5 },
+					-- Warlock: Seduction
+					[6358] = { dur = 1.5 },	
+					-- Warlock: Howl of Terror
+					[5484] = { dur = 1.5 },
+					-- Warlock: Death Coil
+					[6789] = { dur = 1 },
+					-- Warlock: Spell Lock (Felhunter)
+					[24259] = { dur = 1 },
+					-- Druid: Hibernate 
+					[2637] = { dur = 1.5 },				
+					-- Mage: Ice Nova 
+					[22519] = { dur = 1 },
+					-- Druid: Entangling Roots
+					[339] = { dur = 1 },					
+					-- Trinket: Tidal Charm
+					[835] = { dur = 1 },
+					-- Iron Grenade
+					[4068] = {},
+					-- Sleep (Green Whelp Armor chest)
+					[9159] = {},
+					-- Arcane Bomb
+					[19821] = {},
+					-- Silence (Silent Fang sword)
+					[18278] = {},
+					-- Highlord's Justice (Alliance Stormwind Boss - Highlord Bolvar Fordragon)
+					[20683] = {},
+					-- Crusader's Hammer (Horde Stratholme - Boss Grand Crusader Dathrohan)
+					[17286] = {},
+					-- Veil of Shadow (Horde Orgrimmar - Boss Vol'jin)
+					[17820] = {},
+					-- Glimpse of Madness (Dark Edge of Insanity axe)
+					[26108] = { dur = 1 },
+				},
+				Enrage = {
+					-- Berserker Rage
+					[18499] = { dur = 1 },
+					-- Enrage
+					[12880] = { dur = 1 },
+				},
+				Frenzy = {
+				},
+				BlessingofProtection = {
+					-- Disarm 
+					[676] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] }, 				-- Disarm 					(Warrior)
+					[23365] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Dropped Weapon			(Unknown)
+					-- Stunned 
+					--[7922] = { dur = 1.5 }, 				-- Charge Stun				(Warrior)
+					[5211] = { dur = 1.6 },				-- Bash						(Druid)
+					[9005] = { dur = 1.6 },				-- Pounce					(Druid)		
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)		
+					--[20549] = { dur = 1.5 }, 				-- War Stomp 				(Tauren)	
+					[20685] = { dur = 3 },				-- Storm Bolt	 			(Unknown)				-- FIX ME: Is it useable?	
+					[56] = { dur = 3 },					-- Stun 					(Weapon proc)	
+					-- Disoriented
+					[19503] = { dur = 3 }, 				-- Scatter Shot 			(Hunter)		 				
+					-- Feared 
+					[5246] = { dur = 4.5 }, 			-- Intimidating Shout		(Warrior)
+				},
+				BlessingofFreedom = {
+					[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
+					[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
+					[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
+					[45334] = { dur = 2 },				-- Feral Charge Effect		(Druid)	New Cata spell ID, KROKS
+					[19185] = { dur = 2 },				-- Entrapment				(Hunter)
+					[13809] = { dur = 0 },				-- Frost Trap				(Hunter)
+					[25999] = { dur = 2 },				-- Boar Charge				(Hunter's pet)	
+				},
+				BlessingofSacrifice = {
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)	
+				},
+				Vanish = {
+					[22519] = {}, 						-- Ice Nova 				(Mage)
+					[122] = {}, 						-- Frost Nova 				(Mage)
+					[339] = {}, 						-- Entangling Roots 		(Druid)
+				},
+			},
+		}
+	elseif Action.BuildToC >= 40000 then
+		-- CATA
+		Factory[4].Heal = StdUi:tGenerateMinMax({
+			[GameLocale] = {	
+				ISINTERRUPT = true,
+				-- Priest
+				[2050] = "Lesser Heal",
+				[2060] = "Greater Heal",
+				[596] = "Prayer of Healing",
+				-- Druid
+				[740] = "Tranquility",
+				[8936] = "Regrowth",
+				-- Shaman
+				[1064] = "Chain Heal",
+				[331] = "Healing Wave",
+				[8004] = "Lesser Healing Wave",
+				-- Paladin
+				[19750] = "Flash of Light",
+				[635] = "Holy Light",
+			},			
+		}, 43, 70, math_random(87, 95), true)
+		
+		Factory[4].PvP = StdUi:tGenerateMinMax({
+			[GameLocale] = {
+				ISINTERRUPT = true,
+				-- Shaman 
+				[2645] = "Ghost Wolf",
+				-- Mage 
+				[118] = "Pollymorph",
+				-- Priest 
+				[605] = "Mind Control",
+				[9484] = "Shackle Undead",
+				[8129] = "Mana Burn",
+				-- Hunter 
+				[982] = "Revive pet",
+				[1513] = "Scare Beast",
+				-- Warlock 				
+				[1122] = "Inferno",
+				[5782] = "Fear",
+				[5484] = "Howl of Terror",
+				[710] = "Banish",
+				-- Druid 
+				[20484] = "Rebirth",
+				[339] = "Entangling Roots",
+				[2637] = "Hibernate",
+				-- Rogue 
+				[2823] = "Deadly Poison",
+				-- Paladin 	
+				-- Hunter 
+				[19386] = "Wyvern Sting",
+			}, 
+		}, 34, 58, 37)
+		
+		GlobalFactory[5] = {		
+			PvE = {
+				BlackList = {},			
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+					-- Dominate Mind
+					[15859] = {},		-- FIX ME: Is a buff?
+					-- Cause Insanity
+					[12888] = {},		-- FIX ME: Is a buff?
+				},
+				PurgeHigh = {		
+					-- Molten Core: Deaden Magic
+					[19714] = {},
+				},
+				PurgeLow = {
+				},
+				Poison = {    
+					-- Onyxia: Brood Affliction: Green
+					[23169] = {},
+					-- Aspect of Venoxis
+					[24688] = { dur = 1.5 },
+					-- Atal'ai Poison
+					[18949] = { dur = 1.5 },
+					-- Baneful Poison
+					[15475] = {},
+					-- Barbed Sting
+					[14534] = {},
+					-- Bloodpetal Poison
+					[14110] = {},
+					-- Bottle of Poison
+					[22335] = {},
+					-- Brood Affliction: Green
+					[23169] = {},
+					-- Corrosive Poison 
+					[13526] = {},
+					-- Corrosive Venom Spit
+					[20629] = { dur = 1.5 },
+					-- Creeper Venom
+					[14532] = {},
+					-- Deadly Leech Poison
+					[3388] = {},
+					-- Deadly Poison
+					[13582] = {},
+					-- Enervate
+					[22661] = {},
+					-- Entropic Sting
+					[23260] = {},
+					-- Festering Bites
+					[16460] = {},
+					-- Larva Goo
+					[21069] = {},
+					-- Lethal Toxin
+					[8256] = {},
+					-- Maggot Goo
+					[17197] = {},
+					-- Abomination Spit
+					[25262] = {},
+					-- Minor Scorpion Venom Effect
+					[5105] = {},
+					-- Poisonous Spit
+					[4286] = {},
+					-- Slow Poison
+					[3332] = {},
+					-- Slime Bolt
+					[28311] = {},
+					-- Seeping Willow
+					[17196] = {},
+					-- Paralyzing Poison
+					[3609] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				},
+				Disease = {
+					-- Rabies
+					[3150] = {},
+					-- Fevered Fatigue
+					[8139] = {},
+					-- Silithid Pox
+					[8137] = {},
+					-- Wandering Plague
+					[3439] = {},
+					-- Spirit Decay
+					[8016] = {},
+					-- Tetanus
+					[8014] = {},
+					-- Contagion of Rot
+					[7102] = {},
+					-- Volatile Infection
+					[3584] = {},
+					-- Mirkfallon Fungus
+					[8138] = {},
+					-- Infected Wound
+					[3427] = {},
+					-- Noxious Catalyst
+					[5413] = {},
+					-- Corrupted Agility
+					[6817] = {},
+					-- Irradiated
+					[9775] = {},
+					-- Infected Spine
+					[12245] = {},
+					-- Corrupted Stamina
+					[6819] = {},
+					-- Decayed Strength
+					[6951] = {},
+					-- Decayed Agility
+					[7901] = {},
+					-- Infected Bite
+					[16128] = {},
+					-- Plague Cloud
+					[3256] = {},
+					-- Plague Mind
+					[3429] = {},
+					-- Magenta Cap Sickness
+					[10136] = {},
+					-- Gift of Arthas
+					[11374] = {},
+					-- Festering Rash
+					[15848] = {},
+					-- Dark Plague
+					[18270] = {},
+					-- Fevered Plague
+					[8600] = {},
+					-- Rabid Maw
+					[4316] = {},
+					-- Brood Affliction: Red
+					[23155] = {},
+					-- Blight
+					[9796] = {},
+					-- Slime Dysentery
+					[16461] = {},
+					-- Creeping Mold
+					[18289] = {},
+					-- Weakening Disease
+					[18633] = {},
+					-- Putrid Breath
+					[21062] = {},
+					-- Dredge Sickness
+					[14535] = {},
+					-- Putrid Bite
+					[30113] = {},
+					-- Putrid Enzyme
+					[14539] = {},			
+					-- Black Rot
+					[16448] = {},
+					-- Cadaver Worms
+					[16143] = {},
+					-- Ghoul Plague
+					[16458] = {},
+					-- Putrid Stench
+					[12946] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				}, 
+				Curse = {	
+					-- Molten Core: Lucifron's Curse
+					[19703] = {},
+					-- Molten Core: Gehennas' Curse 
+					-- Note: Tank should be prioritized 
+					[19716] = {},
+					-- Shazzrah's Curse
+					-- Note: Tank should be prioritized 
+					[19713] = {},
+					-- Shadowfang Keep: Veil of Shadow
+					[7068] = { dur = 1.5 },
+					-- Curse of Thorns
+					[6909] = {},
+					-- Wracking Pains
+					[13619] = {},
+					-- Curse of Stalvan
+					[13524] = {},
+					-- Curse of Blood
+					[16098] = {},
+					-- Curse of the Plague Rat
+					[17738] = {},
+					-- Discombobulate
+					[4060] = {},
+					-- Hex of Jammal'an
+					[12480] = {},
+					-- Shrink
+					[24054] = {},
+					-- Curse of the Firebrand
+					[16071] = {},
+					-- Enfeeble
+					[11963] = {},
+					-- Piercing Shadow
+					[16429] = {},
+					-- Rage of Thule
+					[3387] = {},
+					-- Mark of Kazzak
+					[21056] = {},
+					-- Curse of the Dreadmaul
+					[11960] = {},
+					-- Banshee Curse
+					[17105] = {},
+					-- Corrupted Fear
+					[21330] = {},
+					-- Curse of Impotence
+					[22371] = {},
+					-- Delusions of Jin'do
+					[24306] = {},
+					-- Haunting Phantoms				-- FIX ME: Does it need here ? (Naxxramas)
+					[16336] = {},
+					-- Tainted Mind
+					[16567] = {},
+					-- Ancient Hysteria
+					[19372] = {},
+					-- Breath of Sargeras
+					[28342] = {},
+					-- Curse of the Elemental Lord
+					[26977] = {},
+					-- Curse of Mending
+					[15730] = {},
+					-- Curse of the Darkmaster
+					[18702] = {},
+					-- Arugal's Curse
+					[7621] = {},
+				},
+				Magic = {	
+					-- Molten Core: Ignite Mana
+					[19659] = {},
+					-- Molten Core: Impending Doom
+					[19702] = { dur = 1.5 },
+					-- Molten Core: Panic
+					[19408] = {},			
+					-- Molten Core: Magma Splash
+					[13880] = { dur = 1.5 },
+					-- Molten Core: Ancient Despair
+					[19369] = { dur = 1.5 },
+					-- Molten Core: Soul Burn
+					[19393] = { dur = 1.5 },
+					-- Onyxia: Greater Polymorph
+					[22274] = {},
+					-- Onyxia: Wild Polymorph
+					[23603] = {},
+					-- Scarlet Monastery Dungeon: Terrify
+					[7399] = {},
+					-- Dominate Mind
+					[20740] = {},
+					-- Immolate
+					[12742] = { dur = 2 },
+					-- Shadow Word: Pain 				-- FIX ME: Does it needs in PvE (?)
+					[23952] = { dur = 2 },
+					-- Misc: Reckless Charge
+					[13327] = { dur = 1 },
+					-- Misc: Hex 
+					[17172] = {},
+					-- Polymorph Backfire (Azshara)
+					[28406] = {},	
+					-- Polymorph: Chicken
+					[228] = {},
+					-- Chains of Ice
+					[113] = { dur = 12 },
+					-- Grasping Vines
+					[8142] = { dur = 4 },
+					-- Naralex's Nightmare
+					[7967] = {},
+					-- Thundercrack
+					[8150] = { dur = 1 },
+					-- Screams of the Past
+					[7074] = { dur = 1 },
+					-- Smoke Bomb
+					[7964] = { dur = 1 },
+					-- Ice Blast
+					[11264] = { dur = 6 },
+					-- Pacify
+					[10730] = {},
+					-- Sonic Burst
+					[8281] = { dur = 0.5 },
+					-- Enveloping Winds
+					[6728] = { dur = 1 },
+					-- Petrify
+					[11020] = { dur = 1 },
+					-- Freeze Solid
+					[11836] = { dur = 1 },
+					-- Deep Slumber
+					[12890] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Crystallize
+					[16104] = { dur = 1, LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Enchanting Lullaby
+					[16798] = { dur = 1 },
+					-- Burning Winds
+					[17293] = { dur = 1 },
+					-- Banshee Shriek
+					[16838] = { dur = 1 },
+				}, 
+				Enrage = {
+				},
+				Frenzy = {
+					-- Frenzy 
+					[19451] = { dur = 1.5 },
+				},
+				BlessingofProtection = {
+					[18431] = { dur = 2.6 }, -- Bellowing Roar (Onyxia fear)
+					[21869] = { dur = 6 },   -- Repulsive Gaze
+					[5134] = { dur = 8 },	 -- Flash Bomb
+				},
+				BlessingofFreedom = {
+					[8312] = { dur = 2 },
+					[8346] = { dur = 2 },
+					[13099] = { dur = 2 },
+					[19636] = { dur = 2 },
+					[23414] = { dur = 2 },
+					[6533] = { dur = 2 },
+					[11820] = { dur = 2 },
+					[8377] = { dur = 2 },
+					[113] = { dur = 2 },
+					[8142] = { dur = 2 },
+					[7295] = { dur = 2 },
+					[11264] = { dur = 2 },
+					[12252] = { dur = 2 },
+					[745] = { dur = 2 },
+					[15474] = { dur = 2 },
+					[14030] = { dur = 2 },
+					[19306] = { dur = 2 },
+					[4962] = { dur = 2 },
+				},
+				BlessingofSacrifice = {
+				},
+				Vanish = {
+				},
+			},
+			PvP = {
+				BlackList = {},
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+				},
+				PurgeHigh = {
+					-- Paladin: Blessing of Protection
+					[1022] = { dur = 1 },
+					-- Paladin: Divine Favor 
+					[31842] = { dur = 0 }, -- New Cata ID, KROKS
+					-- Priest: Power Infusion
+					[10060] = { dur = 4 },
+					-- Mage: Combustion
+					[11129] = { dur = 4 },
+					-- Mage: Arcane Power
+					[12042] = { dur = 4 },
+					-- Druid | Shaman: Nature's Swiftness
+					[16188] = { dur = 1.5 },
+					-- Shaman: Elemental Mastery
+					[16166] = { dur = 1.5 },
+					-- Warlock: Fel Domination
+					[18708] = { dur = 0 },
+					-- Warlock: Amplify Curse
+					[18288] = { dur = 10 },
+				},
+				PurgeLow = {
+					-- Paladin: Blessing of Freedom  
+					[1044] = { dur = 1.5 },
+					-- Druid: Rejuvenation
+					[774] = { dur = 0, onlyBear = true },
+					-- Druid: Regrow
+					[8936] = { dur = 0, onlyBear = true },
+					-- Druid: Mark of the Wild
+					[1126] = { dur = 0, onlyBear = true },
+				},
+				Poison = {
+					-- Hunter: Wyvern Sting
+					[19386] = { dur = 0 },
+					-- Hunter: Serpent Sting
+					[1978] = { dur = 3 },
+					-- Rogue: Slow Poison
+					[3332] = {},
+					-- Rogue: Blind
+					[2094] = { dur = 2.5 },
+				},
+				Disease = {
+				},
+				Curse = {
+					-- Voodoo Hex   			(Shaman) 				-- I AM NOT SURE
+					[8277] = {}, 			
+					-- Warlock: Curse of Tongues
+					[1714] = { dur = 3 },
+					-- Warlock: Curse of Weakness
+					[702] = { dur = 3 },
+					-- Warlock: Curse of Doom
+					[603] = {},
+					-- Warlock: Curse of the Elements
+					[1490] = {},
+					-- Corrupted Fear (set bonus)
+					[21330] = {},
+				},
+				Magic = {			
+					-- Paladin: Repentance
+					[20066] = { dur = 1.5 },
+					-- Paladin: Hammer of Justice
+					[853] = { dur = 0 },
+					-- Hunter: Freezing Trap
+					[1499] = { dur = 1 },
+					-- Hunter: Entrapment
+					[19185] = { dur = 1.5 },
+					-- Hunter: Trap 
+					[8312] = { dur = 1 },
+					-- Hunter: Hunter's Mark
+					[1130] = {}, -- New Cata spell ID, KROKS
+					-- Rogue: Kick - Silenced
+					[18425] = { dur = 1 },
+					-- Priest: Mind Control 
+					[605] = { dur = 0 },
+					-- Priest: Psychic Scream
+					[8122] = { dur = 1.5 },
+					-- Priest: Shackle Undead 
+					[9484] = { dur = 1 },
+					-- Priest: Silence
+					[15487] = { dur = 1 },
+					-- Mage: Polymorph 
+					[118] = { dur = 1.5 },
+					-- Mage: Polymorph: Sheep 
+					[851] = { dur = 1.5 },
+					-- Mage: Polymorph: Turtle 
+					[28271] = { dur = 1.5 },
+					-- Mage: Polymorph: Pig 
+					[28272] = { dur = 1.5 },
+					-- Mage: Frost Nova  
+					[122] = { dur = 1 },
+					-- Warlock: Banish 
+					[710] = {},				
+					-- Warlock: Fear 
+					[5782] = { dur = 1.5 },
+					-- Warlock: Seduction
+					[6358] = { dur = 1.5 },	
+					-- Warlock: Howl of Terror
+					[5484] = { dur = 1.5 },
+					-- Warlock: Death Coil
+					[6789] = { dur = 1 },
+					-- Warlock: Spell Lock (Felhunter)
+					[24259] = { dur = 1 },
+					-- Druid: Hibernate 
+					[2637] = { dur = 1.5 },				
+					-- Mage: Ice Nova 
+					[22519] = { dur = 1 },
+					-- Druid: Entangling Roots
+					[339] = { dur = 1 },					
+					-- Trinket: Tidal Charm
+					[835] = { dur = 1 },
+					-- Iron Grenade
+					[4068] = {},
+					-- Sleep (Green Whelp Armor chest)
+					[9159] = {},
+					-- Arcane Bomb
+					[19821] = {},
+					-- Silence (Silent Fang sword)
+					[18278] = {},
+					-- Highlord's Justice (Alliance Stormwind Boss - Highlord Bolvar Fordragon)
+					[20683] = {},
+					-- Crusader's Hammer (Horde Stratholme - Boss Grand Crusader Dathrohan)
+					[17286] = {},
+					-- Veil of Shadow (Horde Orgrimmar - Boss Vol'jin)
+					[17820] = {},
+					-- Glimpse of Madness (Dark Edge of Insanity axe)
+					[26108] = { dur = 1 },
+				},
+				Enrage = {
+					-- Berserker Rage
+					[18499] = { dur = 1 },
+					-- Enrage
+					[12880] = { dur = 1 },
+				},
+				Frenzy = {
+				},
+				BlessingofProtection = {
+					-- Disarm 
+					[676] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] }, 				-- Disarm 					(Warrior)
+					[14251] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Riposte					(Rogue)
+					[23365] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Dropped Weapon			(Unknown)
+					-- Stunned 
+					--[7922] = { dur = 1.5 }, 				-- Charge Stun				(Warrior)
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+					[20253] = { dur = 2.6 },			-- Intercept Stun 			(Warrior)
+					[5211] = { dur = 1.6 },				-- Bash						(Druid)
+					[9005] = { dur = 1.6 },				-- Pounce					(Druid)		
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)		
+					--[20549] = { dur = 1.5 }, 				-- War Stomp 				(Tauren)	
+					[20685] = { dur = 3 },				-- Storm Bolt	 			(Unknown)				-- FIX ME: Is it useable?	
+					[56] = { dur = 3 },					-- Stun 					(Weapon proc)	
+					-- Disoriented
+					[19503] = { dur = 3 }, 				-- Scatter Shot 			(Hunter)		 				
+					-- Feared 
+					[5246] = { dur = 4.5 }, 			-- Intimidating Shout		(Warrior)
+				},
+				BlessingofFreedom = {
+					[23694] = { dur = 2 },				-- Improved Hamstring		(Warrior)
+					[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
+					[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
+					[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
+					[45334] = { dur = 2 },				-- Feral Charge Effect		(Druid)	New Cata spell ID, KROKS
+					[19185] = { dur = 2 },				-- Entrapment				(Hunter)
+					[13809] = { dur = 0 },				-- Frost Trap				(Hunter)
+					[25999] = { dur = 2 },				-- Boar Charge				(Hunter's pet)	
+				},
+				BlessingofSacrifice = {
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)	
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+				},
+				Vanish = {
+					[22519] = {}, 						-- Ice Nova 				(Mage)
+					[122] = {}, 						-- Frost Nova 				(Mage)
+					[339] = {}, 						-- Entangling Roots 		(Druid)
+				},
+			},
+		}
+	elseif Action.BuildToC >= 30000 then
+		-- WOTLK
+		Factory[4].Heal = StdUi:tGenerateMinMax({
+			[GameLocale] = {	
+				ISINTERRUPT = true,
+				-- Priest
+				[2050] = "Lesser Heal",
+				[2060] = "Greater Heal",
+				[596] = "Prayer of Healing",
+				-- Druid
+				[740] = "Tranquility",
+				[8936] = "Regrowth",
+				-- Shaman
+				[1064] = "Chain Heal",
+				[331] = "Healing Wave",
+				[8004] = "Lesser Healing Wave",
+				-- Paladin
+				[19750] = "Flash of Light",
+				[635] = "Holy Light",
+			},			
+		}, 43, 70, math_random(87, 95), true)
+		
+		Factory[4].PvP = StdUi:tGenerateMinMax({
+			[GameLocale] = {
+				ISINTERRUPT = true,
+				-- Shaman 
+				[2645] = "Ghost Wolf",
+				-- Mage 
+				[118] = "Pollymorph",
+				-- Priest 
+				[605] = "Mind Control",
+				[9484] = "Shackle Undead",
+				[8129] = "Mana Burn",
+				-- Hunter 
+				[982] = "Revive pet",
+				[1513] = "Scare Beast",
+				-- Warlock 				
+				[1122] = "Inferno",
+				[5782] = "Fear",
+				[5484] = "Howl of Terror",
+				[710] = "Banish",
+				-- Druid 
+				[20484] = "Rebirth",
+				[339] = "Entangling Roots",
+				[2637] = "Hibernate",
+				-- Rogue 
+				[2823] = "Deadly Poison",
+				-- Paladin 	
+				-- Hunter 
+				[19386] = "Wyvern Sting",
+			}, 
+		}, 34, 58, 37)
+		
+		GlobalFactory[5] = {		
+			PvE = {
+				BlackList = {},			
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+					-- Dominate Mind
+					[15859] = {},		-- FIX ME: Is a buff?
+					-- Cause Insanity
+					[12888] = {},		-- FIX ME: Is a buff?
+				},
+				PurgeHigh = {		
+					-- Molten Core: Deaden Magic
+					[19714] = {},
+				},
+				PurgeLow = {
+				},
+				Poison = {    
+					-- Onyxia: Brood Affliction: Green
+					[23169] = {},
+					-- Aspect of Venoxis
+					[24688] = { dur = 1.5 },
+					-- Atal'ai Poison
+					[18949] = { dur = 1.5 },
+					-- Baneful Poison
+					[15475] = {},
+					-- Barbed Sting
+					[14534] = {},
+					-- Bloodpetal Poison
+					[14110] = {},
+					-- Bottle of Poison
+					[22335] = {},
+					-- Brood Affliction: Green
+					[23169] = {},
+					-- Corrosive Poison 
+					[13526] = {},
+					-- Corrosive Venom Spit
+					[20629] = { dur = 1.5 },
+					-- Creeper Venom
+					[14532] = {},
+					-- Deadly Leech Poison
+					[3388] = {},
+					-- Deadly Poison
+					[13582] = {},
+					-- Enervate
+					[22661] = {},
+					-- Entropic Sting
+					[23260] = {},
+					-- Festering Bites
+					[16460] = {},
+					-- Larva Goo
+					[21069] = {},
+					-- Lethal Toxin
+					[8256] = {},
+					-- Maggot Goo
+					[17197] = {},
+					-- Abomination Spit
+					[25262] = {},
+					-- Minor Scorpion Venom Effect
+					[5105] = {},
+					-- Poisonous Spit
+					[4286] = {},
+					-- Slow Poison
+					[3332] = {},
+					-- Slime Bolt
+					[28311] = {},
+					-- Seeping Willow
+					[17196] = {},
+					-- Paralyzing Poison
+					[3609] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				},
+				Disease = {
+					-- Rabies
+					[3150] = {},
+					-- Fevered Fatigue
+					[8139] = {},
+					-- Silithid Pox
+					[8137] = {},
+					-- Wandering Plague
+					[3439] = {},
+					-- Spirit Decay
+					[8016] = {},
+					-- Tetanus
+					[8014] = {},
+					-- Contagion of Rot
+					[7102] = {},
+					-- Volatile Infection
+					[3584] = {},
+					-- Mirkfallon Fungus
+					[8138] = {},
+					-- Infected Wound
+					[3427] = {},
+					-- Noxious Catalyst
+					[5413] = {},
+					-- Corrupted Agility
+					[6817] = {},
+					-- Irradiated
+					[9775] = {},
+					-- Infected Spine
+					[12245] = {},
+					-- Corrupted Stamina
+					[6819] = {},
+					-- Decayed Strength
+					[6951] = {},
+					-- Decayed Agility
+					[7901] = {},
+					-- Infected Bite
+					[16128] = {},
+					-- Plague Cloud
+					[3256] = {},
+					-- Plague Mind
+					[3429] = {},
+					-- Magenta Cap Sickness
+					[10136] = {},
+					-- Gift of Arthas
+					[11374] = {},
+					-- Festering Rash
+					[15848] = {},
+					-- Dark Plague
+					[18270] = {},
+					-- Fevered Plague
+					[8600] = {},
+					-- Rabid Maw
+					[4316] = {},
+					-- Brood Affliction: Red
+					[23155] = {},
+					-- Blight
+					[9796] = {},
+					-- Slime Dysentery
+					[16461] = {},
+					-- Creeping Mold
+					[18289] = {},
+					-- Weakening Disease
+					[18633] = {},
+					-- Putrid Breath
+					[21062] = {},
+					-- Dredge Sickness
+					[14535] = {},
+					-- Putrid Bite
+					[30113] = {},
+					-- Putrid Enzyme
+					[14539] = {},			
+					-- Black Rot
+					[16448] = {},
+					-- Cadaver Worms
+					[16143] = {},
+					-- Ghoul Plague
+					[16458] = {},
+					-- Putrid Stench
+					[12946] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				}, 
+				Curse = {	
+					-- Molten Core: Lucifron's Curse
+					[19703] = {},
+					-- Molten Core: Gehennas' Curse 
+					-- Note: Tank should be prioritized 
+					[19716] = {},
+					-- Shazzrah's Curse
+					-- Note: Tank should be prioritized 
+					[19713] = {},
+					-- Shadowfang Keep: Veil of Shadow
+					[7068] = { dur = 1.5 },
+					-- Curse of Thorns
+					[6909] = {},
+					-- Wracking Pains
+					[13619] = {},
+					-- Curse of Stalvan
+					[13524] = {},
+					-- Curse of Blood
+					[16098] = {},
+					-- Curse of the Plague Rat
+					[17738] = {},
+					-- Discombobulate
+					[4060] = {},
+					-- Hex of Jammal'an
+					[12480] = {},
+					-- Shrink
+					[24054] = {},
+					-- Curse of the Firebrand
+					[16071] = {},
+					-- Enfeeble
+					[11963] = {},
+					-- Piercing Shadow
+					[16429] = {},
+					-- Rage of Thule
+					[3387] = {},
+					-- Mark of Kazzak
+					[21056] = {},
+					-- Curse of the Dreadmaul
+					[11960] = {},
+					-- Banshee Curse
+					[17105] = {},
+					-- Corrupted Fear
+					[21330] = {},
+					-- Curse of Impotence
+					[22371] = {},
+					-- Delusions of Jin'do
+					[24306] = {},
+					-- Haunting Phantoms				-- FIX ME: Does it need here ? (Naxxramas)
+					[16336] = {},
+					-- Tainted Mind
+					[16567] = {},
+					-- Ancient Hysteria
+					[19372] = {},
+					-- Breath of Sargeras
+					[28342] = {},
+					-- Curse of the Elemental Lord
+					[26977] = {},
+					-- Curse of Mending
+					[15730] = {},
+					-- Curse of the Darkmaster
+					[18702] = {},
+					-- Arugal's Curse
+					[7621] = {},
+				},
+				Magic = {	
+					-- Molten Core: Ignite Mana
+					[19659] = {},
+					-- Molten Core: Impending Doom
+					[19702] = { dur = 1.5 },
+					-- Molten Core: Panic
+					[19408] = {},			
+					-- Molten Core: Magma Splash
+					[13880] = { dur = 1.5 },
+					-- Molten Core: Ancient Despair
+					[19369] = { dur = 1.5 },
+					-- Molten Core: Soul Burn
+					[19393] = { dur = 1.5 },
+					-- Onyxia: Greater Polymorph
+					[22274] = {},
+					-- Onyxia: Wild Polymorph
+					[23603] = {},
+					-- Scarlet Monastery Dungeon: Terrify
+					[7399] = {},
+					-- Dominate Mind
+					[20740] = {},
+					-- Immolate
+					[12742] = { dur = 2 },
+					-- Shadow Word: Pain 				-- FIX ME: Does it needs in PvE (?)
+					[23952] = { dur = 2 },
+					-- Misc: Reckless Charge
+					[13327] = { dur = 1 },
+					-- Misc: Hex 
+					[17172] = {},
+					-- Polymorph Backfire (Azshara)
+					[28406] = {},	
+					-- Polymorph: Chicken
+					[228] = {},
+					-- Chains of Ice
+					[113] = { dur = 12 },
+					-- Grasping Vines
+					[8142] = { dur = 4 },
+					-- Naralex's Nightmare
+					[7967] = {},
+					-- Thundercrack
+					[8150] = { dur = 1 },
+					-- Screams of the Past
+					[7074] = { dur = 1 },
+					-- Smoke Bomb
+					[7964] = { dur = 1 },
+					-- Ice Blast
+					[11264] = { dur = 6 },
+					-- Pacify
+					[10730] = {},
+					-- Sonic Burst
+					[8281] = { dur = 0.5 },
+					-- Enveloping Winds
+					[6728] = { dur = 1 },
+					-- Petrify
+					[11020] = { dur = 1 },
+					-- Freeze Solid
+					[11836] = { dur = 1 },
+					-- Deep Slumber
+					[12890] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Crystallize
+					[16104] = { dur = 1, LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Enchanting Lullaby
+					[16798] = { dur = 1 },
+					-- Burning Winds
+					[17293] = { dur = 1 },
+					-- Banshee Shriek
+					[16838] = { dur = 1 },
+				}, 
+				Enrage = {
+				},
+				Frenzy = {
+					-- Frenzy 
+					[19451] = { dur = 1.5 },
+				},
+				BlessingofProtection = {
+					[18431] = { dur = 2.6 }, -- Bellowing Roar (Onyxia fear)
+					[21869] = { dur = 6 },   -- Repulsive Gaze
+					[5134] = { dur = 8 },	 -- Flash Bomb
+				},
+				BlessingofFreedom = {
+					[8312] = { dur = 2 },
+					[8346] = { dur = 2 },
+					[13099] = { dur = 2 },
+					[19636] = { dur = 2 },
+					[23414] = { dur = 2 },
+					[6533] = { dur = 2 },
+					[11820] = { dur = 2 },
+					[8377] = { dur = 2 },
+					[113] = { dur = 2 },
+					[8142] = { dur = 2 },
+					[7295] = { dur = 2 },
+					[11264] = { dur = 2 },
+					[12252] = { dur = 2 },
+					[745] = { dur = 2 },
+					[15474] = { dur = 2 },
+					[14030] = { dur = 2 },
+					[19306] = { dur = 2 },
+					[4962] = { dur = 2 },
+				},
+				BlessingofSacrifice = {
+				},
+				Vanish = {
+				},
+			},
+			PvP = {
+				BlackList = {},
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+				},
+				PurgeHigh = {
+					-- Paladin: Blessing of Protection
+					[1022] = { dur = 1 },
+					-- Paladin: Divine Favor 
+					[20216] = { dur = 0 },
+					-- Priest: Power Infusion
+					[10060] = { dur = 4 },
+					-- Mage: Combustion
+					[11129] = { dur = 4 },
+					-- Mage: Arcane Power
+					[12042] = { dur = 4 },
+					-- Druid | Shaman: Nature's Swiftness
+					[16188] = { dur = 1.5 },
+					-- Shaman: Elemental Mastery
+					[16166] = { dur = 1.5 },
+					-- Warlock: Fel Domination
+					[18708] = { dur = 0 },
+					-- Warlock: Amplify Curse
+					[18288] = { dur = 10 },
+				},
+				PurgeLow = {
+					-- Paladin: Blessing of Freedom  
+					[1044] = { dur = 1.5 },
+					-- Druid: Rejuvenation
+					[774] = { dur = 0, onlyBear = true },
+					-- Druid: Regrow
+					[8936] = { dur = 0, onlyBear = true },
+					-- Druid: Mark of the Wild
+					[1126] = { dur = 0, onlyBear = true },
+				},
+				Poison = {
+					-- Hunter: Wyvern Sting
+					[19386] = { dur = 0 },
+					-- Hunter: Serpent Sting
+					[1978] = { dur = 3 },
+					-- Hunter: Viper Sting
+					[3034] = { dur = 2 },
+					-- Hunter: Scorpid Sting
+					[3043] = { dur = 1.5 },
+					-- Rogue: Slow Poison
+					[3332] = {},
+					-- Rogue: Blind
+					[2094] = { dur = 2.5 },
+				},
+				Disease = {
+				},
+				Curse = {
+					-- Voodoo Hex   			(Shaman) 				-- I AM NOT SURE
+					[8277] = {}, 			
+					-- Warlock: Curse of Tongues
+					[1714] = { dur = 3 },
+					-- Warlock: Curse of Weakness
+					[702] = { dur = 3 },
+					-- Warlock: Curse of Doom
+					[603] = {},
+					-- Warlock: Curse of the Elements
+					[1490] = {},
+					-- Corrupted Fear (set bonus)
+					[21330] = {},
+				},
+				Magic = {			
+					-- Paladin: Repentance
+					[20066] = { dur = 1.5 },
+					-- Paladin: Hammer of Justice
+					[853] = { dur = 0 },
+					-- Hunter: Freezing Trap
+					[1499] = { dur = 1 },
+					-- Hunter: Entrapment
+					[19185] = { dur = 1.5 },
+					-- Hunter: Hunter's Mark
+					[14325] = {},
+					-- Hunter: Trap 
+					[8312] = { dur = 1 },
+					-- Rogue: Kick - Silenced
+					[18425] = { dur = 1 },
+					-- Priest: Mind Control 
+					[605] = { dur = 0 },
+					-- Priest: Psychic Scream
+					[8122] = { dur = 1.5 },
+					-- Priest: Shackle Undead 
+					[9484] = { dur = 1 },
+					-- Priest: Silence
+					[15487] = { dur = 1 },
+					-- Mage: Polymorph 
+					[118] = { dur = 1.5 },
+					-- Mage: Polymorph: Sheep 
+					[851] = { dur = 1.5 },
+					-- Mage: Polymorph: Turtle 
+					[28271] = { dur = 1.5 },
+					-- Mage: Polymorph: Pig 
+					[28272] = { dur = 1.5 },
+					-- Mage: Frost Nova  
+					[122] = { dur = 1 },
+					-- Warlock: Banish 
+					[710] = {},				
+					-- Warlock: Fear 
+					[5782] = { dur = 1.5 },
+					-- Warlock: Seduction
+					[6358] = { dur = 1.5 },	
+					-- Warlock: Howl of Terror
+					[5484] = { dur = 1.5 },
+					-- Warlock: Death Coil
+					[6789] = { dur = 1 },
+					-- Warlock: Spell Lock (Felhunter)
+					[24259] = { dur = 1 },
+					-- Druid: Hibernate 
+					[2637] = { dur = 1.5 },				
+					-- Mage: Ice Nova 
+					[22519] = { dur = 1 },
+					-- Druid: Entangling Roots
+					[339] = { dur = 1 },					
+					-- Trinket: Tidal Charm
+					[835] = { dur = 1 },
+					-- Iron Grenade
+					[4068] = {},
+					-- Sleep (Green Whelp Armor chest)
+					[9159] = {},
+					-- Arcane Bomb
+					[19821] = {},
+					-- Silence (Silent Fang sword)
+					[18278] = {},
+					-- Highlord's Justice (Alliance Stormwind Boss - Highlord Bolvar Fordragon)
+					[20683] = {},
+					-- Crusader's Hammer (Horde Stratholme - Boss Grand Crusader Dathrohan)
+					[17286] = {},
+					-- Veil of Shadow (Horde Orgrimmar - Boss Vol'jin)
+					[17820] = {},
+					-- Glimpse of Madness (Dark Edge of Insanity axe)
+					[26108] = { dur = 1 },
+				},
+				Enrage = {
+					-- Berserker Rage
+					[18499] = { dur = 1 },
+					-- Enrage
+					[12880] = { dur = 1 },
+				},
+				Frenzy = {
+				},
+				BlessingofProtection = {
+					-- Disarm 
+					[676] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] }, 				-- Disarm 					(Warrior)
+					[14251] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Riposte					(Rogue)
+					[23365] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Dropped Weapon			(Unknown)
+					-- Stunned 
+					--[7922] = { dur = 1.5 }, 				-- Charge Stun				(Warrior)
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+					[20253] = { dur = 2.6 },			-- Intercept Stun 			(Warrior)
+					[5530] = { dur = 2.6 },				-- Mace Stun Effect			(Warrior)
+					[12798] = { dur = 2.6 },			-- Revenge Stun				(Warrior)
+					[5211] = { dur = 1.6 },				-- Bash						(Druid)
+					[9005] = { dur = 1.6 },				-- Pounce					(Druid)		
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)		
+					--[20549] = { dur = 1.5 }, 				-- War Stomp 				(Tauren)	
+					[20685] = { dur = 3 },				-- Storm Bolt	 			(Unknown)				-- FIX ME: Is it useable?		
+					[16922] = { dur = 3 },				-- Starfire Stun			(Unknown)		
+					[56] = { dur = 3 },					-- Stun 					(Weapon proc)	
+					-- Disoriented
+					[19503] = { dur = 3 }, 				-- Scatter Shot 			(Hunter)		 				
+					-- Feared 
+					[5246] = { dur = 4.5 }, 			-- Intimidating Shout		(Warrior)
+				},
+				BlessingofFreedom = {
+					[23694] = { dur = 2 },				-- Improved Hamstring		(Warrior)
+					[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
+					[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
+					[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
+					[19675] = { dur = 2 },				-- Feral Charge Effect		(Druid)
+					[19185] = { dur = 2 },				-- Entrapment				(Hunter)
+					[13809] = { dur = 0 },				-- Frost Trap				(Hunter)
+					[25999] = { dur = 2 },				-- Boar Charge				(Hunter's pet)	
+				},
+				BlessingofSacrifice = {
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)	
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+				},
+				Vanish = {
+					[22519] = {}, 						-- Ice Nova 				(Mage)
+					[122] = {}, 						-- Frost Nova 				(Mage)
+					[339] = {}, 						-- Entangling Roots 		(Druid)
+				},
+			},
+		}
+	elseif Action.BuildToC >= 20000 then
+		-- TBC
+		Factory[4].Heal = StdUi:tGenerateMinMax({
+			[GameLocale] = {	
+				ISINTERRUPT = true,
+				-- Priest
+				[2050] = "Lesser Heal",
+				[2060] = "Greater Heal",
+				[6064] = "Heal",
+				[596] = "Prayer of Healing",
+				-- Druid
+				[740] = "Tranquility",
+				[8936] = "Regrowth",
+				[25297] = "Healing Touch",
+				-- Shaman
+				[1064] = "Chain Heal",
+				[331] = "Healing Wave",
+				[8004] = "Lesser Healing Wave",
+				-- Paladin
+				[19750] = "Flash of Light",
+				[635] = "Holy Light",
+			},			
+		}, 43, 70, math_random(87, 95), true)
+		
+		Factory[4].PvP = StdUi:tGenerateMinMax({
+			[GameLocale] = {
+				ISINTERRUPT = true,
+				-- Shaman 
+				[2645] = "Ghost Wolf",
+				-- Mage 
+				[118] = "Pollymorph",
+				-- Priest 
+				[605] = "Mind Control",
+				[9484] = "Shackle Undead",
+				[8129] = "Mana Burn",
+				-- Hunter 
+				[982] = "Revive pet",
+				[1513] = "Scare Beast",
+				-- Warlock 				
+				[20757] = "Create Soulstone (Major)",
+				[693] = "Create Soulstone (Minor)",
+				[11730] = "Create Healthstone (Major)",
+				[11729] = "Create Healthstone (Greater)",
+				[5699] = "Create Healthstone",
+				[1122] = "Inferno",
+				[5782] = "Fear",
+				[5484] = "Howl of Terror",
+				[20755] = "Create Soulstone",	
+				[710] = "Banish",
+				-- Druid 
+				[20484] = "Rebirth",
+				[339] = "Entangling Roots",
+				[2637] = "Hibernate",
+				-- Rogue 
+				[8681] = "Instant Poison",
+				[3420] = "Crippling Poison",
+				[13220] = "Wound Poison",
+				[5763] = "Mind-numbing Poison",
+				[2823] = "Deadly Poison",
+				-- Paladin 
+				[2878] = "Turn Undead",		
+				-- Hunter 
+				[19386] = "Wyvern Sting",
+			}, 
+		}, 34, 58, 37)
+	
+		GlobalFactory[5] = {		
+			PvE = {
+				BlackList = {},			
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+					-- Dominate Mind
+					[15859] = {},		-- FIX ME: Is a buff?
+					-- Cause Insanity
+					[12888] = {},		-- FIX ME: Is a buff?
+				},
+				PurgeHigh = {		
+					-- Molten Core: Deaden Magic
+					[19714] = {},
+				},
+				PurgeLow = {
+				},
+				Poison = {    
+					-- Onyxia: Brood Affliction: Green
+					[23169] = {},
+					-- Aspect of Venoxis
+					[24688] = { dur = 1.5 },
+					-- Atal'ai Poison
+					[18949] = { dur = 1.5 },
+					-- Baneful Poison
+					[15475] = {},
+					-- Barbed Sting
+					[14534] = {},
+					-- Bloodpetal Poison
+					[14110] = {},
+					-- Bottle of Poison
+					[22335] = {},
+					-- Brood Affliction: Green
+					[23169] = {},
+					-- Corrosive Poison 
+					[13526] = {},
+					-- Corrosive Venom Spit
+					[20629] = { dur = 1.5 },
+					-- Creeper Venom
+					[14532] = {},
+					-- Deadly Leech Poison
+					[3388] = {},
+					-- Deadly Poison
+					[13582] = {},
+					-- Enervate
+					[22661] = {},
+					-- Entropic Sting
+					[23260] = {},
+					-- Festering Bites
+					[16460] = {},
+					-- Larva Goo
+					[21069] = {},
+					-- Lethal Toxin
+					[8256] = {},
+					-- Maggot Goo
+					[17197] = {},
+					-- Abomination Spit
+					[25262] = {},
+					-- Minor Scorpion Venom Effect
+					[5105] = {},
+					-- Poisonous Spit
+					[4286] = {},
+					-- Slow Poison
+					[3332] = {},
+					-- Slime Bolt
+					[28311] = {},
+					-- Seeping Willow
+					[17196] = {},
+					-- Paralyzing Poison
+					[3609] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				},
+				Disease = {
+					-- Rabies
+					[3150] = {},
+					-- Fevered Fatigue
+					[8139] = {},
+					-- Silithid Pox
+					[8137] = {},
+					-- Wandering Plague
+					[3439] = {},
+					-- Spirit Decay
+					[8016] = {},
+					-- Tetanus
+					[8014] = {},
+					-- Contagion of Rot
+					[7102] = {},
+					-- Volatile Infection
+					[3584] = {},
+					-- Mirkfallon Fungus
+					[8138] = {},
+					-- Infected Wound
+					[3427] = {},
+					-- Noxious Catalyst
+					[5413] = {},
+					-- Corrupted Agility
+					[6817] = {},
+					-- Irradiated
+					[9775] = {},
+					-- Infected Spine
+					[12245] = {},
+					-- Corrupted Stamina
+					[6819] = {},
+					-- Decayed Strength
+					[6951] = {},
+					-- Decayed Agility
+					[7901] = {},
+					-- Infected Bite
+					[16128] = {},
+					-- Plague Cloud
+					[3256] = {},
+					-- Plague Mind
+					[3429] = {},
+					-- Magenta Cap Sickness
+					[10136] = {},
+					-- Gift of Arthas
+					[11374] = {},
+					-- Festering Rash
+					[15848] = {},
+					-- Dark Plague
+					[18270] = {},
+					-- Fevered Plague
+					[8600] = {},
+					-- Rabid Maw
+					[4316] = {},
+					-- Brood Affliction: Red
+					[23155] = {},
+					-- Blight
+					[9796] = {},
+					-- Slime Dysentery
+					[16461] = {},
+					-- Creeping Mold
+					[18289] = {},
+					-- Weakening Disease
+					[18633] = {},
+					-- Putrid Breath
+					[21062] = {},
+					-- Dredge Sickness
+					[14535] = {},
+					-- Putrid Bite
+					[30113] = {},
+					-- Putrid Enzyme
+					[14539] = {},			
+					-- Black Rot
+					[16448] = {},
+					-- Cadaver Worms
+					[16143] = {},
+					-- Ghoul Plague
+					[16458] = {},
+					-- Putrid Stench
+					[12946] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				}, 
+				Curse = {	
+					-- Molten Core: Lucifron's Curse
+					[19703] = {},
+					-- Molten Core: Gehennas' Curse 
+					-- Note: Tank should be prioritized 
+					[19716] = {},
+					-- Shazzrah's Curse
+					-- Note: Tank should be prioritized 
+					[19713] = {},
+					-- Shadowfang Keep: Veil of Shadow
+					[7068] = { dur = 1.5 },
+					-- Curse of Thorns
+					[6909] = {},
+					-- Wracking Pains
+					[13619] = {},
+					-- Curse of Stalvan
+					[13524] = {},
+					-- Curse of Blood
+					[16098] = {},
+					-- Curse of the Plague Rat
+					[17738] = {},
+					-- Discombobulate
+					[4060] = {},
+					-- Hex of Jammal'an
+					[12480] = {},
+					-- Shrink
+					[24054] = {},
+					-- Curse of the Firebrand
+					[16071] = {},
+					-- Enfeeble
+					[11963] = {},
+					-- Piercing Shadow
+					[16429] = {},
+					-- Rage of Thule
+					[3387] = {},
+					-- Mark of Kazzak
+					[21056] = {},
+					-- Curse of the Dreadmaul
+					[11960] = {},
+					-- Banshee Curse
+					[17105] = {},
+					-- Corrupted Fear
+					[21330] = {},
+					-- Curse of Impotence
+					[22371] = {},
+					-- Delusions of Jin'do
+					[24306] = {},
+					-- Haunting Phantoms				-- FIX ME: Does it need here ? (Naxxramas)
+					[16336] = {},
+					-- Tainted Mind
+					[16567] = {},
+					-- Ancient Hysteria
+					[19372] = {},
+					-- Breath of Sargeras
+					[28342] = {},
+					-- Curse of the Elemental Lord
+					[26977] = {},
+					-- Curse of Mending
+					[15730] = {},
+					-- Curse of the Darkmaster
+					[18702] = {},
+					-- Arugal's Curse
+					[7621] = {},
+				},
+				Magic = {	
+					-- Molten Core: Ignite Mana
+					[19659] = {},
+					-- Molten Core: Impending Doom
+					[19702] = { dur = 1.5 },
+					-- Molten Core: Panic
+					[19408] = {},			
+					-- Molten Core: Magma Splash
+					[13880] = { dur = 1.5 },
+					-- Molten Core: Ancient Despair
+					[19369] = { dur = 1.5 },
+					-- Molten Core: Soul Burn
+					[19393] = { dur = 1.5 },
+					-- Onyxia: Greater Polymorph
+					[22274] = {},
+					-- Onyxia: Wild Polymorph
+					[23603] = {},
+					-- Scarlet Monastery Dungeon: Terrify
+					[7399] = {},
+					-- Dominate Mind
+					[20740] = {},
+					-- Immolate
+					[12742] = { dur = 2 },
+					-- Shadow Word: Pain 				-- FIX ME: Does it needs in PvE (?)
+					[23952] = { dur = 2 },
+					-- Misc: Reckless Charge
+					[13327] = { dur = 1 },
+					-- Misc: Hex 
+					[17172] = {},
+					-- Polymorph Backfire (Azshara)
+					[28406] = {},	
+					-- Polymorph: Chicken
+					[228] = {},
+					-- Chains of Ice
+					[113] = { dur = 12 },
+					-- Grasping Vines
+					[8142] = { dur = 4 },
+					-- Naralex's Nightmare
+					[7967] = {},
+					-- Thundercrack
+					[8150] = { dur = 1 },
+					-- Screams of the Past
+					[7074] = { dur = 1 },
+					-- Smoke Bomb
+					[7964] = { dur = 1 },
+					-- Ice Blast
+					[11264] = { dur = 6 },
+					-- Pacify
+					[10730] = {},
+					-- Sonic Burst
+					[8281] = { dur = 0.5 },
+					-- Enveloping Winds
+					[6728] = { dur = 1 },
+					-- Petrify
+					[11020] = { dur = 1 },
+					-- Freeze Solid
+					[11836] = { dur = 1 },
+					-- Deep Slumber
+					[12890] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Crystallize
+					[16104] = { dur = 1, LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Enchanting Lullaby
+					[16798] = { dur = 1 },
+					-- Burning Winds
+					[17293] = { dur = 1 },
+					-- Banshee Shriek
+					[16838] = { dur = 1 },
+				}, 
+				Enrage = {
+				},
+				Frenzy = {
+					-- Frenzy 
+					[19451] = { dur = 1.5 },
+				},
+				BlessingofProtection = {
+					[18431] = { dur = 2.6 }, -- Bellowing Roar (Onyxia fear)
+					[21869] = { dur = 6 },   -- Repulsive Gaze
+					[5134] = { dur = 8 },	 -- Flash Bomb
+				},
+				BlessingofFreedom = {
+					[8312] = { dur = 2 },
+					[8346] = { dur = 2 },
+					[13099] = { dur = 2 },
+					[19636] = { dur = 2 },
+					[23414] = { dur = 2 },
+					[6533] = { dur = 2 },
+					[11820] = { dur = 2 },
+					[8377] = { dur = 2 },
+					[113] = { dur = 2 },
+					[8142] = { dur = 2 },
+					[7295] = { dur = 2 },
+					[11264] = { dur = 2 },
+					[12252] = { dur = 2 },
+					[745] = { dur = 2 },
+					[15474] = { dur = 2 },
+					[14030] = { dur = 2 },
+					[19306] = { dur = 2 },
+					[4962] = { dur = 2 },
+				},
+				BlessingofSacrifice = {
+				},
+				Vanish = {
+				},
+			},
+			PvP = {
+				BlackList = {},
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+				},
+				PurgeHigh = {
+					-- Paladin: Blessing of Protection
+					[1022] = { dur = 1 },
+					-- Paladin: Divine Favor 
+					[20216] = { dur = 0 },
+					-- Priest: Power Infusion
+					[10060] = { dur = 4 },
+					-- Mage: Combustion
+					[11129] = { dur = 4 },
+					-- Mage: Arcane Power
+					[12042] = { dur = 4 },
+					-- Priest (Human): Feedback
+					[13896] = { dur = 1.5 },
+					-- Druid | Shaman: Nature's Swiftness
+					[16188] = { dur = 1.5 },
+					-- Shaman: Elemental Mastery
+					[16166] = { dur = 1.5 },
+					-- Warlock: Major Spellstone
+					[17730] = { dur = 2 },
+					-- Warlock: Greater Spellstone
+					[17729] = { dur = 2 },
+					-- Warlock: Spellstone
+					[128] = { dur = 2 },
+					-- Warlock: Fel Domination
+					[18708] = { dur = 0 },
+					-- Warlock: Amplify Curse
+					[18288] = { dur = 10 },
+				},
+				PurgeLow = {
+					-- Paladin: Blessing of Freedom  
+					[1044] = { dur = 1.5 },
+					-- Druid: Rejuvenation
+					[774] = { dur = 0, onlyBear = true },
+					-- Druid: Regrow
+					[8936] = { dur = 0, onlyBear = true },
+					-- Druid: Mark of the Wild
+					[1126] = { dur = 0, onlyBear = true },
+				},
+				Poison = {
+					-- Hunter: Wyvern Sting
+					[19386] = { dur = 0 },
+					-- Hunter: Serpent Sting
+					[1978] = { dur = 3 },
+					-- Hunter: Viper Sting
+					[3034] = { dur = 2 },
+					-- Hunter: Scorpid Sting
+					[3043] = { dur = 1.5 },
+					-- Rogue: Slow Poison
+					[3332] = {},
+					-- Rogue: Blind
+					[2094] = { dur = 2.5 },
+				},
+				Disease = {
+				},
+				Curse = {
+					-- Voodoo Hex   			(Shaman) 				-- I AM NOT SURE
+					[8277] = {}, 			
+					-- Hex of Weakness			(Priest - Troll)
+					[9035] = {},
+					-- Warlock: Curse of Tongues
+					[1714] = { dur = 3 },
+					-- Warlock: Curse of Weakness
+					[702] = { dur = 3 },
+					-- Warlock: Curse of Doom
+					[603] = {},
+					-- Warlock: Curse of Shadow
+					[17862] = {},
+					-- Warlock: Curse of the Elements
+					[1490] = {},
+					-- Corrupted Fear (set bonus)
+					[21330] = {},
+				},
+				Magic = {			
+					-- Paladin: Repentance
+					[20066] = { dur = 1.5 },
+					-- Paladin: Hammer of Justice
+					[853] = { dur = 0 },
+					-- Hunter: Freezing Trap
+					[1499] = { dur = 1 },
+					-- Hunter: Entrapment
+					[19185] = { dur = 1.5 },
+					-- Hunter: Hunter's Mark
+					[14325] = {},
+					-- Hunter: Trap 
+					[8312] = { dur = 1 },
+					-- Rogue: Kick - Silenced
+					[18425] = { dur = 1 },
+					-- Priest: Mind Control 
+					[605] = { dur = 0 },
+					-- Priest: Psychic Scream
+					[8122] = { dur = 1.5 },
+					-- Priest: Shackle Undead 
+					[9484] = { dur = 1 },
+					-- Priest: Silence
+					[15487] = { dur = 1 },
+					-- Priest: Blackout
+					[15269] = { dur = 1 },
+					-- Mage: Polymorph 
+					[118] = { dur = 1.5 },
+					-- Mage: Polymorph: Sheep 
+					[851] = { dur = 1.5 },
+					-- Mage: Polymorph: Turtle 
+					[28271] = { dur = 1.5 },
+					-- Mage: Polymorph: Pig 
+					[28272] = { dur = 1.5 },
+					-- Mage: Frost Nova  
+					[122] = { dur = 1 },
+					-- Warlock: Banish 
+					[710] = {},				
+					-- Warlock: Fear 
+					[5782] = { dur = 1.5 },
+					-- Warlock: Seduction
+					[6358] = { dur = 1.5 },	
+					-- Warlock: Howl of Terror
+					[5484] = { dur = 1.5 },
+					-- Warlock: Death Coil
+					[6789] = { dur = 1 },
+					-- Warlock: Spell Lock (Felhunter)
+					[24259] = { dur = 1 },
+					-- Druid: Hibernate 
+					[2637] = { dur = 1.5 },
+					-- Druid: Faerie Fire (Feral)
+					[17390] = { dur = 0 },					
+					-- Mage: Ice Nova 
+					[22519] = { dur = 1 },
+					-- Druid: Entangling Roots
+					[339] = { dur = 1 },					
+					-- Trinket: Tidal Charm
+					[835] = { dur = 1 },
+					-- Iron Grenade
+					[4068] = {},
+					-- Sleep (Green Whelp Armor chest)
+					[9159] = {},
+					-- Arcane Bomb
+					[19821] = {},
+					-- Silence (Silent Fang sword)
+					[18278] = {},
+					-- Highlord's Justice (Alliance Stormwind Boss - Highlord Bolvar Fordragon)
+					[20683] = {},
+					-- Crusader's Hammer (Horde Stratholme - Boss Grand Crusader Dathrohan)
+					[17286] = {},
+					-- Veil of Shadow (Horde Orgrimmar - Boss Vol'jin)
+					[17820] = {},
+					-- Glimpse of Madness (Dark Edge of Insanity axe)
+					[26108] = { dur = 1 },
+				},
+				Enrage = {
+					-- Berserker Rage
+					[18499] = { dur = 1 },
+					-- Enrage
+					[12880] = { dur = 1 },
+				},
+				Frenzy = {
+				},
+				BlessingofProtection = {
+					-- Disarm 
+					[676] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] }, 				-- Disarm 					(Warrior)
+					[14251] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Riposte					(Rogue)
+					[23365] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Dropped Weapon			(Unknown)
+					-- Stunned 
+					--[7922] = { dur = 1.5 }, 				-- Charge Stun				(Warrior)
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+					[20253] = { dur = 2.6 },			-- Intercept Stun 			(Warrior)
+					[5530] = { dur = 2.6 },				-- Mace Stun Effect			(Warrior)
+					[12798] = { dur = 2.6 },			-- Revenge Stun				(Warrior)
+					[5211] = { dur = 1.6 },				-- Bash						(Druid)
+					[9005] = { dur = 1.6 },				-- Pounce					(Druid)		
+					[19410] = { dur = 2.8 },			-- Improved Concussive Shot	(Hunter)
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)		
+					--[20549] = { dur = 1.5 }, 				-- War Stomp 				(Tauren)	
+					[20685] = { dur = 3 },				-- Storm Bolt	 			(Unknown)				-- FIX ME: Is it useable?		
+					[16922] = { dur = 3 },				-- Starfire Stun			(Unknown)		
+					[56] = { dur = 3 },					-- Stun 					(Weapon proc)	
+					-- Disoriented
+					[19503] = { dur = 3 }, 				-- Scatter Shot 			(Hunter)		 				
+					-- Feared 
+					[5246] = { dur = 4.5 }, 			-- Intimidating Shout		(Warrior)
+				},
+				BlessingofFreedom = {
+					[23694] = { dur = 2 },				-- Improved Hamstring		(Warrior)
+					[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
+					[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
+					[12494] = { dur = 2 },				-- Frostbite				(Mage)	
+					[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
+					[19675] = { dur = 2 },				-- Feral Charge Effect		(Druid)
+					[19229] = { dur = 2 },				-- Improved Wing Clip 		(Hunter)
+					[19185] = { dur = 2 },				-- Entrapment				(Hunter)
+					[13809] = { dur = 0 },				-- Frost Trap				(Hunter)
+					[25999] = { dur = 2 },				-- Boar Charge				(Hunter's pet)	
+				},
+				BlessingofSacrifice = {
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)	
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+				},
+				Vanish = {
+					[22519] = {}, 						-- Ice Nova 				(Mage)
+					[122] = {}, 						-- Frost Nova 				(Mage)
+					[339] = {}, 						-- Entangling Roots 		(Druid)
+				},
+			},
+		}
+	else
+		-- Classic
+		Factory[4].Heal = StdUi:tGenerateMinMax({
+			[GameLocale] = {	
+				ISINTERRUPT = true,
+				-- Priest
+				[2050] = "Lesser Heal",
+				[2060] = "Greater Heal",
+				[6064] = "Heal",
+				[596] = "Prayer of Healing",
+				-- Druid
+				[740] = "Tranquility",
+				[8936] = "Regrowth",
+				[25297] = "Healing Touch",
+				-- Shaman
+				[1064] = "Chain Heal",
+				[331] = "Healing Wave",
+				[8004] = "Lesser Healing Wave",
+				-- Paladin				
+				[19750] = "Flash of Light",			
+				[635] = "Holy Light",		
+				[19943] = "Flash of Light", -- first ids are wrong?
+				[25292] = "Holy Light",						
+			},			
+		}, 43, 70, math_random(87, 95), true)
+		
+		Factory[4].PvP = StdUi:tGenerateMinMax({
+			[GameLocale] = {
+				ISINTERRUPT = true,
+				-- Shaman 
+				[2645] = "Ghost Wolf",
+				-- Mage 
+				[118] = "Pollymorph",
+				[28270] = "Polymorph: Cow",
+				-- Priest 
+				[605] = "Mind Control",
+				[9484] = "Shackle Undead",
+				[8129] = "Mana Burn",
+				-- Hunter 
+				[982] = "Revive pet",
+				[1513] = "Scare Beast",
+				-- Warlock 				
+				[20757] = "Create Soulstone (Major)",
+				[693] = "Create Soulstone (Minor)",
+				[11730] = "Create Healthstone (Major)",
+				[11729] = "Create Healthstone (Greater)",
+				[5699] = "Create Healthstone",
+				[1122] = "Inferno",
+				[5782] = "Fear",
+				[5484] = "Howl of Terror",
+				[20755] = "Create Soulstone",	
+				[710] = "Banish",
+				-- Druid 
+				[20484] = "Rebirth",
+				[339] = "Entangling Roots",
+				[2637] = "Hibernate",
+				-- Rogue 
+				[8681] = "Instant Poison",
+				[3420] = "Crippling Poison",
+				[13220] = "Wound Poison",
+				[5763] = "Mind-numbing Poison",
+				[2823] = "Deadly Poison",
+				-- Paladin 
+				[2878] = "Turn Undead",		
+				-- Hunter 
+				[19386] = "Wyvern Sting",
+			}, 
+		}, 34, 58, 37)
+	
+		GlobalFactory[5] = {		
+			PvE = {
+				BlackList = {},			
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+					-- Dominate Mind
+					[15859] = {},		-- FIX ME: Is a buff?
+					-- Cause Insanity
+					[12888] = {},		-- FIX ME: Is a buff?
+				},
+				PurgeHigh = {		
+					-- Molten Core: Deaden Magic
+					[19714] = {},
+				},
+				PurgeLow = {
+				},
+				Poison = {    
+					-- Onyxia: Brood Affliction: Green
+					[23169] = {},
+					-- Aspect of Venoxis
+					[24688] = { dur = 1.5 },
+					-- Atal'ai Poison
+					[18949] = { dur = 1.5 },
+					-- Baneful Poison
+					[15475] = {},
+					-- Barbed Sting
+					[14534] = {},
+					-- Bloodpetal Poison
+					[14110] = {},
+					-- Bottle of Poison
+					[22335] = {},
+					-- Brood Affliction: Green
+					[23169] = {},
+					-- Copy of Poison Bolt Volley
+					[29169] = { enabled = false }, 
+					-- Corrosive Poison 
+					[13526] = {},
+					-- Corrosive Venom Spit
+					[20629] = { dur = 1.5 },
+					-- Creeper Venom
+					[14532] = {},
+					-- Deadly Leech Poison
+					[3388] = {},
+					-- Deadly Poison
+					[13582] = {},
+					-- Enervate
+					[22661] = {},
+					-- Entropic Sting
+					[23260] = {},
+					-- Festering Bites
+					[16460] = {},
+					-- Larva Goo
+					[21069] = {},
+					-- Lethal Toxin
+					[8256] = {},
+					-- Maggot Goo
+					[17197] = {},
+					-- Abomination Spit
+					[25262] = {},
+					-- Minor Scorpion Venom Effect
+					[5105] = {},
+					-- Poisonous Spit
+					[4286] = {},
+					-- Slow Poison
+					[3332] = {},
+					-- Slime Bolt
+					[28311] = {},
+					-- Seeping Willow
+					[17196] = {},
+					-- Paralyzing Poison
+					[3609] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				},
+				Disease = {
+					-- Rabies
+					[3150] = {},
+					-- Fevered Fatigue
+					[8139] = {},
+					-- Silithid Pox
+					[8137] = {},
+					-- Wandering Plague
+					[3439] = {},
+					-- Spirit Decay
+					[8016] = {},
+					-- Tetanus
+					[8014] = {},
+					-- Contagion of Rot
+					[7102] = {},
+					-- Volatile Infection
+					[3584] = {},
+					-- Mirkfallon Fungus
+					[8138] = {},
+					-- Infected Wound
+					[3427] = {},
+					-- Noxious Catalyst
+					[5413] = {},
+					-- Corrupted Agility
+					[6817] = {},
+					-- Irradiated
+					[9775] = {},
+					-- Infected Spine
+					[12245] = {},
+					-- Corrupted Stamina
+					[6819] = {},
+					-- Decayed Strength
+					[6951] = {},
+					-- Decayed Agility
+					[7901] = {},
+					-- Infected Bite
+					[16128] = {},
+					-- Plague Cloud
+					[3256] = {},
+					-- Plague Mind
+					[3429] = {},
+					-- Magenta Cap Sickness
+					[10136] = {},
+					-- Gift of Arthas
+					[11374] = {},
+					-- Festering Rash
+					[15848] = {},
+					-- Dark Plague
+					[18270] = {},
+					-- Fevered Plague
+					[8600] = {},
+					-- Rabid Maw
+					[4316] = {},
+					-- Brood Affliction: Red
+					[23155] = {},
+					-- Blight
+					[9796] = {},
+					-- Slime Dysentery
+					[16461] = {},
+					-- Creeping Mold
+					[18289] = {},
+					-- Weakening Disease
+					[18633] = {},
+					-- Putrid Breath
+					[21062] = {},
+					-- Dredge Sickness
+					[14535] = {},
+					-- Putrid Bite
+					[30113] = {},
+					-- Putrid Enzyme
+					[14539] = {},			
+					-- Black Rot
+					[16448] = {},
+					-- Cadaver Worms
+					[16143] = {},
+					-- Ghoul Plague
+					[16458] = {},
+					-- Putrid Stench
+					[12946] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+				}, 
+				Curse = {	
+					-- Molten Core: Lucifron's Curse
+					[19703] = {},
+					-- Molten Core: Gehennas' Curse 
+					-- Note: Tank should be prioritized 
+					[19716] = {},
+					-- Shazzrah's Curse
+					-- Note: Tank should be prioritized 
+					[19713] = {},
+					-- Shadowfang Keep: Veil of Shadow
+					[7068] = { dur = 1.5 },
+					-- Curse of Thorns
+					[6909] = {},
+					-- Wracking Pains
+					[13619] = {},
+					-- Curse of Stalvan
+					[13524] = {},
+					-- Curse of Blood
+					[16098] = {},
+					-- Curse of the Plague Rat
+					[17738] = {},
+					-- Discombobulate
+					[4060] = {},
+					-- Hex of Jammal'an
+					[12480] = {},
+					-- Shrink
+					[24054] = {},
+					-- Curse of the Firebrand
+					[16071] = {},
+					-- Enfeeble
+					[11963] = {},
+					-- Piercing Shadow
+					[16429] = {},
+					-- Rage of Thule
+					[3387] = {},
+					-- Mark of Kazzak
+					[21056] = {},
+					-- Curse of the Dreadmaul
+					[11960] = {},
+					-- Banshee Curse
+					[17105] = {},
+					-- Corrupted Fear
+					[21330] = {},
+					-- Curse of Impotence
+					[22371] = {},
+					-- Delusions of Jin'do
+					[24306] = {},
+					-- Haunting Phantoms				-- FIX ME: Does it need here ? (Naxxramas)
+					[16336] = {},
+					-- Tainted Mind
+					[16567] = {},
+					-- Ancient Hysteria
+					[19372] = {},
+					-- Breath of Sargeras
+					[28342] = {},
+					-- Curse of the Elemental Lord
+					[26977] = {},
+					-- Curse of Mending
+					[15730] = {},
+					-- Curse of the Darkmaster
+					[18702] = {},
+					-- Arugal's Curse
+					[7621] = {},
+				},
+				Magic = {	
+					-- Molten Core: Ignite Mana
+					[19659] = {},
+					-- Molten Core: Impending Doom
+					[19702] = { dur = 1.5 },
+					-- Molten Core: Panic
+					[19408] = {},			
+					-- Molten Core: Magma Splash
+					[13880] = { dur = 1.5 },
+					-- Molten Core: Ancient Despair
+					[19369] = { dur = 1.5 },
+					-- Molten Core: Soul Burn
+					[19393] = { dur = 1.5 },
+					-- Onyxia: Greater Polymorph
+					[22274] = {},
+					-- Onyxia: Wild Polymorph
+					[23603] = {},
+					-- Scarlet Monastery Dungeon: Terrify
+					[7399] = {},
+					-- Dominate Mind
+					[20740] = {},
+					-- Immolate
+					[12742] = { dur = 2 },
+					-- Shadow Word: Pain 				-- FIX ME: Does it needs in PvE (?)
+					[23952] = { dur = 2 },
+					-- Misc: Reckless Charge
+					[13327] = { dur = 1 },
+					-- Misc: Hex 
+					[17172] = {},
+					-- Polymorph Backfire (Azshara)
+					[28406] = {},	
+					-- Polymorph: Chicken
+					[228] = {},
+					-- Chains of Ice
+					[113] = { dur = 12 },
+					-- Grasping Vines
+					[8142] = { dur = 4 },
+					-- Naralex's Nightmare
+					[7967] = {},
+					-- Thundercrack
+					[8150] = { dur = 1 },
+					-- Screams of the Past
+					[7074] = { dur = 1 },
+					-- Smoke Bomb
+					[7964] = { dur = 1 },
+					-- Ice Blast
+					[11264] = { dur = 6 },
+					-- Pacify
+					[10730] = {},
+					-- Sonic Burst
+					[8281] = { dur = 0.5 },
+					-- Enveloping Winds
+					[6728] = { dur = 1 },
+					-- Petrify
+					[11020] = { dur = 1 },
+					-- Freeze Solid
+					[11836] = { dur = 1 },
+					-- Deep Slumber
+					[12890] = { LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Crystallize
+					[16104] = { dur = 1, LUA = [[ return not UnitIsUnit(thisunit, "player") ]] },
+					-- Enchanting Lullaby
+					[16798] = { dur = 1 },
+					-- Burning Winds
+					[17293] = { dur = 1 },
+					-- Banshee Shriek
+					[16838] = { dur = 1 },
+				}, 
+				Enrage = {
+				},
+				Frenzy = {
+					-- Frenzy 
+					[19451] = { dur = 1.5 },
+				},
+				BlessingofProtection = {
+					[18431] = { dur = 2.6 }, -- Bellowing Roar (Onyxia fear)
+					[21869] = { dur = 6 },   -- Repulsive Gaze
+					[5134] = { dur = 8 },	 -- Flash Bomb
+				},
+				BlessingofFreedom = {
+					[8312] = { dur = 2 },
+					[8346] = { dur = 2 },
+					[13099] = { dur = 2 },
+					[19636] = { dur = 2 },
+					[23414] = { dur = 2 },
+					[6533] = { dur = 2 },
+					[11820] = { dur = 2 },
+					[8377] = { dur = 2 },
+					[113] = { dur = 2 },
+					[8142] = { dur = 2 },
+					[7295] = { dur = 2 },
+					[11264] = { dur = 2 },
+					[12252] = { dur = 2 },
+					[745] = { dur = 2 },
+					[15474] = { dur = 2 },
+					[14030] = { dur = 2 },
+					[19306] = { dur = 2 },
+					[4962] = { dur = 2 },
+				},
+				BlessingofSacrifice = {
+				},
+				Vanish = {
+				},
+			},
+			PvP = {
+				BlackList = {},
+				PurgeFriendly = {
+					-- Mind Control (it's buff)
+					[605] = { canStealOrPurge = true },
+					-- Seduction
+					--[270920] = { canStealOrPurge = true, LUAVER = 2, LUA = [[ -- Don't purge if we're Mage
+					--return PlayerClass ~= "MAGE" ]] },
+				},
+				PurgeHigh = {
+					-- Paladin: Blessing of Protection
+					[1022] = { dur = 1 },
+					-- Paladin: Divine Favor 
+					[20216] = { dur = 0 },
+					-- Priest: Power Infusion
+					[10060] = { dur = 4 },
+					-- Mage: Combustion
+					[11129] = { dur = 4 },
+					-- Mage: Arcane Power
+					[12042] = { dur = 4 },
+					-- Priest (Human): Feedback
+					[13896] = { dur = 1.5 },
+					-- Druid | Shaman: Nature's Swiftness
+					[16188] = { dur = 1.5 },
+					-- Shaman: Elemental Mastery
+					[16166] = { dur = 1.5 },
+					-- Warlock: Major Spellstone
+					[17730] = { dur = 2 },
+					-- Warlock: Greater Spellstone
+					[17729] = { dur = 2 },
+					-- Warlock: Spellstone
+					[128] = { dur = 2 },
+					-- Warlock: Fel Domination
+					[18708] = { dur = 0 },
+					-- Warlock: Amplify Curse
+					[18288] = { dur = 10 },
+				},
+				PurgeLow = {
+					-- Paladin: Blessing of Freedom  
+					[1044] = { dur = 1.5 },
+					-- Druid: Rejuvenation
+					[774] = { dur = 0, onlyBear = true },
+					-- Druid: Regrow
+					[8936] = { dur = 0, onlyBear = true },
+					-- Druid: Mark of the Wild
+					[1126] = { dur = 0, onlyBear = true },
+				},
+				Poison = {
+					-- Hunter: Wyvern Sting
+					[19386] = { dur = 0 },
+					-- Hunter: Serpent Sting
+					[1978] = { dur = 3 },
+					-- Hunter: Viper Sting
+					[3034] = { dur = 2 },
+					-- Hunter: Scorpid Sting
+					[3043] = { dur = 1.5 },
+					-- Rogue: Slow Poison
+					[3332] = {},
+					-- Rogue: Blind
+					[2094] = { dur = 2.5 },
+				},
+				Disease = {
+				},
+				Curse = {
+					-- Voodoo Hex   			(Shaman) 				-- I AM NOT SURE
+					[8277] = {}, 			
+					-- Hex of Weakness			(Priest - Troll)
+					[9035] = {},
+					-- Warlock: Curse of Tongues
+					[1714] = { dur = 3 },
+					-- Warlock: Curse of Weakness
+					[702] = { dur = 3 },
+					-- Warlock: Curse of Doom
+					[603] = {},
+					-- Warlock: Curse of Shadow
+					[17862] = {},
+					-- Warlock: Curse of the Elements
+					[1490] = {},
+					-- Corrupted Fear (set bonus)
+					[21330] = {},
+				},
+				Magic = {			
+					-- Paladin: Repentance
+					[20066] = { dur = 1.5 },
+					-- Paladin: Hammer of Justice
+					[853] = { dur = 0 },
+					-- Hunter: Freezing Trap
+					[1499] = { dur = 1 },
+					-- Hunter: Entrapment
+					[19185] = { dur = 1.5 },
+					-- Hunter: Hunter's Mark
+					[14325] = {},
+					-- Hunter: Trap 
+					[8312] = { dur = 1 },
+					-- Rogue: Kick - Silenced
+					[18425] = { dur = 1 },
+					-- Priest: Mind Control 
+					[605] = { dur = 0 },
+					-- Priest: Psychic Scream
+					[8122] = { dur = 1.5 },
+					-- Priest: Shackle Undead 
+					[9484] = { dur = 1 },
+					-- Priest: Silence
+					[15487] = { dur = 1 },
+					-- Priest: Blackout
+					[15269] = { dur = 1 },
+					-- Mage: Polymorph 
+					[118] = { dur = 1.5 },
+					-- Mage: Polymorph: Sheep 
+					[851] = { dur = 1.5 },
+					-- Mage: Polymorph: Cow 
+					[28270] = { dur = 1.5 },
+					-- Mage: Polymorph: Turtle 
+					[28271] = { dur = 1.5 },
+					-- Mage: Polymorph: Pig 
+					[28272] = { dur = 1.5 },
+					-- Mage: Frost Nova  
+					[122] = { dur = 1 },
+					-- Warlock: Banish 
+					[710] = {},				
+					-- Warlock: Fear 
+					[5782] = { dur = 1.5 },
+					-- Warlock: Seduction
+					[6358] = { dur = 1.5 },	
+					-- Warlock: Howl of Terror
+					[5484] = { dur = 1.5 },
+					-- Warlock: Death Coil
+					[6789] = { dur = 1 },
+					-- Warlock: Spell Lock (Felhunter)
+					[24259] = { dur = 1 },
+					-- Druid: Hibernate 
+					[2637] = { dur = 1.5 },
+					-- Druid: Faerie Fire (Feral)
+					[17390] = { dur = 0 },					
+					-- Mage: Ice Nova 
+					[22519] = { dur = 1 },
+					-- Druid: Entangling Roots
+					[339] = { dur = 1 },					
+					-- Trinket: Tidal Charm
+					[835] = { dur = 1 },
+					-- Iron Grenade
+					[4068] = {},
+					-- Sleep (Green Whelp Armor chest)
+					[9159] = {},
+					-- Arcane Bomb
+					[19821] = {},
+					-- Silence (Silent Fang sword)
+					[18278] = {},
+					-- Highlord's Justice (Alliance Stormwind Boss - Highlord Bolvar Fordragon)
+					[20683] = {},
+					-- Crusader's Hammer (Horde Stratholme - Boss Grand Crusader Dathrohan)
+					[17286] = {},
+					-- Veil of Shadow (Horde Orgrimmar - Boss Vol'jin)
+					[17820] = {},
+					-- Glimpse of Madness (Dark Edge of Insanity axe)
+					[26108] = { dur = 1 },
+				},
+				Enrage = {
+					-- Berserker Rage
+					[18499] = { dur = 1 },
+					-- Enrage
+					[12880] = { dur = 1 },
+				},
+				Frenzy = {
+				},
+				BlessingofProtection = {
+					-- Disarm 
+					[676] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] }, 				-- Disarm 					(Warrior)
+					[14251] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Riposte					(Rogue)
+					[23365] = { dur = 5, LUA = [[return Unit(thisunit):IsMelee() and Unit(thisunit):HasBuffs("DamageBuffs_Melee") > 0]] },				-- Dropped Weapon			(Unknown)
+					-- Stunned 
+					--[7922] = { dur = 1.5 }, 				-- Charge Stun				(Warrior)
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+					[20253] = { dur = 2.6 },			-- Intercept Stun 			(Warrior)
+					[5530] = { dur = 2.6 },				-- Mace Stun Effect			(Warrior)
+					[12798] = { dur = 2.6 },			-- Revenge Stun				(Warrior)
+					[5211] = { dur = 1.6 },				-- Bash						(Druid)
+					[9005] = { dur = 1.6 },				-- Pounce					(Druid)		
+					[19410] = { dur = 2.8 },			-- Improved Concussive Shot	(Hunter)
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)		
+					--[20549] = { dur = 1.5 }, 				-- War Stomp 				(Tauren)	
+					[20685] = { dur = 3 },				-- Storm Bolt	 			(Unknown)				-- FIX ME: Is it useable?		
+					[16922] = { dur = 3 },				-- Starfire Stun			(Unknown)		
+					[56] = { dur = 3 },					-- Stun 					(Weapon proc)	
+					-- Disoriented
+					[19503] = { dur = 3 }, 				-- Scatter Shot 			(Hunter)		 				
+					-- Feared 
+					[5246] = { dur = 4.5 }, 			-- Intimidating Shout		(Warrior)
+				},
+				BlessingofFreedom = {
+					[23694] = { dur = 2 },				-- Improved Hamstring		(Warrior)
+					[22519] = { dur = 2 }, 				-- Ice Nova 				(Mage)
+					[122] = { dur = 2 }, 				-- Frost Nova 				(Mage)	
+					[12494] = { dur = 2 },				-- Frostbite				(Mage)	
+					[339] = { dur = 2 }, 				-- Entangling Roots 		(Druid)
+					[19675] = { dur = 2 },				-- Feral Charge Effect		(Druid)
+					[19229] = { dur = 2 },				-- Improved Wing Clip 		(Hunter)
+					[19185] = { dur = 2 },				-- Entrapment				(Hunter)
+					[13809] = { dur = 0 },				-- Frost Trap				(Hunter)
+					[25999] = { dur = 2 },				-- Boar Charge				(Hunter's pet)	
+				},
+				BlessingofSacrifice = {
+					[1833] = { dur = 3 }, 				-- Cheap Shot 				(Rogue)
+					[408] = { dur = 4.5 }, 				-- Kidney Shot 				(Rogue)	
+					[12809] = { dur = 4 },				-- Concussion Blow			(Warrior)
+				},
+				Vanish = {
+					[22519] = {}, 						-- Ice Nova 				(Mage)
+					[122] = {}, 						-- Frost Nova 				(Mage)
+					[339] = {}, 						-- Entangling Roots 		(Druid)
+				},
+			},
+		}
+	end
+end
 
 -- Table controlers 	
 local function tMerge(default, new, special, nonexistremove)
@@ -5614,12 +8025,14 @@ local Upgrade 					= {
 			}, "pActionDB[4]")
 		end,
 		[2]						= function()
-			tEraseKeys(pActionDB[4].PvP, { 
-				["GameLocale"] = {
-					-- Mage: Polymorph: Cow 
-					[28270] = true,
-				},
-			}, "pActionDB[4].PvP")
+			if Action.BuildToC >= 20000 then
+				tEraseKeys(pActionDB[4].PvP, { 
+					["GameLocale"] = {
+						-- Mage: Polymorph: Cow 
+						[28270] = true,
+					},
+				}, "pActionDB[4].PvP")
+			end
 		end,
 		[3]						= function()
 			-- Defaults to /focus mode healing or /target if Classic is Vanilla
@@ -5639,52 +8052,56 @@ local Upgrade 					= {
 	},
 	gUpgrades					= {
 		[1]						= function()
-			tEraseKeys(gActionDB[5].PvP, { 
-				Magic = {
-					-- Mage: Polymorph: Cow 
-					[28270] = true,
-				},
-			}, "gActionDB[5].PvP")
-			tEraseKeys(gActionDB[5].PvE, { 
-				Poison = {
-					-- Copy of Poison Bolt Volley
-					[29169] = true,
-				},
-			}, "gActionDB[5].PvE")
+			if Action.BuildToC >= 20000 then
+				tEraseKeys(gActionDB[5].PvP, { 
+					Magic = {
+						-- Mage: Polymorph: Cow 
+						[28270] = true,
+					},
+				}, "gActionDB[5].PvP")
+				tEraseKeys(gActionDB[5].PvE, { 
+					Poison = {
+						-- Copy of Poison Bolt Volley
+						[29169] = true,
+					},
+				}, "gActionDB[5].PvE")
+			end
 		end,
 		[2] 					= function()
-			tEraseKeys(gActionDB[5].PvP, { 
-				PurgeHigh = {
-					-- Warlock: Major Spellstone
-					[17730] = true,
-					-- Priest (Human): Feedback
-					[13896] = true,
-					-- Warlock: Spellstone
-					[128] = true,
-					-- Warlock: Greater Spellstone
-					[17729] = true, 
-				},
-				Magic = {
-					-- Druid: Faerie Fire (Feral)
-					[17390] = true,
-					-- Priest: Blackout
-					[15269] = true,
-				},
-				BlessingofProtection = {
-						-- Improved Concussive Shot	(Hunter)
-					[19410] = true,
-				},
-				Curse = {
-					-- Warlock: Curse of Shadow
-					[17862] = true, 
-					-- Hex of Weakness(Priest - Troll)
-					[9035] = true,
-				},
-				BlessingofFreedom = {
-					-- Improved Wing Clip (Hunter)
-					[19229] = true,	
-				},
-			}, "gActionDB[5].PvP")
+			if Action.BuildToC >= 30000 then
+				tEraseKeys(gActionDB[5].PvP, { 
+					PurgeHigh = {
+						-- Warlock: Major Spellstone
+						[17730] = true,
+						-- Priest (Human): Feedback
+						[13896] = true,
+						-- Warlock: Spellstone
+						[128] = true,
+						-- Warlock: Greater Spellstone
+						[17729] = true, 
+					},
+					Magic = {
+						-- Druid: Faerie Fire (Feral)
+						[17390] = true,
+						-- Priest: Blackout
+						[15269] = true,
+					},
+					BlessingofProtection = {
+							-- Improved Concussive Shot	(Hunter)
+						[19410] = true,
+					},
+					Curse = {
+						-- Warlock: Curse of Shadow
+						[17862] = true, 
+						-- Hex of Weakness(Priest - Troll)
+						[9035] = true,
+					},
+					BlessingofFreedom = {
+						-- Improved Wing Clip (Hunter)
+						[19229] = true,	
+					},
+				}, "gActionDB[5].PvP")
+			end
 		end,
 	},
 	pUpgradesForProfile			= {},
@@ -6925,7 +9342,7 @@ local ColorPicker 						= {
 			-- Refresh already created frames 
 			local objects = self:tFindByOption(self.StdUiObjects[element], option)
 			if objects and next(objects) then 
-				for obj, method in pairs(objects) do 										
+				for obj, method in pairs(objects) do 
 					if type(obj) == "table" then -- exclude texture from stdUi.config (related to updates with BackdropTemplateMixin)
 						obj[method](obj, tStdUiConfig.r, tStdUiConfig.g, tStdUiConfig.b, tStdUiConfig.a)
 						
@@ -6934,7 +9351,7 @@ local ColorPicker 						= {
 						if obj.target then 
 							obj.target.origBackdropBorderColor = nil 
 						end 	
-					end 					
+					end 
 				end 
 			end 
 			
@@ -8094,7 +10511,7 @@ local Re; Re = {
 		Action.Re:ClearTarget()
 		Action.Re:ClearFocus()
 	end,
-	Initialize		= function(self)	
+	Initialize		= function(self)
 		if A_GetToggle(1, "ReTarget") then 
 			A_Listener:Add(   "ACTION_EVENT_RE", "PLAYER_TARGET_CHANGED", self.PLAYER_TARGET_CHANGED)
 			self.PLAYER_TARGET_CHANGED()
@@ -8105,7 +10522,7 @@ local Re; Re = {
 			self.LastTargetTexture 	= nil 			
 		end 
 		
-		if A_GetToggle(1, "ReFocus") then 
+		if Action.BuildToC >= 20000 and A_GetToggle(1, "ReFocus") then 
 			A_Listener:Add(   "ACTION_EVENT_RE", "PLAYER_FOCUS_CHANGED",  self.PLAYER_FOCUS_CHANGED)
 			self.PLAYER_FOCUS_CHANGED()
 		else 
@@ -8151,6 +10568,10 @@ Action.Re = {
 	-- Focus 
 	SetFocus 	= function(self, unitID)
 		-- Creates schedule to set in focus the 'unitID'
+		if Action.BuildToC < 20000 then
+			return 
+		end
+		
 		if not Re.focus[unitID] then 
 			error("Action.Re:SetFocus must have valid for own API the 'unitID' param. Input: " .. (unitID or "nil"))
 			return 
@@ -8160,12 +10581,20 @@ Action.Re = {
 		Re.ManualFocusTexture 	= Re.focus[unitID]
 	end,	
 	ClearFocus 	= function(self)
+		if Action.BuildToC < 20000 then
+			return 
+		end
+		
 		Re.ManualFocusUnitID 	= nil 
 		Re.ManualFocusTexture 	= nil 		
 	end,
 	CanFocus	= function(self, icon)
 		-- @return boolean 
 		-- Note: Only for internal use for Core.lua
+		if Action.BuildToC < 20000 then
+			return false
+		end
+		
 		if not Re.LastFocusIsExists and Re.LastFocusTexture and UnitExists(Re.LastFocusUnitID) then 
 			return Action:Show(icon, Re.LastFocusTexture)
 		end 
@@ -8205,7 +10634,7 @@ local LineOfSight = {
 				if not NamePlateFrame then 
 					break 
 				else
-					UnitFrame = NamePlateFrame.UnitFrame					
+					UnitFrame = NamePlateFrame.UnitFrame
 					if UnitFrame and UnitFrame.unitExists and UnitIsUnit(UnitFrame.unit, unitID) then
 						return UnitFrame:GetEffectiveAlpha() <= 0.400001
 					end		
@@ -8366,7 +10795,7 @@ local ScreenshotHider = {
 			self:Reset()
 		end 
 	end,
-}
+}; Action.ScreenshotHider = ScreenshotHider
 
 -- [1] PlaySound 
 function Action.PlaySound(sound)
@@ -8442,7 +10871,7 @@ local LETMECAST = {
 			self:Reset()			
 		end 
 	end,
-}
+}; Action.LETMECAST = LETMECAST
 
 -- [1] LetMeDrag
 local LETMEDRAG = {
@@ -8548,7 +10977,7 @@ local LETMEDRAG = {
 			self:Reset()			
 		end 
 	end,
-}
+}; Action.LETMEDRAG = LETMEDRAG
 
 -- [1] AuraDuration
 local AuraDuration = {
@@ -8566,8 +10995,8 @@ local AuraDuration = {
 	},
 	largeBuffList			= {},
 	largeDebuffList 		= {},
-	LibAuraTypes			= LibStub("LibAuraTypes"), -- TODO: TBC
-	LibSpellLocks			= LibStub("LibSpellLocks"), -- TODO: TBC
+	LibAuraTypes			= LibStub("LibAuraTypes"),
+	LibSpellLocks			= LibStub("LibSpellLocks"),
 	TurnOnAuras				= function(self) 
 		local tFrame = _G["TargetFrame"]
 		if not InCombatLockdown() then 
@@ -8658,7 +11087,7 @@ local AuraDuration = {
 						caster = name.sourceUnit
 						spellId = name.spellId
 						name = name.name
-					end  						
+					end  	
 				else 
 					for i = 1, huge do 
 						name, icon, _, _, duration, expirationTime, caster, _,_, spellId = UnitAura(unit, i, maxPrioFilter)
@@ -8795,7 +11224,7 @@ local AuraDuration = {
 				debuffType = debuffName.dispelName
 				duration = debuffName.duration
 				expirationTime = debuffName.expirationTime
-				caster = debuffName.sourceUnit				
+				caster = debuffName.sourceUnit
 				spellId = debuffName.spellId
 				casterIsPlayer = debuffName.isFromPlayerOrPlayerPet
 				nameplateShowAll = debuffName.nameplateShowAll
@@ -8967,7 +11396,7 @@ local AuraDuration = {
 
 				if type(name) == "table" then 	
 					duration = name.duration
-					expirationTime = name.expirationTime			
+					expirationTime = name.expirationTime
 					spellId = name.spellId
 					name = name.name
 				end  			
@@ -8984,10 +11413,10 @@ local AuraDuration = {
 		hooksecurefunc("CompactUnitFrame_UtilSetDebuff", function(debuffFrame, unit, index, filter)
 			if Action.IsInitialized and self.IsEnabled then 
 				local name, _, _, _, duration, expirationTime, _, _, _, spellId = UnitAura(unit, index, filter)
-				
+
 				if type(name) == "table" then 	
 					duration = name.duration
-					expirationTime = name.expirationTime			
+					expirationTime = name.expirationTime
 					spellId = name.spellId
 					name = name.name
 				end  					
@@ -9004,7 +11433,7 @@ local AuraDuration = {
 		-- turn on visual immediately
 		self:TurnOnAuras()	
 	end,
-}
+}; Action.AuraDuration = AuraDuration
 
 -- [1] RealHealth and PercentHealth
 local NumberGroupingScale = {
@@ -9141,7 +11570,7 @@ local UnitHealthTool = {
 			end 	
 		end)			
 	end,
-}
+}; Action.UnitHealthTool = UnitHealthTool
 
 -- [2] AoE toggle through Ctrl+Left Click on main picture 
 ActionDataPrintCache.ToggleAoE = {2, "AoE"}
@@ -9491,7 +11920,7 @@ function Action:SetQueue(args)
 			end 
 		end 
 	end
-    
+   
 	-- Since devs expects to make "arena1" running at A[6] without need for .MetaSlot specified 
 	-- This part of code determines .MetaSlot depending on UnitID
 	local meta = args.MetaSlot or Queue.GetMetaByUnitID[args.UnitID]
@@ -9508,10 +11937,10 @@ function Action:SetQueue(args)
 	end 		 	
 	if args.ExtraCD then
 		ActionDataQ[priority].ExtraCD = args.ExtraCD 
-	end 	
+	end
 	if args.NoStaying then
 		ActionDataQ[priority].NoStaying = args.NoStaying 
-	end 	
+	end 
 	
 	-- Ryan's fix Action:SetQueue() is missing CP passing to IsQueueReady logic
 	if args.CP then
@@ -9840,7 +12269,7 @@ function Action.AuraIsBlackListed(unitID)
 			if type(Name) == "table" then 	
 				count = Name.charges
 				duration = Name.duration
-				expirationTime = Name.expirationTime	
+				expirationTime = Name.expirationTime
 				canStealOrPurge = Name.isStealable
 				id = Name.spellId
 				Name = Name.name
@@ -9872,11 +12301,11 @@ function Action.AuraIsValid(unitID, Toggle, Category)
 				if type(Name) == "table" then 	
 					count = Name.charges
 					duration = Name.duration
-					expirationTime = Name.expirationTime	
+					expirationTime = Name.expirationTime
 					canStealOrPurge = Name.isStealable
 					id = Name.spellId
 					Name = Name.name
-				end  					
+				end  				
 				
 				if Name then					
 					if Aura[Name] and Aura[Name].Enabled and (Aura[Name].Role == "ANY" or (Aura[Name].Role == "HEALER" and Action.IamHealer) or (Aura[Name].Role == "DAMAGER" and not Action.IamHealer)) and (not Aura[Name].byID or id == Aura[Name].ID) then 					
@@ -9960,7 +12389,7 @@ local Cursor; Cursor 		= {
 		end 
 	end,	
 	Reset 					= function(self)
-		A_Listener:Remove("ACTION_EVENT_CURSOR_FEATURE", "CURSOR_UPDATE")
+		--A_Listener:Remove("ACTION_EVENT_CURSOR_FEATURE", "CURSOR_UPDATE")
 		A_Listener:Remove("ACTION_EVENT_CURSOR_FEATURE", "UPDATE_MOUSEOVER_UNIT")	
 		Action.GameTooltipClick = nil 
 		self.lastMouseName		= nil 	
@@ -10384,11 +12813,20 @@ local OnToggleHandler		= {
 			Action:PLAYER_SPECIALIZATION_CHANGED()	
 			TMW:Fire("TMW_ACTION_ROLE_CHANGED")
 		end,
+		ReFocus				= function() 
+			Re:Initialize()
+		end,
 		ReTarget			= function() 
 			Re:Initialize()
 		end,
 		LOSCheck			= function() 
 			LineOfSight:Initialize() 
+		end,
+		CVars 				= function()
+			TMW:Fire("TMW_ACTION_CVARS_CHANGED")
+		end,
+		DisableRegularFrames = function()
+			TMW:Fire("TMW_ACTION_UPDATE_FRAMES_OPACITY")
 		end,
 	},
 	[2]						= {
@@ -10477,6 +12915,11 @@ local OnToggleHandler		= {
 		end,
 	},	
 	[9]						= {
+		Framework			= function()
+			TMW:Fire("TMW_ACTION_METAENGINE_RECONFIGURE")
+			TMW:Fire("TMW_ACTION_METAENGINE_REFRESH_UI")
+			TMW:Fire("TMW_ACTION_FRAMEWORK_CHANGED")
+		end,
 		MetaEngine			= function()
 			TMW:Fire("TMW_ACTION_METAENGINE_REFRESH_UI")
 		end,
@@ -10903,7 +13346,7 @@ function Action.ToggleMainUI()
 				end 
 			else 
 				TMWdb:SetProfile(val)
-				Action.ToggleMainUI()
+				C_UI.Reload()
 			end 
 		end		
 		MainUI.Profiles.SortDSC = function(a, b)
@@ -10962,6 +13405,7 @@ function Action.ToggleMainUI()
 		MainUI.CheckboxSaveMouse		= StdUi:Checkbox(MainUI.ResetQuestion, L["TAB"]["SAVEMOUSE"], 300)	
 		MainUI.CheckboxSaveMSG 			= StdUi:Checkbox(MainUI.ResetQuestion, L["TAB"]["SAVEMSG"], 300)
 		MainUI.CheckboxSaveHE 			= StdUi:Checkbox(MainUI.ResetQuestion, L["TAB"]["SAVEHE"], 300)
+		MainUI.CheckboxSaveHotkeys		= StdUi:Checkbox(MainUI.ResetQuestion, L["TAB"]["SAVEHOTKEYS"], 300)
 		
 		MainUI.Yes = StdUi:Button(MainUI.ResetQuestion, 150, 35, L["YES"])		
 		StdUi:GlueBottom(MainUI.Yes, MainUI.ResetQuestion, 20, 20, "LEFT")
@@ -11104,7 +13548,7 @@ function Action.ToggleMainUI()
 				childs = {},
 			},
 		}); MainUI.tabFrame = tabFrame
-		StdUi:GlueAcross(tabFrame, MainUI, 10, -60, -10, 10)
+		StdUi:GlueAcross(tabFrame, MainUI, 10, -50, -10, 10)
 		tabFrame.container:SetPoint("TOPLEFT", tabFrame.buttonContainer, "BOTTOMLEFT", 0, 0)
 		tabFrame.container:SetPoint("TOPRIGHT", tabFrame.buttonContainer, "BOTTOMRIGHT", 0, 0)	
 		
@@ -11534,6 +13978,51 @@ function Action.ToggleMainUI()
 			StopCast.Identify = { Type = "Checkbox", Toggle = "StopCast" }
 			StdUi:FrameTooltip(StopCast, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "TOPRIGHT", true)	
 			
+			local function GetProfileRole()
+				local temp = {}
+				temp[#temp + 1] = { text = L["TAB"]["AUTO"], value = "AUTO" }
+				
+				local roles = Action.GetCurrentSpecializationRoles()
+				local isUsed = {}
+				if roles then 
+					for role in pairs(roles) do 
+						if not isUsed[role] then 
+							temp[#temp + 1] = { text = L["TAB"][8][role] or _G[role], value = role }
+							isUsed[role] = true 
+						end 
+					end 
+				end 
+				
+				return temp 				
+			end 
+			local Role = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), themeHeight, GetProfileRole())		          
+			Role:SetValue(specDB.Role)
+			Role.OnValueChanged = function(self, val)				
+				specDB.Role = val 				
+				if val ~= "AUTO" then 
+					ActionDataTG["Role"] = val
+				end 
+				Action:PLAYER_SPECIALIZATION_CHANGED()	
+				TMW:Fire("TMW_ACTION_ROLE_CHANGED")
+			end
+			Role:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			Role:SetScript("OnClick", function(self, button, down)
+				if button == "LeftButton" then 
+					self:ToggleOptions()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][5]["ROLE"], [[/run Action.ToggleRole()]])	
+				end
+			end)		
+			Role.Identify = { Type = "Dropdown", Toggle = "Role" }	
+			StdUi:FrameTooltip(Role, L["TAB"][tabName]["ROLETOOLTIP"], nil, "TOPRIGHT", true)
+			Role.FontStringTitle = StdUi:Subtitle(Role, L["TAB"][5]["ROLE"])
+			StdUi:GlueAbove(Role.FontStringTitle, Role)	
+			Role.text:SetJustifyH("CENTER")				
+			TMW:RegisterCallback("TMW_ACTION_ROLE_CHANGED", function() 
+				local textRole = specDB.Role 
+				Role.text:SetText(Role:FindValueText(textRole))
+			end) 			
+			
 			local ReTarget = StdUi:Checkbox(anchor, "ReTarget")			
 			ReTarget:SetChecked(specDB.ReTarget)
 			ReTarget:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -11550,7 +14039,26 @@ function Action.ToggleMainUI()
 			ReTarget.Identify = { Type = "Checkbox", Toggle = "ReTarget" }
 			StdUi:FrameTooltip(ReTarget, L["TAB"][tabName]["RETARGET"], nil, "TOPRIGHT", true)
 			ReTarget.FontStringTitle = StdUi:Subtitle(ReTarget, L["TAB"][tabName]["PVPSECTION"])
-			StdUi:GlueAbove(ReTarget.FontStringTitle, ReTarget)			
+			StdUi:GlueAbove(ReTarget.FontStringTitle, Role.FontStringTitle, 0, ReTarget:GetHeight() + 8)
+			
+			local ReFocus 
+			if Action.BuildToC >= 20000 then
+				ReFocus = StdUi:Checkbox(anchor, "ReFocus")
+				ReFocus:SetChecked(specDB.ReFocus)
+				ReFocus:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+				ReFocus:SetScript("OnClick", function(self, button, down)	
+					if button == "LeftButton" then 
+						specDB.ReFocus = not specDB.ReFocus
+						self:SetChecked(specDB.ReFocus)	
+						Action.Print("ReFocus" .. ": ", specDB.ReFocus)
+						Re:Initialize()					
+					elseif button == "RightButton" then 
+						Action.CraftMacro("ReFocus", [[/run Action.SetToggle({]] .. tabName .. [[, "ReFocus", "]] .. "ReFocus" .. [[: "})]])	
+					end 
+				end)
+				ReFocus.Identify = { Type = "Checkbox", Toggle = "ReFocus" }
+				StdUi:FrameTooltip(ReFocus, L["TAB"][tabName]["REFOCUS"], nil, "TOPRIGHT", true)
+			end
 			
 			local LosSystem = StdUi:Checkbox(anchor, L["TAB"][tabName]["LOSSYSTEM"])
 			LosSystem:SetChecked(specDB.LOSCheck)
@@ -11676,52 +14184,7 @@ function Action.ToggleMainUI()
 			Trinkets.FontStringTitle = StdUi:Subtitle(Trinkets, L["TAB"][tabName]["TRINKETS"])
 			StdUi:FrameTooltip(Trinkets, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "TOPLEFT", true)
 			StdUi:GlueAbove(Trinkets.FontStringTitle, Trinkets)
-			Trinkets.text:SetJustifyH("CENTER")	
-
-			local function GetProfileRole()
-				local temp = {}
-				temp[#temp + 1] = { text = L["TAB"]["AUTO"], value = "AUTO" }
-				
-				local roles = Action.GetCurrentSpecializationRoles()
-				local isUsed = {}
-				if roles then 
-					for role in pairs(roles) do 
-						if not isUsed[role] then 
-							temp[#temp + 1] = { text = L["TAB"][8][role] or _G[role], value = role }
-							isUsed[role] = true 
-						end 
-					end 
-				end 
-				
-				return temp 				
-			end 
-			local Role = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), themeHeight, GetProfileRole())		          
-			Role:SetValue(specDB.Role)
-			Role.OnValueChanged = function(self, val)				
-				specDB.Role = val 				
-				if val ~= "AUTO" then 
-					ActionDataTG["Role"] = val
-				end 
-				Action:PLAYER_SPECIALIZATION_CHANGED()	
-				TMW:Fire("TMW_ACTION_ROLE_CHANGED")
-			end
-			Role:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-			Role:SetScript("OnClick", function(self, button, down)
-				if button == "LeftButton" then 
-					self:ToggleOptions()
-				elseif button == "RightButton" then 
-					Action.CraftMacro(L["TAB"][5]["ROLE"], [[/run Action.ToggleRole()]])	
-				end
-			end)		
-			Role.Identify = { Type = "Dropdown", Toggle = "Role" }	
-			StdUi:FrameTooltip(Role, L["TAB"][tabName]["ROLETOOLTIP"], nil, "TOPRIGHT", true)
-			Role.FontStringTitle = StdUi:Subtitle(Role, L["TAB"][5]["ROLE"])
-			StdUi:GlueAbove(Role.FontStringTitle, Role)	
-			Role.text:SetJustifyH("CENTER")				
-			TMW:RegisterCallback("TMW_ACTION_ROLE_CHANGED", function() 
-				local textRole = specDB.Role 
-				Role.text:SetText(Role:FindValueText(textRole))
-			end) 
+			Trinkets.text:SetJustifyH("CENTER")				
 	
 			local Burst = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), themeHeight, {
 				{ text = L["TAB"][tabName]["BURSTEVERYTHING"], 	value = "Everything" 	},
@@ -12088,10 +14551,10 @@ function Action.ToggleMainUI()
 			Color:SetupStates()
 			Color:SetupPicker()			
 			
-			local PauseChecksPanel = StdUi:PanelWithTitle(anchor, tab.frame:GetWidth() - 30, 530, L["TAB"][tabName]["PAUSECHECKS"])
+			local PauseChecksPanel = StdUi:PanelWithTitle(anchor, tab.frame:GetWidth() - 30, 580, L["TAB"][tabName]["PAUSECHECKS"])
 			PauseChecksPanel.titlePanel.label:SetFontSize(14)
-			StdUi:EasyLayout(PauseChecksPanel, { padding = { top = 10 } })	
-
+			StdUi:EasyLayout(PauseChecksPanel, { padding = { top = 10 } })		
+			
 			local AntiFakeItems = {
 				{ text = "START AntiFake CC", value = 1 },
 				{ text = "START AntiFake Interrupt", value = 2 },
@@ -12115,174 +14578,339 @@ function Action.ToggleMainUI()
 					end 				
 				end 				
 			end				
-			AntiFakePauses:RegisterForClicks("LeftButtonUp")
-			AntiFakePauses:SetScript("OnClick", AntiFakePauses.ToggleOptions) 
+			AntiFakePauses:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			AntiFakePauses:SetScript("OnClick", function(self, button, down)
+				if button == "LeftButton" then 
+					self:ToggleOptions()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["ANTIFAKEPAUSES"], [[/run Action.SetToggle({]] .. tabName .. [[, "AntiFakePauses", "]] .. L["TAB"][tabName]["ANTIFAKEPAUSES"] .. [[:"})]])	
+				end
+			end)	
 			AntiFakePauses.Identify = { Type = "Dropdown", Toggle = "AntiFakePauses" }			
 			AntiFakePauses.FontStringTitle = StdUi:Subtitle(AntiFakePauses, L["TAB"][tabName]["ANTIFAKEPAUSESSUBTITLE"])
-			StdUi:FrameTooltip(AntiFakePauses, L["TAB"][tabName]["ANTIFAKEPAUSESTT"], nil, "TOP", true)
+			StdUi:FrameTooltip(AntiFakePauses, strjoin("\n\n", L["TAB"][tabName]["ANTIFAKEPAUSESTT"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOP", true)
 			StdUi:GlueAbove(AntiFakePauses.FontStringTitle, AntiFakePauses)
-			AntiFakePauses.text:SetJustifyH("CENTER")		
-			
-			local CheckDeadOrGhost = StdUi:Checkbox(anchor, L["TAB"][tabName]["DEADOFGHOSTPLAYER"])	
-			CheckDeadOrGhost:SetChecked(tabDB.CheckDeadOrGhost)
-			function CheckDeadOrGhost:OnValueChanged(self, state, value)
-				tabDB.CheckDeadOrGhost = not tabDB.CheckDeadOrGhost		
-				Action.Print(L["TAB"][tabName]["DEADOFGHOSTPLAYER"] .. ": ", tabDB.CheckDeadOrGhost)
-			end		
-			CheckDeadOrGhost.Identify = { Type = "Checkbox", Toggle = "CheckDeadOrGhost" }
-			
-			local CheckDeadOrGhostTarget = StdUi:Checkbox(anchor, L["TAB"][tabName]["DEADOFGHOSTTARGET"])
-			CheckDeadOrGhostTarget:SetChecked(tabDB.CheckDeadOrGhostTarget)
-			function CheckDeadOrGhostTarget:OnValueChanged(self, state, value)
-				tabDB.CheckDeadOrGhostTarget = not tabDB.CheckDeadOrGhostTarget
-				Action.Print(L["TAB"][tabName]["DEADOFGHOSTTARGET"] .. ": ", tabDB.CheckDeadOrGhostTarget)
-			end	
-			CheckDeadOrGhostTarget.Identify = { Type = "Checkbox", Toggle = "CheckDeadOrGhostTarget" }
-			StdUi:FrameTooltip(CheckDeadOrGhostTarget, L["TAB"][tabName]["DEADOFGHOSTTARGETTOOLTIP"], nil, "BOTTOMLEFT", true)					
-
-			local CheckCombat = StdUi:Checkbox(anchor, L["TAB"][tabName]["COMBAT"])	
-			CheckCombat:SetChecked(tabDB.CheckCombat)
-			function CheckCombat:OnValueChanged(self, state, value)
-				tabDB.CheckCombat = not tabDB.CheckCombat	
-				Action.Print(L["TAB"][tabName]["COMBAT"] .. ": ", tabDB.CheckCombat)
-			end	
-			CheckCombat.Identify = { Type = "Checkbox", Toggle = "CheckCombat" }
-			StdUi:FrameTooltip(CheckCombat, L["TAB"][tabName]["COMBATTOOLTIP"], nil, "BOTTOMRIGHT", true)		
-
-			local CheckMount = StdUi:Checkbox(anchor, L["TAB"][tabName]["MOUNT"])
-			CheckMount:SetChecked(tabDB.CheckMount)
-			function CheckMount:OnValueChanged(self, state, value)
-				tabDB.CheckMount = not tabDB.CheckMount
-				Action.Print(L["TAB"][tabName]["MOUNT"] .. ": ", tabDB.CheckMount)
-			end	
-			CheckMount.Identify = { Type = "Checkbox", Toggle = "CheckMount" }		
+			AntiFakePauses.text:SetJustifyH("CENTER")			
 
 			local CheckSpellIsTargeting = StdUi:Checkbox(anchor, L["TAB"][tabName]["SPELLISTARGETING"])		
 			CheckSpellIsTargeting:SetChecked(tabDB.CheckSpellIsTargeting)
-			function CheckSpellIsTargeting:OnValueChanged(self, state, value)
-				tabDB.CheckSpellIsTargeting = not tabDB.CheckSpellIsTargeting
-				Action.Print(L["TAB"][tabName]["SPELLISTARGETING"] .. ": ", tabDB.CheckSpellIsTargeting)
-			end	
+			CheckSpellIsTargeting:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckSpellIsTargeting:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckSpellIsTargeting = not tabDB.CheckSpellIsTargeting
+					self:SetChecked(tabDB.CheckSpellIsTargeting)	
+					Action.Print(L["TAB"][tabName]["SPELLISTARGETING"] .. ": ", tabDB.CheckSpellIsTargeting)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["SPELLISTARGETING"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckSpellIsTargeting", "]] .. L["TAB"][tabName]["SPELLISTARGETING"] .. [[: "})]])	
+				end 
+			end)
 			CheckSpellIsTargeting.Identify = { Type = "Checkbox", Toggle = "CheckSpellIsTargeting" }
-			StdUi:FrameTooltip(CheckSpellIsTargeting, L["TAB"][tabName]["SPELLISTARGETINGTOOLTIP"], nil, "BOTTOMRIGHT", true)
-
+			StdUi:FrameTooltip(CheckSpellIsTargeting, strjoin("\n\n", L["TAB"][tabName]["SPELLISTARGETINGTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMRIGHT", true)
+			
 			local CheckLootFrame = StdUi:Checkbox(anchor, L["TAB"][tabName]["LOOTFRAME"])
 			CheckLootFrame:SetChecked(tabDB.CheckLootFrame)
-			function CheckLootFrame:OnValueChanged(self, state, value)
-				tabDB.CheckLootFrame = not tabDB.CheckLootFrame	
-				Action.Print(L["TAB"][tabName]["LOOTFRAME"] .. ": ", tabDB.CheckLootFrame)
-			end	
+			CheckLootFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckLootFrame:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckLootFrame = not tabDB.CheckLootFrame
+					self:SetChecked(tabDB.CheckLootFrame)	
+					Action.Print(L["TAB"][tabName]["LOOTFRAME"] .. ": ", tabDB.CheckLootFrame)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["LOOTFRAME"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckLootFrame", "]] .. L["TAB"][tabName]["LOOTFRAME"] .. [[: "})]])	
+				end 
+			end)
 			CheckLootFrame.Identify = { Type = "Checkbox", Toggle = "CheckLootFrame" }	
+			StdUi:FrameTooltip(CheckLootFrame, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMLEFT", true)			
+
+			local CheckVehicle = StdUi:Checkbox(anchor, L["TAB"][tabName]["VEHICLE"])			
+			CheckVehicle:SetChecked(tabDB.CheckVehicle)
+			CheckVehicle:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckVehicle:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckVehicle = not tabDB.CheckVehicle
+					self:SetChecked(tabDB.CheckVehicle)	
+					Action.Print(L["TAB"][tabName]["VEHICLE"] .. ": ", tabDB.CheckVehicle)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["VEHICLE"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckVehicle", "]] .. L["TAB"][tabName]["VEHICLE"] .. [[: "})]])	
+				end 
+			end)
+			CheckVehicle.Identify = { Type = "Checkbox", Toggle = "CheckVehicle" }
+			StdUi:FrameTooltip(CheckVehicle, strjoin("\n\n", L["TAB"][tabName]["VEHICLETOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMRIGHT", true)				
+			
+			local CheckDeadOrGhost = StdUi:Checkbox(anchor, L["TAB"][tabName]["DEADOFGHOSTPLAYER"])	
+			CheckDeadOrGhost:SetChecked(tabDB.CheckDeadOrGhost)
+			CheckDeadOrGhost:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckDeadOrGhost:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckDeadOrGhost = not tabDB.CheckDeadOrGhost
+					self:SetChecked(tabDB.CheckDeadOrGhost)	
+					Action.Print(L["TAB"][tabName]["DEADOFGHOSTPLAYER"] .. ": ", tabDB.CheckDeadOrGhost)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DEADOFGHOSTPLAYER"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckDeadOrGhost", "]] .. L["TAB"][tabName]["DEADOFGHOSTPLAYER"] .. [[: "})]])	
+				end 
+			end)
+			CheckDeadOrGhost.Identify = { Type = "Checkbox", Toggle = "CheckDeadOrGhost" }
+			StdUi:FrameTooltip(CheckDeadOrGhost, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMLEFT", true)
+			
+			local CheckMount = StdUi:Checkbox(anchor, L["TAB"][tabName]["MOUNT"])
+			CheckMount:SetChecked(tabDB.CheckMount)
+			CheckMount:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckMount:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckMount = not tabDB.CheckMount
+					self:SetChecked(tabDB.CheckMount)	
+					Action.Print(L["TAB"][tabName]["MOUNT"] .. ": ", tabDB.CheckMount)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["MOUNT"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckMount", "]] .. L["TAB"][tabName]["MOUNT"] .. [[: "})]])	
+				end 
+			end)
+			CheckMount.Identify = { Type = "Checkbox", Toggle = "CheckMount" }	
+			StdUi:FrameTooltip(CheckMount, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMRIGHT", true)					
+			
+			local CheckDeadOrGhostTarget = StdUi:Checkbox(anchor, L["TAB"][tabName]["DEADOFGHOSTTARGET"])
+			CheckDeadOrGhostTarget:SetChecked(tabDB.CheckDeadOrGhostTarget)			
+			CheckDeadOrGhostTarget:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckDeadOrGhostTarget:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckDeadOrGhostTarget = not tabDB.CheckDeadOrGhostTarget
+					self:SetChecked(tabDB.CheckDeadOrGhostTarget)	
+					Action.Print(L["TAB"][tabName]["DEADOFGHOSTTARGET"] .. ": ", tabDB.CheckDeadOrGhostTarget)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DEADOFGHOSTTARGET"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckDeadOrGhostTarget", "]] .. L["TAB"][tabName]["DEADOFGHOSTTARGET"] .. [[: "})]])	
+				end 
+			end)
+			CheckDeadOrGhostTarget.Identify = { Type = "Checkbox", Toggle = "CheckDeadOrGhostTarget" }
+			StdUi:FrameTooltip(CheckDeadOrGhostTarget, strjoin("\n\n", L["TAB"][tabName]["DEADOFGHOSTTARGETTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMLEFT", true)						
+
+			local CheckCombat = StdUi:Checkbox(anchor, L["TAB"][tabName]["COMBAT"])	
+			CheckCombat:SetChecked(tabDB.CheckCombat)
+			CheckCombat:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckCombat:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckCombat = not tabDB.CheckCombat
+					self:SetChecked(tabDB.CheckCombat)	
+					Action.Print(L["TAB"][tabName]["COMBAT"] .. ": ", tabDB.CheckCombat)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["COMBAT"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckCombat", "]] .. L["TAB"][tabName]["COMBAT"] .. [[: "})]])	
+				end 
+			end)
+			CheckCombat.Identify = { Type = "Checkbox", Toggle = "CheckCombat" }
+			StdUi:FrameTooltip(CheckCombat, strjoin("\n\n", L["TAB"][tabName]["COMBATTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMRIGHT", true)			
 
 			local CheckEatingOrDrinking = StdUi:Checkbox(anchor, L["TAB"][tabName]["EATORDRINK"])
 			CheckEatingOrDrinking:SetChecked(tabDB.CheckEatingOrDrinking)
-			function CheckEatingOrDrinking:OnValueChanged(self, state, value)
-				tabDB.CheckEatingOrDrinking = not tabDB.CheckEatingOrDrinking	
-				Action.Print(L["TAB"][tabName]["EATORDRINK"] .. ": ", tabDB.CheckEatingOrDrinking)
-			end	
+			CheckEatingOrDrinking:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CheckEatingOrDrinking:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.CheckEatingOrDrinking = not tabDB.CheckEatingOrDrinking
+					self:SetChecked(tabDB.CheckEatingOrDrinking)	
+					Action.Print(L["TAB"][tabName]["EATORDRINK"] .. ": ", tabDB.CheckEatingOrDrinking)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["EATORDRINK"], [[/run Action.SetToggle({]] .. tabName .. [[, "CheckEatingOrDrinking", "]] .. L["TAB"][tabName]["EATORDRINK"] .. [[: "})]])	
+				end 
+			end)
 			CheckEatingOrDrinking.Identify = { Type = "Checkbox", Toggle = "CheckEatingOrDrinking" }
+			StdUi:FrameTooltip(CheckEatingOrDrinking, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMLEFT", true)				
 			
 			local Misc = StdUi:Header(PauseChecksPanel, L["TAB"][tabName]["MISC"])
 			Misc:SetAllPoints()			
 			Misc:SetJustifyH("CENTER")
 			Misc:SetFontSize(14)
 			
-			local DisableRotationDisplay = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEROTATIONDISPLAY"])
-			DisableRotationDisplay:SetChecked(tabDB.DisableRotationDisplay)
-			function DisableRotationDisplay:OnValueChanged(self, state, value)
-				tabDB.DisableRotationDisplay = not tabDB.DisableRotationDisplay		
-				Action.Print(L["TAB"][tabName]["DISABLEROTATIONDISPLAY"] .. ": ", tabDB.DisableRotationDisplay)
-			end				
-			DisableRotationDisplay.Identify = { Type = "Checkbox", Toggle = "DisableRotationDisplay" }
-			StdUi:FrameTooltip(DisableRotationDisplay, L["TAB"][tabName]["DISABLEROTATIONDISPLAYTOOLTIP"], nil, "BOTTOMRIGHT", true)	
+			local DisableRegularFrames = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEREGULARFRAMES"])
+			DisableRegularFrames:SetChecked(tabDB.DisableRegularFrames)			
+			DisableRegularFrames:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableRegularFrames:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableRegularFrames = not tabDB.DisableRegularFrames
+					self:SetChecked(tabDB.DisableRegularFrames)	
+					Action.Print(L["TAB"][tabName]["DISABLEREGULARFRAMES"] .. ": ", tabDB.DisableRegularFrames)
+					TMW:Fire("TMW_ACTION_UPDATE_FRAMES_OPACITY")
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEREGULARFRAMES"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableRegularFrames", "]] .. L["TAB"][tabName]["DISABLEREGULARFRAMES"] .. [[: "})]])	
+				end 
+			end)
+			DisableRegularFrames.Identify = { Type = "Checkbox", Toggle = "DisableRegularFrames" }
+			StdUi:FrameTooltip(DisableRegularFrames, strjoin("\n\n", L["TAB"][tabName]["DISABLEREGULARFRAMESTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMLEFT", true)										
 			
 			local DisableBlackBackground = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEBLACKBACKGROUND"])
-			DisableBlackBackground:SetChecked(tabDB.DisableBlackBackground)
-			function DisableBlackBackground:OnValueChanged(self, state, value)
-				tabDB.DisableBlackBackground = not tabDB.DisableBlackBackground	
-				Action.Print(L["TAB"][tabName]["DISABLEBLACKBACKGROUND"] .. ": ", tabDB.DisableBlackBackground)
-				Action.BlackBackgroundSet(not tabDB.DisableBlackBackground)
-			end				
+			DisableBlackBackground:SetChecked(tabDB.DisableBlackBackground)			
+			DisableBlackBackground:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableBlackBackground:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableBlackBackground = not tabDB.DisableBlackBackground
+					self:SetChecked(tabDB.DisableBlackBackground)	
+					Action.Print(L["TAB"][tabName]["DISABLEBLACKBACKGROUND"] .. ": ", tabDB.DisableBlackBackground)
+					Action.BlackBackgroundSet(not tabDB.DisableBlackBackground)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEBLACKBACKGROUND"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableBlackBackground", "]] .. L["TAB"][tabName]["DISABLEBLACKBACKGROUND"] .. [[: "}); Action.BlackBackgroundSet(not Action.GetToggle(1, "DisableBlackBackground"))]])	
+				end 
+			end)
 			DisableBlackBackground.Identify = { Type = "Checkbox", Toggle = "DisableBlackBackground" }
-			StdUi:FrameTooltip(DisableBlackBackground, L["TAB"][tabName]["DISABLEBLACKBACKGROUNDTOOLTIP"], nil, "BOTTOMLEFT", true)	
+			StdUi:FrameTooltip(DisableBlackBackground, strjoin("\n\n", L["TAB"][tabName]["DISABLEBLACKBACKGROUNDTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMLEFT", true)	
 
 			local DisablePrint = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEPRINT"])
-			DisablePrint:SetChecked(tabDB.DisablePrint)
-			function DisablePrint:OnValueChanged(self, state, value)
-				tabDB.DisablePrint = not tabDB.DisablePrint		
-				Action.Print(L["TAB"][tabName]["DISABLEPRINT"] .. ": ", tabDB.DisablePrint, true)
-			end				
+			DisablePrint:SetChecked(tabDB.DisablePrint)		
+			DisablePrint:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisablePrint:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisablePrint = not tabDB.DisablePrint
+					self:SetChecked(tabDB.DisablePrint)	
+					Action.Print(L["TAB"][tabName]["DISABLEPRINT"] .. ": ", tabDB.DisablePrint)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEPRINT"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisablePrint", "]] .. L["TAB"][tabName]["DISABLEPRINT"] .. [[: "})]])	
+				end 
+			end)
 			DisablePrint.Identify = { Type = "Checkbox", Toggle = "DisablePrint" }
-			StdUi:FrameTooltip(DisablePrint, L["TAB"][tabName]["DISABLEPRINTTOOLTIP"], nil, "BOTTOMRIGHT", true)
+			StdUi:FrameTooltip(DisablePrint, strjoin("\n\n", L["TAB"][tabName]["DISABLEPRINTTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMRIGHT", true)
 
 			local DisableMinimap = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEMINIMAP"])
-			DisableMinimap:SetChecked(tabDB.DisableMinimap)
-			function DisableMinimap:OnValueChanged(self, state, value)
-				Action.ToggleMinimap()
-			end				
+			DisableMinimap:SetChecked(tabDB.DisableMinimap)	
+			DisableMinimap:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableMinimap:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 					
+					Action.ToggleMinimap()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEMINIMAP"], [[/run Action.ToggleMinimap()]])	
+				end 
+			end)
 			DisableMinimap.Identify = { Type = "Checkbox", Toggle = "DisableMinimap" }
-			StdUi:FrameTooltip(DisableMinimap, L["TAB"][tabName]["DISABLEMINIMAPTOOLTIP"], nil, "BOTTOMLEFT", true)
+			StdUi:FrameTooltip(DisableMinimap, strjoin("\n\n", L["TAB"][tabName]["DISABLEMINIMAPTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMLEFT", true)	
 						
 			local DisableClassPortraits = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEPORTRAITS"])
-			DisableClassPortraits:SetChecked(tabDB.DisableClassPortraits)
-			function DisableClassPortraits:OnValueChanged(self, state, value)
-				tabDB.DisableClassPortraits = not tabDB.DisableClassPortraits		
-				Action.Print(L["TAB"][tabName]["DISABLEPORTRAITS"] .. ": ", tabDB.DisableClassPortraits)
-			end				
-			DisableClassPortraits.Identify = { Type = "Checkbox", Toggle = "DisableClassPortraits" }
+			DisableClassPortraits:SetChecked(tabDB.DisableClassPortraits)		
+			DisableClassPortraits:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableClassPortraits:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableClassPortraits = not tabDB.DisableClassPortraits
+					self:SetChecked(tabDB.DisableClassPortraits)	
+					Action.Print(L["TAB"][tabName]["DISABLEPORTRAITS"] .. ": ", tabDB.DisableClassPortraits)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEPORTRAITS"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableClassPortraits", "]] .. L["TAB"][tabName]["DISABLEPORTRAITS"] .. [[: "})]])	
+				end 
+			end)
+			DisableClassPortraits.Identify = { Type = "Checkbox", Toggle = "DisableClassPortraits" }	
+			StdUi:FrameTooltip(DisableClassPortraits, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMRIGHT", true)	
 
 			local DisableRotationModes = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEROTATIONMODES"])
-			DisableRotationModes:SetChecked(tabDB.DisableRotationModes)
-			function DisableRotationModes:OnValueChanged(self, state, value)
-				tabDB.DisableRotationModes = not tabDB.DisableRotationModes		
-				Action.Print(L["TAB"][tabName]["DISABLEROTATIONMODES"] .. ": ", tabDB.DisableRotationModes)
-			end				
+			DisableRotationModes:SetChecked(tabDB.DisableRotationModes)		
+			DisableRotationModes:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableRotationModes:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableRotationModes = not tabDB.DisableRotationModes
+					self:SetChecked(tabDB.DisableRotationModes)	
+					Action.Print(L["TAB"][tabName]["DISABLEROTATIONMODES"] .. ": ", tabDB.DisableRotationModes)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEROTATIONMODES"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableRotationModes", "]] .. L["TAB"][tabName]["DISABLEROTATIONMODES"] .. [[: "})]])	
+				end 
+			end)
 			DisableRotationModes.Identify = { Type = "Checkbox", Toggle = "DisableRotationModes" }	
+			StdUi:FrameTooltip(DisableRotationModes, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMLEFT", true)	
 			
-			local DisableSounds = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLESOUNDS"])
-			DisableSounds:SetChecked(tabDB.DisableSounds)
-			function DisableSounds:OnValueChanged(self, state, value)
-				tabDB.DisableSounds = not tabDB.DisableSounds		
-				Action.Print(L["TAB"][tabName]["DISABLESOUNDS"] .. ": ", tabDB.DisableSounds)
-			end				
-			DisableSounds.Identify = { Type = "Checkbox", Toggle = "DisableSounds" }
-			
+			local DisableRotationDisplay = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEROTATIONDISPLAY"])
+			DisableRotationDisplay:SetChecked(tabDB.DisableRotationDisplay)
+			DisableRotationDisplay:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableRotationDisplay:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableRotationDisplay = not tabDB.DisableRotationDisplay
+					self:SetChecked(tabDB.DisableRotationDisplay)	
+					Action.Print(L["TAB"][tabName]["DISABLEROTATIONDISPLAY"] .. ": ", tabDB.DisableRotationDisplay)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEROTATIONDISPLAY"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableRotationDisplay", "]] .. L["TAB"][tabName]["DISABLEROTATIONDISPLAY"] .. [[: "})]])	
+				end 
+			end)
+			DisableRotationDisplay.Identify = { Type = "Checkbox", Toggle = "DisableRotationDisplay" }
+			StdUi:FrameTooltip(DisableRotationDisplay, strjoin("\n\n", L["TAB"][tabName]["DISABLEROTATIONDISPLAYTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMRIGHT", true)	
+						
 			local HideOnScreenshot = StdUi:Checkbox(anchor, L["TAB"][tabName]["HIDEONSCREENSHOT"])
-			HideOnScreenshot:SetChecked(tabDB.HideOnScreenshot)
-			function HideOnScreenshot:OnValueChanged(self, state, value)
-				tabDB.HideOnScreenshot = not tabDB.HideOnScreenshot
-				ScreenshotHider:Initialize()
-			end				
+			HideOnScreenshot:SetChecked(tabDB.HideOnScreenshot)	
+			HideOnScreenshot:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			HideOnScreenshot:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.HideOnScreenshot = not tabDB.HideOnScreenshot
+					self:SetChecked(tabDB.HideOnScreenshot)	
+					Action.Print(L["TAB"][tabName]["HIDEONSCREENSHOT"] .. ": ", tabDB.HideOnScreenshot)
+					ScreenshotHider:Initialize()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["HIDEONSCREENSHOT"], [[/run Action.SetToggle({]] .. tabName .. [[, "HideOnScreenshot", "]] .. L["TAB"][tabName]["HIDEONSCREENSHOT"] .. [[: "}); Action.ScreenshotHider:Initialize()]])	
+				end 
+			end)
 			HideOnScreenshot.Identify = { Type = "Checkbox", Toggle = "HideOnScreenshot" }
-			StdUi:FrameTooltip(HideOnScreenshot, L["TAB"][tabName]["HIDEONSCREENSHOTTOOLTIP"], nil, "BOTTOMLEFT", true)	
+			StdUi:FrameTooltip(HideOnScreenshot, strjoin("\n\n", L["TAB"][tabName]["HIDEONSCREENSHOTTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "BOTTOMLEFT", true)	
 			
 			local DisableAddonsCheck = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLEADDONSCHECK"])
-			DisableAddonsCheck:SetChecked(tabDB.DisableAddonsCheck)
-			function DisableAddonsCheck:OnValueChanged(self, state, value)
-				tabDB.DisableAddonsCheck = not tabDB.DisableAddonsCheck		
-				Action.Print(L["TAB"][tabName]["DISABLEADDONSCHECK"] .. ": ", tabDB.DisableAddonsCheck)
-			end				
-			DisableAddonsCheck.Identify = { Type = "Checkbox", Toggle = "DisableAddonsCheck" }			
-			
-			local cameraDistanceMaxZoomFactor = StdUi:Checkbox(anchor, L["TAB"][tabName]["CAMERAMAXFACTOR"])
-			cameraDistanceMaxZoomFactor:SetChecked(tabDB.cameraDistanceMaxZoomFactor)
-			function cameraDistanceMaxZoomFactor:OnValueChanged(self, state, value)
-				tabDB.cameraDistanceMaxZoomFactor = not tabDB.cameraDistanceMaxZoomFactor	
-				
-				local cameraDistanceMaxZoomFactor = GetCVar("cameraDistanceMaxZoomFactor")
-				if tabDB.cameraDistanceMaxZoomFactor then 					
-					if cameraDistanceMaxZoomFactor ~= "4" then 
-						SetCVar("cameraDistanceMaxZoomFactor", 4) 																	
-					end	
-				else 
-					if cameraDistanceMaxZoomFactor ~= "2" then 
-						SetCVar("cameraDistanceMaxZoomFactor", 2) 
-					end						
+			DisableAddonsCheck:SetChecked(tabDB.DisableAddonsCheck)	
+			DisableAddonsCheck:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableAddonsCheck:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableAddonsCheck = not tabDB.DisableAddonsCheck
+					self:SetChecked(tabDB.DisableAddonsCheck)	
+					Action.Print(L["TAB"][tabName]["DISABLEADDONSCHECK"] .. ": ", tabDB.DisableAddonsCheck)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLEADDONSCHECK"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableAddonsCheck", "]] .. L["TAB"][tabName]["DISABLEADDONSCHECK"] .. [[: "})]])	
 				end 
-				
-				Action.Print(L["TAB"][tabName]["CAMERAMAXFACTOR"] .. ": ", tabDB.cameraDistanceMaxZoomFactor)
+			end)			
+			DisableAddonsCheck.Identify = { Type = "Checkbox", Toggle = "DisableAddonsCheck" }		
+			StdUi:FrameTooltip(DisableAddonsCheck, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMRIGHT", true)		
+			
+			local DisableSounds = StdUi:Checkbox(anchor, L["TAB"][tabName]["DISABLESOUNDS"])
+			DisableSounds:SetChecked(tabDB.DisableSounds)		
+			DisableSounds:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			DisableSounds:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.DisableSounds = not tabDB.DisableSounds
+					self:SetChecked(tabDB.DisableSounds)	
+					Action.Print(L["TAB"][tabName]["DISABLESOUNDS"] .. ": ", tabDB.DisableSounds)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["DISABLESOUNDS"], [[/run Action.SetToggle({]] .. tabName .. [[, "DisableSounds", "]] .. L["TAB"][tabName]["DISABLESOUNDS"] .. [[: "})]])	
+				end 
+			end)
+			DisableSounds.Identify = { Type = "Checkbox", Toggle = "DisableSounds" }
+			StdUi:FrameTooltip(DisableSounds, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "BOTTOMRIGHT", true)	
+
+			local CVarsItems = {
+				{ text = "Contrast", 							value = 1 },
+				{ text = "Brightness", 							value = 2 },
+				{ text = "Gamma", 								value = 3 },
+				{ text = "colorblindsimulator", 				value = 4 },
+				{ text = "colorblindWeaknessFactor", 			value = 5 },
+				{ text = "SpellQueueWindow", 					value = 6 },
+				{ text = "doNotFlashLowHealthWarning", 			value = 7 },
+				{ text = "nameplateMaxDistance", 				value = 8 },
+				{ text = "nameplateNotSelectedAlpha", 			value = 9 },
+				{ text = "nameplateOccludedAlphaMult", 			value = 10 },
+				{ text = "breakUpLargeNumbers", 				value = 11 },
+				{ text = "screenshotQuality", 					value = 12 },
+				{ text = "nameplateShowEnemies", 				value = 13 },
+				{ text = "autoSelfCast", 						value = 14 },
+			}
+			local CVars = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), themeHeight, CVarsItems, nil, true, true)
+			CVars:SetPlaceholder(" -- CVars -- ") 	
+			for i, v in ipairs(CVars.optsFrame.scrollChild.items) do 
+				v:SetChecked(tabDB.CVars[i])
+			end			
+			CVars.OnValueChanged = function(self, value)			
+				for i, v in ipairs(self.optsFrame.scrollChild.items) do 					
+					if tabDB.CVars[i] ~= v:GetChecked() then
+						tabDB.CVars[i] = v:GetChecked()
+						Action.Print("CVar - " .. CVarsItems[i].text .. ": ", tabDB.CVars[i])
+						TMW:Fire("TMW_ACTION_CVARS_CHANGED")
+					end 				
+				end 				
 			end				
-			cameraDistanceMaxZoomFactor.Identify = { Type = "Checkbox", Toggle = "cameraDistanceMaxZoomFactor" }		
+			CVars:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			CVars:SetScript("OnClick", function(self, button, down)
+				if button == "LeftButton" then 
+					self:ToggleOptions()
+				elseif button == "RightButton" then 
+					Action.CraftMacro("CVars", [[/run Action.SetToggle({]] .. tabName .. [[, "CVars", "CVars:"})]])	
+				end
+			end)	
+			CVars.Identify = { Type = "Dropdown", Toggle = "CVars" }			
+			CVars.FontStringTitle = StdUi:Subtitle(CVars, "CVars")
+			StdUi:FrameTooltip(CVars, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "TOP", true)
+			StdUi:GlueAbove(CVars.FontStringTitle, CVars)
+			CVars.text:SetJustifyH("CENTER")	
 
 			local Tools = StdUi:Header(PauseChecksPanel, L["TAB"][tabName]["TOOLS"])
 			Tools:SetAllPoints()			
@@ -12291,111 +14919,190 @@ function Action.ToggleMainUI()
 			
 			local LetMeCast = StdUi:Checkbox(anchor, "LetMeCast")
 			LetMeCast:SetChecked(tabDB.LetMeCast)
-			function LetMeCast:OnValueChanged(self, state, value)
-				tabDB.LetMeCast = not tabDB.LetMeCast		
-				LETMECAST:Initialize()
-				Action.Print("LetMeCast: ", tabDB.LetMeCast)
-			end				
+			LetMeCast:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			LetMeCast:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.LetMeCast = not tabDB.LetMeCast
+					self:SetChecked(tabDB.LetMeCast)	
+					Action.Print("LetMeCast: ", tabDB.LetMeCast)
+					LETMECAST:Initialize()
+				elseif button == "RightButton" then 
+					Action.CraftMacro("LetMeCast", [[/run Action.SetToggle({]] .. tabName .. [[, "LetMeCast", "LetMeCast: "}); Action.LETMECAST:Initialize()]])	
+				end 
+			end)				
 			LetMeCast.Identify = { Type = "Checkbox", Toggle = "LetMeCast" }	
-			StdUi:FrameTooltip(LetMeCast, L["TAB"][tabName]["LETMECASTTOOLTIP"], nil, "TOPRIGHT", true)
+			StdUi:FrameTooltip(LetMeCast, strjoin("\n\n", L["TAB"][tabName]["LETMECASTTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPRIGHT", true)
 			
 			local LetMeDrag = StdUi:Checkbox(anchor, "LetMeDrag")
 			LetMeDrag:SetChecked(tabDB.LetMeDrag)
 			if not LETMEDRAG:CanBeEnabled() then 
 				LetMeDrag:Disable()
-			end
-			function LetMeDrag:OnValueChanged(self, state, value)
-				tabDB.LetMeDrag = not tabDB.LetMeDrag		
-				LETMEDRAG:Initialize()
-				Action.Print("LetMeDrag: ", tabDB.LetMeDrag)
-			end				
+			end		
+			LetMeDrag:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			LetMeDrag:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.LetMeDrag = not tabDB.LetMeDrag
+					self:SetChecked(tabDB.LetMeDrag)	
+					Action.Print("LetMeDrag: ", tabDB.LetMeDrag)
+					LETMEDRAG:Initialize()
+				elseif button == "RightButton" then 
+					Action.CraftMacro("LetMeDrag", [[/run Action.SetToggle({]] .. tabName .. [[, "LetMeDrag", "LetMeDrag: "}); Action.LETMEDRAG:Initialize()]])	
+				end 
+			end)				
 			LetMeDrag.Identify = { Type = "Checkbox", Toggle = "LetMeDrag" }	
-			StdUi:FrameTooltip(LetMeDrag, L["TAB"][tabName]["LETMEDRAGTOOLTIP"], nil, "TOPLEFT", true)			
+			StdUi:FrameTooltip(LetMeDrag, strjoin("\n\n", L["TAB"][tabName]["LETMEDRAGTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPLEFT", true)			
+			
+			local cameraDistanceMaxZoomFactor = StdUi:Checkbox(anchor, L["TAB"][tabName]["CAMERAMAXFACTOR"])
+			cameraDistanceMaxZoomFactor:SetChecked(tabDB.cameraDistanceMaxZoomFactor)		
+			cameraDistanceMaxZoomFactor:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			cameraDistanceMaxZoomFactor:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.cameraDistanceMaxZoomFactor = not tabDB.cameraDistanceMaxZoomFactor
+					self:SetChecked(tabDB.cameraDistanceMaxZoomFactor)	
+					
+					local cameraDistanceMaxZoomFactor = GetCVar("cameraDistanceMaxZoomFactor")
+					if tabDB.cameraDistanceMaxZoomFactor then 					
+						if cameraDistanceMaxZoomFactor ~= "4" then 
+							SetCVar("cameraDistanceMaxZoomFactor", 4) 																	
+						end	
+					else 
+						if cameraDistanceMaxZoomFactor ~= "2" then 
+							SetCVar("cameraDistanceMaxZoomFactor", 2) 
+						end						
+					end 
+					
+					Action.Print(L["TAB"][tabName]["CAMERAMAXFACTOR"] .. ": ", tabDB.cameraDistanceMaxZoomFactor)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["CAMERAMAXFACTOR"], [[/run Action.SetToggle({]] .. tabName .. [[, "cameraDistanceMaxZoomFactor", "]] .. L["TAB"][tabName]["CAMERAMAXFACTOR"] .. [[: "}); SetCVar("cameraDistanceMaxZoomFactor", Action.GetToggle(1, "cameraDistanceMaxZoomFactor") and 4 or 2)]])	
+				end 
+			end)	
+			cameraDistanceMaxZoomFactor.Identify = { Type = "Checkbox", Toggle = "cameraDistanceMaxZoomFactor" }	
+			StdUi:FrameTooltip(cameraDistanceMaxZoomFactor, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "TOPRIGHT", true)				
 			
 			local TargetCastBar = StdUi:Checkbox(anchor, L["TAB"][tabName]["TARGETCASTBAR"])
-			TargetCastBar:SetChecked(tabDB.TargetCastBar)
-			function TargetCastBar:OnValueChanged(self, state, value)
-				tabDB.TargetCastBar = not tabDB.TargetCastBar						
-				Action.Print(L["TAB"][tabName]["TARGETCASTBAR"] .. ": ", tabDB.TargetCastBar)
-			end				
+			TargetCastBar:SetChecked(tabDB.TargetCastBar)		
+			TargetCastBar:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			TargetCastBar:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.TargetCastBar = not tabDB.TargetCastBar
+					self:SetChecked(tabDB.TargetCastBar)	
+					Action.Print(L["TAB"][tabName]["TARGETCASTBAR"] .. ": ", tabDB.TargetCastBar)
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["TARGETCASTBAR"], [[/run Action.SetToggle({]] .. tabName .. [[, "TargetCastBar", "]] .. L["TAB"][tabName]["TARGETCASTBAR"] .. [[: "})]])	
+				end 
+			end)			
 			TargetCastBar.Identify = { Type = "Checkbox", Toggle = "TargetCastBar" }	
-			StdUi:FrameTooltip(TargetCastBar, L["TAB"][tabName]["TARGETCASTBARTOOLTIP"], nil, "TOPLEFT", true)			
-			
-			local TargetRealHealth = StdUi:Checkbox(anchor, L["TAB"][tabName]["TARGETREALHEALTH"])
-			TargetRealHealth:SetChecked(tabDB.TargetRealHealth)
-			function TargetRealHealth:OnValueChanged(self, state, value)
-				tabDB.TargetRealHealth = not tabDB.TargetRealHealth		
-				UnitHealthTool:SetupStatusBarText()
-				Action.Print(L["TAB"][tabName]["TARGETREALHEALTH"] .. ": ", tabDB.TargetRealHealth)
-			end				
-			TargetRealHealth.Identify = { Type = "Checkbox", Toggle = "TargetRealHealth" }	
-			StdUi:FrameTooltip(TargetRealHealth, L["TAB"][tabName]["TARGETREALHEALTHTOOLTIP"], nil, "TOPLEFT", true)	
+			StdUi:FrameTooltip(TargetCastBar, strjoin("\n\n", L["TAB"][tabName]["TARGETCASTBARTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPLEFT", true)			
 			
 			local TargetPercentHealth = StdUi:Checkbox(anchor, L["TAB"][tabName]["TARGETPERCENTHEALTH"])
 			TargetPercentHealth:SetChecked(tabDB.TargetPercentHealth)
-			function TargetPercentHealth:OnValueChanged(self, state, value)
-				tabDB.TargetPercentHealth = not tabDB.TargetPercentHealth	
-				UnitHealthTool:SetupStatusBarText()
-				Action.Print(L["TAB"][tabName]["TARGETPERCENTHEALTH"] .. ": ", tabDB.TargetPercentHealth)
-			end				
+			TargetPercentHealth:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			TargetPercentHealth:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.TargetPercentHealth = not tabDB.TargetPercentHealth
+					self:SetChecked(tabDB.TargetPercentHealth)	
+					Action.Print(L["TAB"][tabName]["TARGETPERCENTHEALTH"] .. ": ", tabDB.TargetPercentHealth)
+					UnitHealthTool:SetupStatusBarText()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["TARGETPERCENTHEALTH"], [[/run Action.SetToggle({]] .. tabName .. [[, "TargetPercentHealth", "]] .. L["TAB"][tabName]["TARGETPERCENTHEALTH"] .. [[: "}); Action.UnitHealthTool:SetupStatusBarText()]])	
+				end 
+			end)				
 			TargetPercentHealth.Identify = { Type = "Checkbox", Toggle = "TargetPercentHealth" }	
-			StdUi:FrameTooltip(TargetPercentHealth, L["TAB"][tabName]["TARGETPERCENTHEALTHTOOLTIP"], nil, "TOPRIGHT", true)	
+			StdUi:FrameTooltip(TargetPercentHealth, strjoin("\n\n", L["TAB"][tabName]["TARGETPERCENTHEALTHTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPRIGHT", true)				
+			
+			local TargetRealHealth = StdUi:Checkbox(anchor, L["TAB"][tabName]["TARGETREALHEALTH"])
+			TargetRealHealth:SetChecked(tabDB.TargetRealHealth)			
+			TargetRealHealth:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			TargetRealHealth:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.TargetRealHealth = not tabDB.TargetRealHealth
+					self:SetChecked(tabDB.TargetRealHealth)	
+					Action.Print(L["TAB"][tabName]["TARGETREALHEALTH"] .. ": ", tabDB.TargetRealHealth)
+					UnitHealthTool:SetupStatusBarText()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["TARGETREALHEALTH"], [[/run Action.SetToggle({]] .. tabName .. [[, "TargetRealHealth", "]] .. L["TAB"][tabName]["TARGETREALHEALTH"] .. [[: "}); Action.UnitHealthTool:SetupStatusBarText()]])	
+				end 
+			end)				
+			TargetRealHealth.Identify = { Type = "Checkbox", Toggle = "TargetRealHealth" }	
+			StdUi:FrameTooltip(TargetRealHealth, strjoin("\n\n", L["TAB"][tabName]["TARGETREALHEALTHTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPLEFT", true)	
 					
 			local AuraCCPortrait = StdUi:Checkbox(anchor, L["TAB"][tabName]["AURACCPORTRAIT"])
 			AuraCCPortrait:SetChecked(tabDB.AuraCCPortrait)
-			AuraCCPortrait:RegisterForClicks("LeftButtonUp")
+			AuraCCPortrait:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 			AuraCCPortrait:SetScript("OnClick", function(self, button, down)
-				if not self.isDisabled then 
-					tabDB.AuraCCPortrait = not tabDB.AuraCCPortrait		
-					if tabDB.AuraCCPortrait then 
-						AuraDuration:TurnOnPortrait()
-					else 
-						AuraDuration:TurnOffPortrait()
+				if button == "LeftButton" then 
+					if not self.isDisabled then 
+						tabDB.AuraCCPortrait = not tabDB.AuraCCPortrait		
+						if tabDB.AuraCCPortrait then 
+							AuraDuration:TurnOnPortrait()
+						else 
+							AuraDuration:TurnOffPortrait()
+						end 
+						self:SetChecked(tabDB.AuraCCPortrait)
+						Action.Print(L["TAB"][tabName]["AURACCPORTRAIT"] .. ": ", tabDB.AuraCCPortrait)
 					end 
-					self:SetChecked(tabDB.AuraCCPortrait)
-					Action.Print(L["TAB"][tabName]["AURACCPORTRAIT"] .. ": ", tabDB.AuraCCPortrait)
-				end 
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["AURACCPORTRAIT"], [[/run Action.SetToggle({]] .. tabName .. [[, "AuraCCPortrait", "]] .. L["TAB"][tabName]["AURACCPORTRAIT"] .. [[: "}); Action.AuraDuration[Action.GetToggle(1, "AuraCCPortrait") and "TurnOnPortrait" or "TurnOffPortrait"](Action.AuraDuration)]])	
+				end
 			end)				
 			AuraCCPortrait.Identify = { Type = "Checkbox", Toggle = "AuraCCPortrait" }	
-			StdUi:FrameTooltip(AuraCCPortrait, L["TAB"][tabName]["AURACCPORTRAITTOOLTIP"], nil, "TOPRIGHT", true)
+			StdUi:FrameTooltip(AuraCCPortrait, strjoin("\n\n", L["TAB"][tabName]["AURACCPORTRAITTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPRIGHT", true)
 			if not tabDB.AuraDuration then 
 				AuraCCPortrait:Disable()
 			end 
 			
 			local AuraDurationCheckbox = StdUi:Checkbox(anchor, L["TAB"][tabName]["AURADURATION"])
-			AuraDurationCheckbox:SetChecked(tabDB.AuraDuration)
-			function AuraDurationCheckbox:OnValueChanged(self, state, value)
-				tabDB.AuraDuration = not tabDB.AuraDuration	
-				AuraDuration:Initialize()
-				if tabDB.AuraDuration then 
-					AuraCCPortrait:Enable()
-				else 
-					AuraCCPortrait:Disable()
+			AuraDurationCheckbox:SetChecked(tabDB.AuraDuration)			
+			AuraDurationCheckbox:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			AuraDurationCheckbox:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.AuraDuration = not tabDB.AuraDuration
+					self:SetChecked(tabDB.AuraDuration)	
+					Action.Print(L["TAB"][tabName]["AURADURATION"] .. ": ", tabDB.AuraDuration)
+					AuraDuration:Initialize()
+					if tabDB.AuraDuration then 
+						AuraCCPortrait:Enable()
+					else 
+						AuraCCPortrait:Disable()
+					end 
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["AURADURATION"], [[/run Action.SetToggle({]] .. tabName .. [[, "AuraDuration", "]] .. L["TAB"][tabName]["AURADURATION"] .. [[: "}); Action.AuraDuration:Initialize()]])	
 				end 
-				Action.Print(L["TAB"][tabName]["AURADURATION"] .. ": ", tabDB.AuraDuration)
-			end				
+			end)	
 			AuraDurationCheckbox.Identify = { Type = "Checkbox", Toggle = "AuraDuration" }	
-			StdUi:FrameTooltip(AuraDurationCheckbox, L["TAB"][tabName]["AURADURATIONTOOLTIP"], nil, "TOPLEFT", true)		
+			StdUi:FrameTooltip(AuraDurationCheckbox, strjoin("\n\n", L["TAB"][tabName]["AURADURATIONTOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPLEFT", true)		
 
 			local LossOfControlPlayerFrame = StdUi:Checkbox(anchor, L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAME"])
 			LossOfControlPlayerFrame:SetChecked(tabDB.LossOfControlPlayerFrame)
-			function LossOfControlPlayerFrame:OnValueChanged(self, state, value)
-				tabDB.LossOfControlPlayerFrame = not tabDB.LossOfControlPlayerFrame	
-				Action.LossOfControl:UpdateFrameData()				
-				Action.Print(L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAME"] .. ": ", tabDB.LossOfControlPlayerFrame)
-			end				
+			LossOfControlPlayerFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			LossOfControlPlayerFrame:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.LossOfControlPlayerFrame = not tabDB.LossOfControlPlayerFrame
+					self:SetChecked(tabDB.LossOfControlPlayerFrame)	
+					Action.Print(L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAME"] .. ": ", tabDB.LossOfControlPlayerFrame)
+					Action.LossOfControl:UpdateFrameData()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAME"], [[/run Action.SetToggle({]] .. tabName .. [[, "LossOfControlPlayerFrame", "]] .. L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAME"] .. [[: "}); Action.LossOfControl:UpdateFrameData()]])	
+				end 
+			end)	
 			LossOfControlPlayerFrame.Identify = { Type = "Checkbox", Toggle = "LossOfControlPlayerFrame" }	
-			StdUi:FrameTooltip(LossOfControlPlayerFrame, L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAMETOOLTIP"], nil, "TOPRIGHT", true)	
+			StdUi:FrameTooltip(LossOfControlPlayerFrame, strjoin("\n\n", L["TAB"][tabName]["LOSSOFCONTROLPLAYERFRAMETOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPRIGHT", true)	
 
 			local LossOfControlRotationFrame = StdUi:Checkbox(anchor, L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAME"])
 			LossOfControlRotationFrame:SetChecked(tabDB.LossOfControlRotationFrame)
-			function LossOfControlRotationFrame:OnValueChanged(self, state, value)
-				tabDB.LossOfControlRotationFrame = not tabDB.LossOfControlRotationFrame	
-				Action.LossOfControl:UpdateFrameData()				
-				Action.Print(L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAME"] .. ": ", tabDB.LossOfControlRotationFrame)
-			end				
+			LossOfControlRotationFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			LossOfControlRotationFrame:SetScript("OnClick", function(self, button, down)	
+				if button == "LeftButton" then 
+					tabDB.LossOfControlRotationFrame = not tabDB.LossOfControlRotationFrame
+					self:SetChecked(tabDB.LossOfControlRotationFrame)	
+					Action.Print(L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAME"] .. ": ", tabDB.LossOfControlRotationFrame)
+					Action.LossOfControl:UpdateFrameData()
+				elseif button == "RightButton" then 
+					Action.CraftMacro(L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAME"], [[/run Action.SetToggle({]] .. tabName .. [[, "LossOfControlRotationFrame", "]] .. L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAME"] .. [[: "}); Action.LossOfControl:UpdateFrameData()]])	
+				end 
+			end)	
 			LossOfControlRotationFrame.Identify = { Type = "Checkbox", Toggle = "LossOfControlRotationFrame" }	
-			StdUi:FrameTooltip(LossOfControlRotationFrame, L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAMETOOLTIP"], nil, "TOPLEFT", true)		
+			StdUi:FrameTooltip(LossOfControlRotationFrame, strjoin("\n\n", L["TAB"][tabName]["LOSSOFCONTROLROTATIONFRAMETOOLTIP"], L["TAB"]["RIGHTCLICKCREATEMACRO"]), nil, "TOPLEFT", true)		
 			
 			local LossOfControlTypes = StdUi:Dropdown(anchor, StdUi:GetWidthByColumn(anchor, 6), themeHeight, {
 				{ text = _G["LOSS_OF_CONTROL_DISPLAY_INTERRUPT"] .. " " .. _G.SPELL_SCHOOL0_CAP, value = 1 },
@@ -12442,22 +15149,28 @@ function Action.ToggleMainUI()
 				end 					
 				Action.LossOfControl:UpdateFrameData()	
 			end				
-			LossOfControlTypes:RegisterForClicks("LeftButtonUp")
+			LossOfControlTypes:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 			LossOfControlTypes:SetScript("OnClick", function(self, button, down)
 				if button == "LeftButton" then 
 					self:ToggleOptions()
+				elseif button == "RightButton" then 
+					Action.CraftMacro("LossOfControlTypes", [[/run Action.SetToggle({]] .. tabName .. [[, "LossOfControlTypes"})]])	
 				end
 			end)		
 			LossOfControlTypes.Identify = { Type = "Dropdown", Toggle = "LossOfControlTypes" }			
 			LossOfControlTypes.FontStringTitle = StdUi:Subtitle(LossOfControlTypes, L["TAB"][tabName]["LOSSOFCONTROLTYPES"])
 			StdUi:GlueAbove(LossOfControlTypes.FontStringTitle, LossOfControlTypes)
 			LossOfControlTypes.text:SetJustifyH("CENTER")
+			StdUi:FrameTooltip(LossOfControlTypes, L["TAB"]["RIGHTCLICKCREATEMACRO"], nil, "TOP", true)	
 			
 			local GlobalOverlay = anchor:AddRow()					
 			GlobalOverlay:AddElement(PvEPvPToggle, { column = 5.35 })			
 			GlobalOverlay:AddElement(StdUi:LayoutSpace(anchor), { column = 0.65 })	
-			GlobalOverlay:AddElement(InterfaceLanguage, { column = 6 })			
-			anchor:AddRow({ margin = { top = 10 } }):AddElements(ReTarget, Trinkets, { column = "even" })			
+			GlobalOverlay:AddElement(InterfaceLanguage, { column = 6 })	
+			local GlobalOverlay2 = anchor:AddRow({ margin = { top = 10 } })					
+			GlobalOverlay2:AddElement(ReTarget, { column = 3 })			
+			GlobalOverlay2:AddElement(ReFocus or StdUi:LayoutSpace(anchor), { column = 3 })	
+			GlobalOverlay2:AddElement(Trinkets, { column = 6 })					
 			anchor:AddRow():AddElements(Role, Burst, { column = "even" })			
 			local SpecialRow = anchor:AddRow()
 			SpecialRow:AddElement(FPS, { column = 6 })
@@ -12477,15 +15190,16 @@ function Action.ToggleMainUI()
 			PauseChecksPanel:AddRow():AddElement(PauseChecksPanel.titlePanel.label, { column = 12 })
 			PauseChecksPanel:AddRow({ margin = { top = 10 } }):AddElement(AntiFakePauses, { column = 12 })
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckSpellIsTargeting, CheckLootFrame, { column = "even" })	
-			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckEatingOrDrinking, CheckDeadOrGhost, { column = "even" })	
+			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckVehicle, CheckDeadOrGhost, { column = "even" })	
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckMount, CheckDeadOrGhostTarget, { column = "even" })	
-			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckCombat, StdUi:LayoutSpace(anchor), { column = "even" })	
+			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(CheckCombat, CheckEatingOrDrinking, { column = "even" })	
 			PauseChecksPanel:AddRow({ margin = { top = -15 } }):AddElement(Misc)		
-			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableRotationDisplay, DisableBlackBackground, { column = "even" })	
+			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableRegularFrames, DisableBlackBackground, { column = "even" })	
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisablePrint, DisableMinimap, { column = "even" })			
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableClassPortraits, DisableRotationModes, { column = "even" })		
-			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableSounds, HideOnScreenshot, { column = "even" })	
-			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableAddonsCheck, StdUi:LayoutSpace(anchor), { column = "even" })	
+			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableRotationDisplay, HideOnScreenshot, { column = "even" })	
+			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(DisableAddonsCheck, DisableSounds, { column = "even" })	
+			PauseChecksPanel:AddRow({ margin = { top = 0 } }):AddElement(CVars, { column = 12 })
 			PauseChecksPanel:AddRow({ margin = { top = -5  } }):AddElement(Tools)
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(LetMeCast, LetMeDrag, { column = "even" })
 			PauseChecksPanel:AddRow({ margin = { top = -10 } }):AddElements(cameraDistanceMaxZoomFactor, TargetCastBar, { column = "even" })
@@ -12756,39 +15470,39 @@ function Action.ToggleMainUI()
 			local Scroll, ScrollTable, Key, SetQueue, SetBlocker, MacroButton, MacroEditor, LuaButton, LuaEditor, QLuaButton, QLuaEditor, AutoHidden
 			
 			local AutoHiddenEvents				= {
-				["ACTIVE_TALENT_GROUP_CHANGED"]	= true, 
+				["ACTIVE_TALENT_GROUP_CHANGED"]	= true,
 				["BAG_UPDATE"]					= true,
 				["BAG_UPDATE_COOLDOWN"]			= true,
 				["PLAYER_EQUIPMENT_CHANGED"]	= true,
 				["UNIT_INVENTORY_CHANGED"]		= true,
-				--["UI_INFO_MESSAGE"]			= true, -- Classic: No war mode 
-				--["UNIT_PET"] 					= true, -- Replaced by callbacks "TMW_ACTION_PET_LIBRARY_MAIN_PET_UP" and "TMW_ACTION_PET_LIBRARY_MAIN_PET_DOWN"
-				--["PLAYER_LEVEL_UP"]			= true,	-- Classic: Spells are learn able only by teachers
+				["UI_INFO_MESSAGE"]				= not StdUi.isClassic, -- Classic: No war mode
+				--["PLAYER_LEVEL_UP"]			= true,	-- Retail: Replaced by callback TMW_ACTION_SPELL_BOOK_CHANGED | Classic: Spells are learn able only by teachers
+				--["UNIT_PET"] 					= true, -- Replaced by callbacks TMW_ACTION_PET_LIBRARY_MAIN_PET_UP and TMW_ACTION_PET_LIBRARY_MAIN_PET_DOWN which are represented by TMW_ACTION_SPELL_BOOK_CHANGED				
 			}
 			local AutoHiddenToggle				= function()
 				local script 					= ScrollTable:GetScript("OnEvent")
 				if Action.GetToggle(tabName, "AutoHidden") then 
 					-- Registers events 
-					for k in pairs(AutoHiddenEvents) do 
-						ScrollTable:RegisterEvent(k)
+					for k, v in pairs(AutoHiddenEvents) do 
+						if v then
+							ScrollTable:RegisterEvent(k)
+						end
 					end 
 					
 					-- Registers callback (Classic: Callback fires in the next priority talents -> spellbook)				
 					TMW:RegisterCallback("TMW_ACTION_SPELL_BOOK_CHANGED", 			script)
-					TMW:RegisterCallback("TMW_ACTION_PET_LIBRARY_MAIN_PET_UP", 		script)
-					TMW:RegisterCallback("TMW_ACTION_PET_LIBRARY_MAIN_PET_DOWN", 	script)
 				else 
 					-- Unregisters events 
-					for k in pairs(AutoHiddenEvents) do 
-						ScrollTable:UnregisterEvent(k)
+					for k, v in pairs(AutoHiddenEvents) do 
+						if v then
+							ScrollTable:UnregisterEvent(k)
+						end
 					end 
 					
 					-- Unregisters callback 
 					TMW:UnregisterCallback("TMW_ACTION_SPELL_BOOK_CHANGED", 		script)
-					TMW:UnregisterCallback("TMW_ACTION_PET_LIBRARY_MAIN_PET_UP", 	script)
-					TMW:UnregisterCallback("TMW_ACTION_PET_LIBRARY_MAIN_PET_DOWN",  script)
 				end 
-			end 						
+			end
 						
 			-- UI: Scroll
 			Scroll 						= setmetatable({
@@ -12940,7 +15654,7 @@ function Action.ToggleMainUI()
 			ScrollTable:RegisterEvents(nil, { OnClick = Scroll.OnClickHeader })
             ScrollTable:EnableSelection(true)			
 			ScrollTable.OnPairs			= function(self, k, v, isAutoHidden)
-				if type(v) == "table" and not v.Hidden and v.Type and v.ID and v.Desc then  
+				if type(v) == "table" and not v.Hidden and not v.HiddenUI and v.Type and v.ID and v.Desc then  
 					local Enabled = v:IsBlocked() and "False" or "True"
 					local isShown = true 
 					
@@ -13028,14 +15742,14 @@ function Action.ToggleMainUI()
 					end 
 				end  
 			end)
-			hooksecurefunc(ScrollTable, "ClearSelection", function()				
+			hooksecurefunc(ScrollTable, "ClearSelection", function()	
 				if MacroEditor:IsShown() then 
 					MacroEditor.closeBtn:Click()
 					MacroEditor.Preview.SkipNextTimer = TMW.time + 2
 					MacroEditor.EditBox:SetText("")
 					MacroEditor.Preview:SetText("")
 					Action.TimerDestroy("MacroWindow.Preview")						
-				end 
+				end 	
 				
 				LuaEditor.EditBox:SetText("")
 				if LuaEditor:IsShown() then 
@@ -13111,7 +15825,7 @@ function Action.ToggleMainUI()
 					else
 						if button == "LeftButton" then 	
 							local action = getmetatable(data).__index
-							action:SetQueue(self.SetToggleOptions)								
+							action:SetQueue(self.SetToggleOptions)							
 						elseif button == "RightButton" then 						
 							Action.CraftMacro("Queue: " .. data.TableKeyName, [[#showtooltip ]] .. data:Info() .. "\n" .. [[/run Action.MacroQueue("]] .. data.TableKeyName .. [[", { Priority = 1 })]], 1, true, true)	
 						end
@@ -13488,8 +16202,8 @@ function Action.ToggleMainUI()
 				{ text = "[MainPvP] @target" .. (Action.IamHealer and "||targettarget" or ""), 	value = "MainPvP" 				},	
 				{ text = "[MousePvE] @mouseover", 												value = "MousePvE" 				},	
 				{ text = "[MousePvP] @mouseover", 												value = "MousePvP" 				},
-				{ text = "[Heal] @arena1-3", 													value = "Heal" 					},				
-				{ text = "[PvP] @arena1-3", 													value = "PvP" 					},
+				{ text = "[Heal] @arena1-5/ME:40", 												value = "Heal" 					},				
+				{ text = "[PvP] @arena1-5/ME:40", 												value = "PvP" 					},
 			}, "Main" .. (Action.IsInPvP and "PvP" or "PvE"))	
 			Category.OnValueChanged = TabUpdate
 			Category.text:SetJustifyH("CENTER")	
@@ -15852,12 +18566,12 @@ function Action.ToggleMainUI()
 			
 			-- UI: PanelOptions - SelectResurrects
 			SelectResurrects = CreateCheckbox(PanelOptions, "SelectResurrects", true) -- yes macro, no callback 
-			--if StdUi.isClassic and Action.PlayerClass == "DRUID" then 
-			--	-- Druid in Classic hasn't ressurect
-			--	SelectResurrects:Disable()
-			--	SelectResurrects:SetChecked(false, true) -- only internal 
-			--	specDB.SelectResurrects = false 
-			--end 
+			if Action.BuildToC < 30000 and Action.PlayerClass == "DRUID" then 
+				-- Druid in Classic, TBC hasn't ressurect but in WOTLK has
+				SelectResurrects:Disable()
+				SelectResurrects:SetChecked(false, true) -- only internal 
+				specDB.SelectResurrects = false 
+			end 
 		end -- isHealer END 
 
 			-- UI: PanelUnitIDs
@@ -17025,24 +19739,38 @@ function Action.ToggleMainUI()
 				{ text = "Meta Engine", value = "MetaEngine" },
 			--	{ text = "v2", value = "v2" },				
 			}, specDB.Framework)	
+			PanelFramework.Category:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 			PanelFramework.Category:SetScript("OnClick", function(self, button)
 				if InCombatLockdown() then
-					if self.optsFrame:IsVisible() then 
+					if self.optsFrame:IsVisible() then
 						self:ToggleOptions()
-					end 
-				else
-					self:ToggleOptions()
+					end
+					
+					return
 				end
+					
+				if button == "LeftButton" then
+					self:ToggleOptions()					
+				elseif button == "RightButton" then 
+					local name = L["TAB"][tabName]["FRAMEWORK"]:gsub("^%[(.+)%](%s?)", "")
+					Action.CraftMacro(name, [[/run Action.SetToggle({]] .. tabName .. [[, "Framework", "]] .. name .. [[: "}, "]] .. specDB.Framework .. [[")]])	
+				end 
 			end)
 			PanelFramework.Category.OnValueChanged = function(self, value)
+				local hasChanges = specDB.Framework ~= value
 				specDB.Framework = value
 				MetaEnginePanel:SetShown(value == "MetaEngine")
 				if value == "MetaEngine" then
 					MetaEnginePanel.ScrollTable.MakeUpdate()
 				end
 				TMW:Fire("TMW_ACTION_METAENGINE_RECONFIGURE")
+				
+				if hasChanges then
+					TMW:Fire("TMW_ACTION_FRAMEWORK_CHANGED")
+				end
 			end
-			PanelFramework.Category.text:SetJustifyH("CENTER")				
+			PanelFramework.Category.text:SetJustifyH("CENTER")			
+			PanelFramework.Category.Identify = { Type = "Dropdown", Toggle = "Framework" }			
 			
 			------------------------------------- 
 			-- MetaEngine
@@ -17401,6 +20129,7 @@ end
 -------------------------------------------------------------------------------
 -- Specializations
 -------------------------------------------------------------------------------
+-- MoP added specialization API functions back but we will continue using legacy API until v2
 local classSpecIds = {
 	DRUID 				= {102,103,105},
 	HUNTER 				= {253,254,255},
@@ -17412,7 +20141,11 @@ local classSpecIds = {
 	WARLOCK 			= {265,266,267},
 	WARRIOR 			= {71,72,73},
 	DEATHKNIGHT 		= {250,251,252},
+	MONK 				= {268,270,269},
 }; ActionData.classSpecIds = classSpecIds
+if Action.BuildToC >= 50000 then
+	tinsert(classSpecIds.DRUID, 3, 104)
+end
 local specs = {
 	-- 4th index is localizedName of the specialization 
 	[253]	= {"Beast Mastery", 461112, "DAMAGER"},
@@ -17441,6 +20174,7 @@ local specs = {
 
 	[102]	= {"Balance", 136096, "DAMAGER"},
 	[103]	= {"Feral", 132115, "DAMAGER"},
+	[104]	= {"Guardian", 132276, "TANK"},
 	[105]	= {"Restoration", 136041, "HEALER"},
 
 	[262]	= {"Elemental", 136048, "DAMAGER"},
@@ -17454,11 +20188,15 @@ local specs = {
 	[250]	= {"Blood", 135770, "TANK"},
 	[251]	= {"Frost", 135773, "DAMAGER"},
 	[252]	= {"Unholy", 135775, "DAMAGER"},
+	
+	[268]	= {"Brewmaster", 608951, "TANK"},
+	[270]	= {"Mistweaver", 608952, "HEALER"},
+	[269]	= {"Windwalker", 608953, "DAMAGER"},
 }; ActionData.specs = specs
 
 function Action.GetNumSpecializations()
 	-- @return number 
-	return 3
+	return GetNumSpecializations and GetNumSpecializations() or 3
 end
 
 function Action.GetCurrentSpecialization()
@@ -17485,10 +20223,16 @@ function Action.GetCurrentSpecializationID()
 		local localizedName, _, points = GetTalentTabInfo(i)
 		if type(points) == "string" then 
 			_, localizedName, _, _, points = GetTalentTabInfo(i)
+			if not points and biggest == 0 and Action.BuildToC >= 50500 then -- MoP+ style with backward compatibility for Classic - Cata
+				local C_SpecializationInfo = _G.C_SpecializationInfo
+				local specIndex = C_SpecializationInfo.GetSpecialization()
+				local specInfo = specIndex and C_SpecializationInfo.GetSpecializationInfo(specIndex)
+				points = specInfo == specIDs[i] and specInfo or nil
+			end
 		end 
 		
 		specs[specIDs[i]][4] = localizedName
-		if points > biggest then
+		if points and points > biggest then -- MoP+ points can be nil if not choicen specialization tree
 			biggest = points
 			specID = specIDs[i]
 		elseif not specID and specs[specIDs[i]][3] == "DAMAGER" then 
@@ -17594,10 +20338,9 @@ TMW:RegisterSelfDestructingCallback("TMW_DB_INITIALIZED", function()
 	-- Note:
 	-- "PLAYER_SPECIALIZATION_CHANGED" will not be fired if player joins in the instance with spec which is not equal to what was used before loading screen, its not viable for Classic anyway 	
 	-- "TMW_DB_INITIALIZED" callback fires after "PLAYER_LOGIN" but with same time so basically it's "PLAYER_LOGIN" with properly order
-	Action:RegisterEvent("CHARACTER_POINTS_CHANGED", 		"PLAYER_SPECIALIZATION_CHANGED")
-	Action:RegisterEvent("CONFIRM_TALENT_WIPE", 			"PLAYER_SPECIALIZATION_CHANGED")
-	--Action:RegisterEvent("PLAYER_ENTERING_WORLD", 			"PLAYER_SPECIALIZATION_CHANGED")
-	Action:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED", 	"PLAYER_SPECIALIZATION_CHANGED")
+	Action:RegisterEvent("CHARACTER_POINTS_CHANGED", 	"PLAYER_SPECIALIZATION_CHANGED")
+	Action:RegisterEvent("CONFIRM_TALENT_WIPE", 		"PLAYER_SPECIALIZATION_CHANGED")
+	Action:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED", "PLAYER_SPECIALIZATION_CHANGED")
 	Action:PLAYER_SPECIALIZATION_CHANGED("PLAYER_LOGIN")
 	dbUpdate()
 	return true -- Signal RegisterSelfDestructingCallback to unregister
@@ -17782,8 +20525,8 @@ local function OnInitialize()
 	----------------------------------	
     A_Print(L["SLASH"]["LIST"])
 	A_Print("|cff00cc66/action|r - "  .. L["SLASH"]["OPENCONFIGMENU"])
-	A_Print("|cff00cc66/action help|r - " .. L["SLASH"]["HELP"])		
-	A_Print("|cff00cc66/action toaster|r - " .. L["SLASH"]["OPENCONFIGMENUTOASTER"])	
+	A_Print("|cff00cc66/action help|r - " .. L["SLASH"]["HELP"])	
+	A_Print("|cff00cc66/action toaster|r - " .. L["SLASH"]["OPENCONFIGMENUTOASTER"])		
 
 	----------------------------------	
 	-- Initialization
@@ -17796,7 +20539,7 @@ local function OnInitialize()
 	-- Initialization ColorPicker 
 	ColorPicker:Initialize()
 	
-	-- Initialization ReTarget 
+	-- Initialization ReTarget ReFocus
 	Re:Initialize()
 	
 	-- Initialization ScreenshotHider
@@ -17886,10 +20629,10 @@ local function OnInitialize()
 		-- This is the main update engine of TMW.
 		local function OnUpdate()
 			while true do
-				UpdateGlobals()				
+				UpdateGlobals()
 				TMW.GCD  = TMW.GCD or GetGCD() 	-- Update GCD: 02/09/2024 is no longer in TMW 
 				Locked = TMW.Locked				-- custom 
-				Time = TMW.time 				-- custom			
+				Time = TMW.time 				-- custom
 
 				if updateInProgress then
 					-- If the previous update cycle didn't finish (updateInProgress is still true)
@@ -18115,7 +20858,7 @@ function Action:ADDON_LOADED(event, addonName)
 				A_Print(L["SLASH"]["INTERFACEGUIDANCEALLSPECS"])
 				A_Print(L["SLASH"]["INTERFACEGUIDANCEGLOBAL"])
 				A_Print(L["SLASH"]["ATTENTION"])
-			end 		
+			end 	
 		else 
 			A_ToggleMainUI()
 		end 
@@ -18130,7 +20873,7 @@ function Action:ADDON_LOADED(event, addonName)
 		if ActionHasRunningDB then 
 			-- Reset Queue
 			Queue:OnEventToReset() 
-			-- ReTarget 
+			-- ReTarget ReFocus
 			Re:Reset()
 			-- ScreenshotHider - Only here!!
 			ScreenshotHider:Reset()

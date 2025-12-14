@@ -5,12 +5,13 @@ local huge 						= math.huge
 local math_max					= math.max 
 local math_min					= math.min	  
 local math_floor				= math.floor 	  
-local tsort						= table.sort	
+local tsort						= table.sort
 local wipe 						= _G.wipe 	 
 
 local SPELL_FAILED_NOT_BEHIND	= _G.SPELL_FAILED_NOT_BEHIND
 local SPELL_FAILED_NOT_INFRONT	= _G.SPELL_FAILED_NOT_INFRONT
 local ERR_PET_SPELL_NOT_BEHIND	= _G.ERR_PET_SPELL_NOT_BEHIND
+local SPELL_FAILED_UNIT_NOT_INFRONT = _G.SPELL_FAILED_UNIT_NOT_INFRONT
 	  
 local TMW 						= _G.TMW
 local CNDT						= TMW.CNDT 
@@ -18,6 +19,7 @@ local Env 						= CNDT.Env
 local SwingTimers 				= TMW.COMMON.SwingTimerMonitor.SwingTimers
 
 local A   						= _G.Action	
+local BuildToC					= A.BuildToC
 local CONST 					= A.Const
 local Listener					= A.Listener
 local toNum 					= A.toNum
@@ -46,14 +48,19 @@ local PainPowerType				= PowerType.Pain
 local EssencePowerType 			= PowerType.Essence
 
 local GetSpellName 				= _G.C_Spell and _G.C_Spell.GetSpellName or _G.GetSpellInfo
+local C_Item					= _G.C_Item
 local InCombatLockdown			= _G.InCombatLockdown  
 local issecure					= _G.issecure
 
-local 	 UnitLevel,    UnitPower, 	 UnitPowerMax, 	  UnitStagger, 	  UnitAttackSpeed, 	  UnitRangedDamage,    UnitDamage,     UnitAura =
-	  _G.UnitLevel, _G.UnitPower, _G.UnitPowerMax, _G.UnitStagger, _G.UnitAttackSpeed, _G.UnitRangedDamage, _G.UnitDamage,  _G.UnitAura
+local 	 UnitLevel,    UnitPower, 	 UnitPowerMax, 	  UnitStagger, 	  UnitAttackSpeed, 	  UnitRangedDamage,    UnitDamage, 	  UnitGUID,     UnitAura =
+	  _G.UnitLevel, _G.UnitPower, _G.UnitPowerMax, _G.UnitStagger, _G.UnitAttackSpeed, _G.UnitRangedDamage, _G.UnitDamage, _G.UnitGUID,  _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex
+-- Classic - TBC
+if BuildToC < 30000 then
+	UnitAura = A.UnitAura or TMW.UnitAura or _G.UnitAura or _G.C_UnitAuras.GetAuraDataByIndex
+end
 
-local 	 GetPowerRegen,    GetShapeshiftForm, 	 GetCritChance,    GetHaste, 	GetComboPoints =
-	  _G.GetPowerRegen, _G.GetShapeshiftForm, _G.GetCritChance, _G.GetHaste, _G.GetComboPoints
+local	 GetPowerRegen,    GetRuneCooldown,	   GetRuneType,    GetShapeshiftForm, 	 GetCritChance,    GetHaste, 	GetMasteryEffect, 	 GetVersatilityBonus, 	 GetCombatRatingBonus, 	  GetComboPoints =
+	  _G.GetPowerRegen, _G.GetRuneCooldown, _G.GetRuneType, _G.GetShapeshiftForm, _G.GetCritChance, _G.GetHaste, _G.GetMasteryEffect, _G.GetVersatilityBonus, _G.GetCombatRatingBonus, _G.GetComboPoints 
 	  
 local 	GetTotemInfo, 	 GetTotemTimeLeft =
 	 _G.GetTotemInfo, _G.GetTotemTimeLeft	  
@@ -62,16 +69,17 @@ local 	 IsEquippedItem, 	IsStealthed, 	IsMounted, 	  IsFalling, 	IsSwimming,    
 	  _G.IsEquippedItem, _G.IsStealthed, _G.IsMounted, _G.IsFalling, _G.IsSwimming, _G.IsSubmerged
 	  
 local 	 CancelUnitBuff, 	CancelSpellByName, 	  CombatLogGetCurrentEventInfo =
-	  _G.CancelUnitBuff, _G.CancelSpellByName, _G.CombatLogGetCurrentEventInfo
+	  _G.CancelUnitBuff, _G.CancelSpellByName, _G.CombatLogGetCurrentEventInfo or _G.C_CombatLog.GetCurrentEventInfo
 	  
 -- Bags / Inventory
 local 	 C_Container = _G.C_Container
-local 	 GetContainerNumSlots, 	  									  GetContainerItemID, 	 								   GetInventoryItemID, 	  GetItemInfoInstant,    GetItemCount, 	  IsEquippableItem =	  
-	  _G.GetContainerNumSlots or C_Container.GetContainerNumSlots, _G.GetContainerItemID or C_Container.GetContainerItemID, _G.GetInventoryItemID, _G.GetItemInfoInstant, _G.GetItemCount, _G.IsEquippableItem
-	  
--- Glyphs WOTLK+ 
-local  GetActiveTalentGroup, 	GetGlyphSocketInfo,	   GetNumGlyphSockets = 
-	_G.GetActiveTalentGroup, _G.GetGlyphSocketInfo, _G.GetNumGlyphSockets
+local 	 GetContainerNumSlots, 	  									  GetContainerItemID, 	 								   GetInventoryItemID, 	  										  GetItemInfoInstant,    								   GetItemCount, 	  									  IsEquippableItem =	  
+	  _G.GetContainerNumSlots or C_Container.GetContainerNumSlots, _G.GetContainerItemID or C_Container.GetContainerItemID, _G.GetInventoryItemID, C_Item and C_Item.GetItemInfoInstant or _G.GetItemInfoInstant, C_Item and C_Item.GetItemCount or _G.GetItemCount, C_Item and C_Item.IsEquippableItem or _G.IsEquippableItem
+	
+-- Glyphs: WOTLK - BFA
+local C_SpecializationInfo 		= _G.C_SpecializationInfo
+local  																		   GetActiveTalentGroup,	GetGlyphSocketInfo,	   GetNumGlyphSockets = 
+		C_SpecializationInfo and C_SpecializationInfo.GetActiveSpecGroup or _G.GetActiveTalentGroup, _G.GetGlyphSocketInfo, _G.GetNumGlyphSockets
 	  	  	  
 -------------------------------------------------------------------------------
 -- Remap
@@ -145,6 +153,8 @@ local Data = {
 	-- Behind
 	PlayerBehind = 0,
 	PetBehind = 0,
+	TargetBehind = 0,
+	TargetBehindGUID = nil,	
 	-- Swap 
 	isSwapLocked = false, 
 	-- Items 
@@ -157,6 +167,13 @@ local Data = {
 	-- Inventory
 	CheckInv 	= {},
 	InfoInv 	= {},
+	-- Runes
+	RunePresence = {
+		[CONST.DEATHKNIGHT_BLOOD] 	= 1, 	Blood 	= 1, 
+		[CONST.DEATHKNIGHT_FROST] 	= 2, 	Frost 	= 2, -- DON'T TOUCH THIS: WIKI HAS INCORRECT INDEXES AT LEAST ON MOP
+		[CONST.DEATHKNIGHT_UNHOLY] 	= 3, 	Unholy 	= 3, -- DON'T TOUCH THIS: WIKI HAS INCORRECT INDEXES AT LEAST ON MOP
+											Death 	= 4,
+	},	
 	-- Glyph
 	Glyphs		= {},
 } 
@@ -171,6 +188,7 @@ local DataCheckBags					= Data.CheckBags
 local DataInfoBags					= Data.InfoBags
 local DataCheckInv					= Data.CheckInv
 local DataInfoInv					= Data.InfoInv
+local DataRunePresence				= Data.RunePresence
 local DataGlyphs					= Data.Glyphs
 
 function Data.logAura(...)
@@ -224,7 +242,7 @@ end
 
 function Data.updateAutoShoot(...)
 	local unitID, _, spellID = ... 
-	if unitID == "player" and A.IamRanger and Data.IsShoot[A_GetSpellInfo(spellID)]  then 
+	if unitID == "player" and A.IamRanger and Data.IsShoot[A_GetSpellInfo(spellID)] then 
 		Data.AutoShootNextTick = TMW.time + UnitRangedDamage("player")
 	end 
 end 
@@ -252,6 +270,11 @@ function Data.logBehind(...)
 	if message == ERR_PET_SPELL_NOT_BEHIND then 
 		Data.PetBehind = TMW.time
 	end 
+	
+	if message == SPELL_FAILED_UNIT_NOT_INFRONT then
+		Data.TargetBehind = TMW.time
+		Data.TargetBehindGUID = UnitGUID("target") --record target GUID, if target changes it is likely no longer behind
+	end 	
 end 
 
 function Data.logLevel(...)
@@ -351,12 +374,13 @@ function Data.UpdateGlyphs()
 	wipe(DataGlyphs)
 	
 	local talentGroup = GetActiveTalentGroup() or 1
-	local enabled, _, spellID, spellName 
+	local enabled, _, spellID, spellName, glyphID
 	for i = 1, GetNumGlyphSockets() do 
-		enabled, _, spellID = GetGlyphSocketInfo(i, talentGroup)
+		enabled, _, _, spellID, _, glyphID = GetGlyphSocketInfo(i, talentGroup)
 		if enabled and spellID then 
 			spellName = GetSpellName(spellID)
 			if spellName then 
+				DataGlyphs[glyphID] = true 
 				DataGlyphs[spellID] = true 
 				DataGlyphs[spellName] = true 
 			end 
@@ -408,11 +432,13 @@ Listener:Add("ACTION_EVENT_PLAYER", "UPDATE_SHAPESHIFT_FORM", 				Data.UpdateSta
 Listener:Add("ACTION_EVENT_PLAYER", "PLAYER_ENTERING_WORLD", 				Data.UpdateStance)
 Listener:Add("ACTION_EVENT_PLAYER", "PLAYER_LOGIN", 						Data.UpdateStance)
 
--- WOTLK: Glyphs
-Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_ADDED", 					Data.UpdateGlyphs)
-Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_REMOVED", 					Data.UpdateGlyphs)
-Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_UPDATED", 					Data.UpdateGlyphs)
-TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", 			Data.UpdateGlyphs)
+-- Glyphs: WOTLK - BFA
+if BuildToC >= 30000 and BuildToC < 80000 then
+	Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_ADDED", 					Data.UpdateGlyphs)
+	Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_REMOVED", 					Data.UpdateGlyphs)
+	Listener:Add("ACTION_EVENT_PLAYER_GLYPH", "GLYPH_UPDATED", 					Data.UpdateGlyphs)
+	TMW:RegisterCallback("TMW_ACTION_PLAYER_SPECIALIZATION_CHANGED", 			Data.UpdateGlyphs)
+end
 
 local function RecoveryOffset()
 	return A_GetPing() + A_GetCurrentGCD()
@@ -544,6 +570,24 @@ function Player:IsPetBehindTime()
 	return TMW.time - Data.PetBehind
 end 
 
+function Player:TargetIsBehind(x)
+	-- @return boolean
+	--Note: Returns true if target is behind the player since x seconds taken from the last ui message and its the last target that caused the error
+	if UnitGUID("target") ~= Data.TargetBehindGUID then
+		Data.TargetBehind = 0
+	end
+	return TMW.time <= Data.TargetBehind + (x or 2.5)
+end
+
+function Player:TargetIsBehindTime()
+	-- @return boolean
+	--Note: Returns time since target behind the player and its the last target that caused the error
+	if UnitGUID("target") ~= Data.TargetBehindGUID then
+		Data.TargetBehind = 0
+	end
+	return TMW.time - Data.TargetBehind
+end 
+
 function Player:IsMounted()
 	-- @return boolean
 	return IsMounted() and (not DataAuraOnCombatMounted[PlayerClass] or A_Unit(self.UnitID):HasBuffs(DataAuraOnCombatMounted[PlayerClass], true) == 0)
@@ -604,7 +648,7 @@ function Player:CancelBuff(buffName)
 		for i = 1, huge do			
 			local Name = UnitAura("player", i, "HELPFUL")
 			
-			if type(Name) == "table" then 	
+			if type(Name) == "table" then 
 				Name = Name.name
 			end  			
 			
@@ -677,9 +721,10 @@ function Player:GetDeBuffsUnitCount(...)
 	return units, counter
 end 
 
--- WOTLK: Glyphs
+-- Glyphs: WOTLK - BFA
 function Player:HasGlyph(spell)
-	-- @usage Player:HasGlyph(spellName) or Player:HasGlyph(spellID)
+	-- @usage Player:HasGlyph(spellName) or Player:HasGlyph(spellID) or Player:HasGlyph(glyphID) 
+	-- As spellID and spellName should be specified name of glyph (not name of ability)
 	-- @return boolean 
 	return DataGlyphs[spell]
 end 
@@ -907,7 +952,8 @@ end
 
 function Player:HasTier(tier, count)
 	-- @return boolean 
-	return self:GetTier(tier) >= count 
+	-- Set Bonuses are disabled in MoP: Proving Grounds (InstanceID = 1148, ZoneID = 480)
+	return self:GetTier(tier) >= count and A.ZoneID ~= 480 
 end 
 
 -- Bags 
@@ -1522,14 +1568,18 @@ local function ComputeRuneCooldown(Slot, BypassRecovery)
 end
 
 -- rune
-function Player:Rune()
-	local Count = 0
+function Player:Rune(presence)
+	local presenceType = DataRunePresence[presence]	or presence
+    local c = 0
+	local runeType
 	for i = 1, 6 do
-		if ComputeRuneCooldown(i) == 0 then
-			Count = Count + 1
+		runeType = presenceType and GetRuneType and GetRuneType(i) or nil
+		if ComputeRuneCooldown(i) == 0 and (runeType == presenceType or runeType == 4) then -- 4 is RUNETYPE_DEATH
+			c = c + 1			
 		end
-	end
-	return Count
+	end	
+
+	return c
 end
 
 -- rune.time_to_x

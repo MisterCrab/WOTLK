@@ -11,7 +11,7 @@ local Unit							= A.Unit
 local Class 						= A.PlayerClass	  
 
 local tremove						= table.remove
-local CombatLogGetCurrentEventInfo 	= _G.CombatLogGetCurrentEventInfo
+local CombatLogGetCurrentEventInfo 	= _G.CombatLogGetCurrentEventInfo or _G.C_CombatLog.GetCurrentEventInfo
 local UnitGUID 						= _G.UnitGUID
 	
 local ListenedSpells 				= {}
@@ -174,8 +174,9 @@ CLEU = function(...)
 		end
 	-- PMultiplier OnRemove & OnUnitDeath Listener    
 	elseif EVENT == "UNIT_DIED" or EVENT == "UNIT_DESTROYED" then
-		local Units = ListenedSpell.Units
+		local Units
 		for _, ListenedSpell in pairs(ListenedSpells) do
+			Units = ListenedSpell.Units
 			if Units[DestGUID] then
 				Units[DestGUID] = nil
 			end

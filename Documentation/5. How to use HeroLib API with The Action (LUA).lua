@@ -44,11 +44,11 @@ if HL then
 	local S, I = A:HeroCreate() 		-- Get S (Spell) and I (Item) tables as it does 'Hero API' 
 	Action.HeroSetHookAllTable(S, {
 		-- [3] is 'Meta Icon' which will be used as position to display whole rotation, look '1. Introduction.lua' about 'Shown Main' if you forgot what each meta does
-		-- "TellMeWhen_Group4_Icon3" is string in quotes, this is refference for 'Condition Icon', if you're confused about this look '3. How to create Rotation (LUA).lua' №4
-		[3] = "TellMeWhen_Group4_Icon3",
+		-- "TellMeWhen_Group2_Icon3" is string in quotes, this is refference for 'Condition Icon', if you're confused about this look '3. How to create Rotation (LUA).lua' №4
+		[3] = "TellMeWhen_Group2_Icon3",
 	})
 	Action.HeroSetHookAllTable(I, {
-		[3] = "TellMeWhen_Group4_Icon3",
+		[3] = "TellMeWhen_Group2_Icon3",
 	})
 	
 	-- You can use standalone table keys, you're not limited to use Action.HeroSetHookAllTable for only one table always, look 'HeroLib.lua' for more info 
@@ -187,10 +187,10 @@ local HR   = HeroRotation
 -- PORT TO ACTION 
 local S, I = A:HeroCreate()
 Action.HeroSetHookAllTable(S, { -- Spells 
-	[3] = "TellMeWhen_Group4_Icon3",
+	[3] = "TellMeWhen_Group2_Icon3",
 })
 Action.HeroSetHookAllTable(I, { -- Items
-	[3] = "TellMeWhen_Group4_Icon3",
+	[3] = "TellMeWhen_Group2_Icon3",
 })
 -- Adding manually missed staff
 S.Brews                                 = Spell(115308)
